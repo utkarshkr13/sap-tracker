@@ -271,6 +271,9 @@ let _integCache = null, _signoffCache = null;
 - Firebase blank page bug → `new-proj-overlay` HTML placed after `</script>`; fixed by moving modal HTML before script
 - Migration skipping data → was checking `if(fbGet('projects')) return`; fixed by checking `data/{pid}` instead
 - Data vanishing on project select → `getDKey()` returned `'sap_data_'` (empty PID); fixed with auto-select first project
+- **New user Access Denied even after being added** (2026-05-11) → `getRoleForEmail` used stale localStorage/cache on new browser; fixed by adding `checkUserAuth(user)` async function that fetches fresh Firebase `config` before the role check
+- **Project name reverts on new device** (2026-05-11) → `migrateToProjects()` ran before Firebase loaded; saw empty localStorage → created new default project and overwrote Firebase; fixed by pre-loading Firebase projects into localStorage before `migrateToProjects` runs in `initApp`
+- **Vercel deploy fails** (2026-05-11) → `@vercel/static` builder deprecated; updated `vercel.json` to modern static config; also set git `user.email` to `ukumardj@gmail.com` so Vercel team auth passes
 
 ## Deployment notes
 - Vercel CLI at `/opt/homebrew/bin/vercel`
