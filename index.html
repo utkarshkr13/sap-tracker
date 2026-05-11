@@ -1796,7 +1796,7 @@ function saveProjectDetails(){
   projs[idx].name=(document.getElementById('sp-name').value||'').trim()||projs[idx].name;
   projs[idx].client=(document.getElementById('sp-client').value||'').trim();
   projs[idx].description=(document.getElementById('sp-desc').value||'').trim();
-  saveProjects(projs); updateTopbarProject(); toast('Project details saved');
+  saveProjects(projs); updateTopbarProject(); renderProjDropdown(); toast('✓ Project details saved');
 }
 
 function updateSession(idx,field,val){
@@ -2128,33 +2128,42 @@ async function startClerk(){
     await window.Clerk.load();
     clerkInstance=window.Clerk;
 
+    // Async auth check — always fetches fresh config from Firebase before role lookup.
+    // This ensures users added by admin on another device are recognised immediately
+    // without needing the new user to have a prior localStorage cache.
+    let _authInProgress = false;
+    async function checkUserAuth(user){
+      if(_authInProgress) return;
+      _authInProgress = true;
+      const email=(user.primaryEmailAddress?.emailAddress||'').toLowerCase();
+      const name=user.fullName||user.firstName||email;
+      // Show spinner while we fetch fresh config
+      const loadEl=document.getElementById('login-loading');
+      if(loadEl) loadEl.style.display='block';
+      try {
+        const fbCfg = await fbGet('config');
+        if(fbCfg){ _cfgCache=fbCfg; localStorage.setItem(CFGKEY,JSON.stringify(fbCfg)); }
+      } catch(e){ /* fall through to cached/default config */ }
+      const r=getRoleForEmail(email);
+      if(r){
+        document.getElementById('login-screen').style.display='none';
+        document.getElementById('access-denied-screen').style.display='none';
+        initApp(r, email, name);
+      } else {
+        if(loadEl) loadEl.style.display='none';
+        showAccessDenied(email, name);
+      }
+      _authInProgress = false;
+    }
+
     // Listen for auth state changes (fires when user signs in via modal)
     clerkInstance.addListener(({user})=>{
-      if(user){
-        const email=user.primaryEmailAddress?.emailAddress||'';
-        const name=user.fullName||user.firstName||email;
-        const r=getRoleForEmail(email);
-        if(r){
-          document.getElementById('login-screen').style.display='none';
-          document.getElementById('access-denied-screen').style.display='none';
-          initApp(r, email, name);
-        } else {
-          showAccessDenied(email, name);
-        }
-      }
+      if(user) checkUserAuth(user);
     });
 
     if(clerkInstance.user){
       // Already signed in (e.g. returning visit with active session)
-      const email=clerkInstance.user.primaryEmailAddress?.emailAddress||'';
-      const name=clerkInstance.user.fullName||clerkInstance.user.firstName||email;
-      const r=getRoleForEmail(email);
-      if(r){
-        document.getElementById('login-screen').style.display='none';
-        initApp(r, email, name);
-      } else {
-        showAccessDenied(email, name);
-      }
+      checkUserAuth(clerkInstance.user);
     } else {
       document.getElementById('login-loading').style.display='none';
       document.getElementById('google-btn-wrap').style.display='block';
@@ -2168,7 +2177,19 @@ async function startClerk(){
 }
 
 async function initApp(r, email='', displayName=''){
-  migrateToProjects();
+  // Pre-load projects from Firebase BEFORE migrateToProjects runs.
+  // Without this, a new browser sees empty localStorage → migrateToProjects creates a
+  // fresh default project and overwrites Firebase, losing any custom project name.
+  if(db){
+    try {
+      const fbProjects = await fbGet('projects');
+      if(fbProjects){
+        const pa=fbToArray(fbProjects);
+        if(pa&&pa.length){ _projectsCache=pa; localStorage.setItem(PROJ_LIST_KEY,JSON.stringify(pa)); }
+      }
+    } catch(e){}
+  }
+  migrateToProjects(); // safe — returns early if localStorage already has projects (just loaded above)
   role = r;
   // Auto-select first project if nothing is active (e.g. fresh browser)
   if(!getActivePid()){
