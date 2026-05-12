@@ -552,6 +552,29 @@ td.muted{color:var(--text3);font-size:12px}
 .link-input-wrap input{padding-left:36px!important}
 .link-input-icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:14px;pointer-events:none;z-index:1}
 .link-chip{display:inline-flex;align-items:center;gap:3px;background:#eff6ff;color:#4f46e5;border:1px solid #c7d2fe;border-radius:5px;font-size:10px;font-weight:700;padding:1px 6px;margin-left:5px;vertical-align:middle;flex-shrink:0}
+/* ── Jira chip (table row) ── */
+.jira-chip{display:inline-flex;align-items:center;gap:4px;background:#e0f2fe;color:#0369a1;border:1px solid #7dd3fc;border-radius:5px;font-size:10px;font-weight:800;padding:1px 7px;margin-left:5px;vertical-align:middle;flex-shrink:0;letter-spacing:.3px}
+.jira-chip.comment{background:#fef9c3;color:#a16207;border-color:#fde68a}
+/* ── Jira drawer card ── */
+.jira-card{border:1.5px solid #bae6fd;border-radius:12px;overflow:hidden;background:#fff}
+.jira-card-header{display:flex;align-items:center;gap:8px;padding:12px 14px;background:linear-gradient(135deg,#e0f2fe,#f0f9ff);border-bottom:1px solid #bae6fd;flex-wrap:wrap}
+.jira-logo{width:20px;height:20px;flex-shrink:0}
+.jira-ticket-id{font-size:13px;font-weight:800;color:#0369a1;letter-spacing:.3px}
+.jira-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px}
+.jira-badge.ticket{background:#dbeafe;color:#1d4ed8}
+.jira-badge.comment{background:#fef9c3;color:#a16207}
+.jira-open-btn{margin-left:auto;font-size:11px;font-weight:700;color:#0369a1;background:#fff;border:1.5px solid #7dd3fc;border-radius:7px;padding:4px 12px;text-decoration:none;white-space:nowrap;transition:all .15s;cursor:pointer}
+.jira-open-btn:hover{background:#0369a1;color:#fff;border-color:#0369a1}
+.jira-card-body{padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.jira-live-row{display:flex;align-items:center;gap:8px;font-size:12px}
+.jira-live-label{color:#64748b;font-weight:600;min-width:72px;flex-shrink:0}
+.jira-live-val{color:#0f172a;font-weight:500}
+.jira-status-pill{font-size:11px;font-weight:700;padding:2px 10px;border-radius:20px;background:#f1f5f9;color:#475569}
+.jira-status-pill.done{background:#dcfce7;color:#15803d}
+.jira-status-pill.inprogress{background:#dbeafe;color:#1d4ed8}
+.jira-status-pill.todo{background:#f1f5f9;color:#475569}
+.jira-related{padding:8px 14px;background:#fafafa;border-top:1px solid #f1f5f9;font-size:11.5px;color:#64748b}
+.jira-related strong{color:#0369a1}
 .sf-tbl th{background:#f8fafc;color:#8e8e93;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;padding:9px 12px;border-bottom:1px solid #f2f2f7;position:sticky;top:0;z-index:5;white-space:nowrap}
 .sf-tbl td{padding:10px 12px;border-bottom:1px solid #fafafa;font-size:12px;color:#1c1c1e;vertical-align:middle}
 .sf-tbl tbody tr:hover td{background:#fafafa}
@@ -1201,6 +1224,34 @@ td.muted{color:var(--text3);font-size:12px}
           </div>
         </div>
 
+        <!-- Jira Integration -->
+        <div class="settings-card">
+          <h3>🔵 Jira Integration</h3>
+          <p>Connect your Jira Cloud workspace. Once configured, the tracker will show live ticket status, summary, and assignee when you open any entry with a Jira link.</p>
+          <div style="display:grid;gap:12px;margin-top:16px">
+            <div class="mfg" style="margin-bottom:0"><label>Jira Base URL</label>
+              <input id="s-jira-url" type="url" placeholder="https://yourcompany.atlassian.net"/>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+              <div class="mfg" style="margin-bottom:0"><label>Jira Email</label>
+                <input id="s-jira-email" type="email" placeholder="you@company.com"/>
+              </div>
+              <div class="mfg" style="margin-bottom:0"><label>API Token</label>
+                <input id="s-jira-token" type="password" placeholder="Paste your Jira API token…" autocomplete="off"/>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:14px">
+            <button class="btn-upd" onclick="saveJiraCfg_ui()">Save Jira Config</button>
+            <button class="btn-upd" style="background:#f8fafc;color:#475569;border:1.5px solid #e2e8f0" onclick="testJiraConnection()">Test Connection</button>
+            <button class="btn-upd" style="background:#fff1f2;color:#e11d48;border:1.5px solid #fecdd3" onclick="clearJiraCfg()">Clear</button>
+          </div>
+          <div class="settings-note" style="margin-top:12px">
+            Get your API token from <strong>id.atlassian.com</strong> → Security → API tokens. Token is stored locally and in Firebase — shared with your team.
+          </div>
+          <div id="jira-test-result" style="margin-top:10px;font-size:12px"></div>
+        </div>
+
         <!-- Data management -->
         <div class="settings-card">
           <h3>🗑 Data Management</h3>
@@ -1570,14 +1621,15 @@ function fbToArray(val){
 async function loadAllFromFirebase(pid){
   if(!db || !pid) return;
   try {
-    const [cfg, projects, projCfg, data, integ, signoff, requests] = await Promise.all([
+    const [cfg, projects, projCfg, data, integ, signoff, requests, jiraCfg] = await Promise.all([
       fbGet('config'),
       fbGet('projects'),
       fbGet('proj_config/'+pid),
       fbGet('data/'+pid),
       fbGet('integration/'+pid),
       fbGet('signoff/'+pid),
-      fbGet('requests')
+      fbGet('requests'),
+      fbGet('jira_config')
     ]);
     if(cfg)      { _cfgCache=cfg;          localStorage.setItem(CFGKEY,JSON.stringify(cfg)); }
     if(projects) { _projectsCache=fbToArray(projects); localStorage.setItem(PROJ_LIST_KEY,JSON.stringify(_projectsCache)); }
@@ -1589,6 +1641,7 @@ async function loadAllFromFirebase(pid){
     const sf=fbToArray(signoff);
     if(sf) { _signoffCache=sf; localStorage.setItem('sap_signoff_'+pid,JSON.stringify(sf)); }
     if(requests) { const ra=fbToArray(requests); if(ra) localStorage.setItem(RKEY,JSON.stringify(ra)); }
+    if(jiraCfg)  { localStorage.setItem('sap_jira_cfg',JSON.stringify(jiraCfg)); }
     return true;
   } catch(e){ console.warn('loadAllFromFirebase error:',e); return false; }
 }
@@ -2417,7 +2470,7 @@ function renderData(){
       <td style="font-size:12px;font-weight:${r.rework==='Yes'?700:400};color:${r.rework==='Yes'?'#b45309':'var(--text3)'}">${r.rework}</td>
       <td class="muted">${r.rby}</td>
       <td>${r.rework==='Yes'&&r.rwhen?`<span class="rw-chip">📅 ${r.rwhen}</span>`:'<span style="color:#e2e8f0">—</span>'}</td>
-      <td class="desc-cell" title="${r.desc||''}">${r.desc||'—'}${r.link?`<span class="link-chip">🔗</span>`:''}</td>
+      <td class="desc-cell" title="${r.desc||''}">${r.desc||'—'}${r.link?(()=>{const ji=parseJiraInfo(r.link);return ji&&ji.ticketId?`<span class="jira-chip${ji.isComment?' comment':''}">${ji.isComment?'💬':'🎫'} ${ji.ticketId}</span>`:`<span class="link-chip">🔗</span>`;})():''}</td>
       <td>${stHtml(r.status,r.id)}</td>
       ${canAct?`<td><div class="act-btns">
         <button class="btn-ed" onclick="openModal(${r.id})">✏️ Edit</button>
@@ -2799,6 +2852,7 @@ function switchPanel(id,el){
     if(inp) inp.placeholder=pk?'pk_…'+pk.slice(-6):'pk_live_...';
     renderRoleList();
     if(role==='admin') renderSettingsProj();
+    loadJiraCfgIntoSettings();
   }
 }
 
@@ -3174,7 +3228,11 @@ function openRowDrawer(id){
     </div>`:''}
   `;
 
-  if(r.link) renderLinkPreview(r.link, `rd-link-${r.id}`);
+  if(r.link){
+    const ji=parseJiraInfo(r.link);
+    if(ji&&ji.ticketId) renderJiraCard(r.link, `rd-link-${r.id}`, r.id);
+    else renderLinkPreview(r.link, `rd-link-${r.id}`);
+  }
 
   const editBtn=document.getElementById('rd-edit-btn');
   if(editBtn){
@@ -3188,6 +3246,141 @@ function openRowDrawer(id){
 function closeDrawer(){
   document.getElementById('drawer-backdrop').classList.remove('open');
   document.getElementById('row-drawer').classList.remove('open');
+}
+
+// ══════════════════════════════════════════════════════
+// JIRA INTEGRATION
+// ══════════════════════════════════════════════════════
+
+// Parse any Jira URL or bare ticket ID into structured info
+function parseJiraInfo(url){
+  if(!url) return null;
+  const s=url.trim();
+  // Bare ticket ID: e.g. "SAP-123"
+  if(/^[A-Z][A-Z0-9]+-\d+$/i.test(s)){
+    const cfg=getJiraCfg();
+    return {ticketId:s.toUpperCase(),isComment:false,commentId:null,isJira:true,href:cfg.baseUrl?`${cfg.baseUrl}/browse/${s.toUpperCase()}`:s};
+  }
+  try{
+    const u=new URL(s);
+    const host=u.hostname; // e.g. company.atlassian.net
+    const m=s.match(/\/browse\/([A-Z][A-Z0-9]+-\d+)/i)||s.match(/\/issues\/([A-Z][A-Z0-9]+-\d+)/i);
+    if(!m) return null;
+    const ticketId=m[1].toUpperCase();
+    const params=new URLSearchParams(u.search);
+    const commentId=params.get('focusedCommentId')||(u.hash.match(/comment-(\d+)/)||[])[1]||null;
+    return {ticketId,commentId,isComment:!!commentId,isJira:true,baseUrl:u.origin,href:s};
+  }catch(e){return null;}
+}
+
+// Jira config (stored in localStorage + Firebase)
+const JIRA_CFG_KEY='sap_jira_cfg';
+function getJiraCfg(){ return JSON.parse(localStorage.getItem(JIRA_CFG_KEY)||'{}'); }
+function _persistJiraCfg(c){ localStorage.setItem(JIRA_CFG_KEY,JSON.stringify(c)); fbSet('jira_config',c); }
+
+function saveJiraCfg_ui(){
+  const c={
+    baseUrl:(document.getElementById('s-jira-url').value||'').trim().replace(/\/+$/,''),
+    email:(document.getElementById('s-jira-email').value||'').trim(),
+    token:(document.getElementById('s-jira-token').value||'').trim(),
+  };
+  if(!c.baseUrl){toast('⚠️ Enter your Jira base URL');return;}
+  _persistJiraCfg(c);
+  toast('✓ Jira config saved');
+}
+function clearJiraCfg(){
+  if(!confirm('Clear Jira config?')) return;
+  _persistJiraCfg({});
+  ['s-jira-url','s-jira-email','s-jira-token'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  toast('Jira config cleared');
+}
+async function testJiraConnection(){
+  const c=getJiraCfg();
+  const res=document.getElementById('jira-test-result');
+  if(!c.baseUrl||!c.email||!c.token){res.innerHTML='<span style="color:#e11d48">⚠️ Fill in all three fields first.</span>';return;}
+  res.innerHTML='<span style="color:#64748b">Testing…</span>';
+  const data=await _fetchJiraIssue('_test_',c);
+  // A 401 response still means the URL is reachable
+  if(data===null){res.innerHTML='<span style="color:#e11d48">❌ Could not reach Jira — check the URL and try again. CORS may block browser requests on some instances.</span>';}
+  else if(data&&data._corsOk){res.innerHTML='<span style="color:#15803d">✓ Connected to Jira successfully!</span>';}
+  else{res.innerHTML='<span style="color:#e11d48">❌ Auth failed — check your email and API token.</span>';}
+}
+
+// Fetch a Jira issue via REST API (returns null on network/CORS fail)
+async function _fetchJiraIssue(ticketId, cfg){
+  cfg=cfg||getJiraCfg();
+  if(!cfg.baseUrl||!cfg.email||!cfg.token) return null;
+  try{
+    const resp=await fetch(`${cfg.baseUrl}/rest/api/3/issue/${ticketId}?fields=summary,status,assignee,priority,issuetype`,{
+      headers:{'Authorization':'Basic '+btoa(cfg.email+':'+cfg.token),'Accept':'application/json'}
+    });
+    if(resp.status===404&&ticketId==='_test_') return {_corsOk:true}; // CORS ok, 404 expected for fake id
+    if(resp.status===200||resp.status===404) return Object.assign(await resp.json().catch(()=>({})),{_corsOk:true});
+    return null;
+  }catch(e){return null;}
+}
+
+// Render a Jira-branded card in the drawer
+async function renderJiraCard(url, containerId, rowId){
+  const el=document.getElementById(containerId);
+  if(!el) return;
+  const ji=parseJiraInfo(url);
+  if(!ji||!ji.ticketId){renderLinkPreview(url,containerId);return;}
+  const href=ji.href||url;
+
+  // Find other entries linked to same Jira ticket
+  const others=rows.filter(r=>r.id!==rowId&&r.link&&(()=>{const p=parseJiraInfo(r.link);return p&&p.ticketId===ji.ticketId;})());
+
+  el.innerHTML=`<div class="jira-card">
+    <div class="jira-card-header">
+      <svg class="jira-logo" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M16.003 0C7.165 0 0 7.163 0 15.997 0 24.831 7.165 32 16.003 32 24.837 32 32 24.831 32 15.997 32 7.163 24.837 0 16.003 0z" fill="#2684FF"/>
+        <path d="M24.734 15.216l-8.73-8.726-8.74 8.726 4.37 4.368 4.37 4.368 4.37-4.368 4.36-4.368z" fill="white"/>
+      </svg>
+      <span class="jira-ticket-id">${ji.ticketId}</span>
+      <span class="jira-badge ${ji.isComment?'comment':'ticket'}">${ji.isComment?'💬 Comment':'🎫 Ticket'}</span>
+      <a href="${href}" target="_blank" rel="noopener" class="jira-open-btn" onclick="event.stopPropagation()">Open in Jira →</a>
+    </div>
+    <div class="jira-card-body" id="${containerId}-body">
+      <div style="font-size:12px;color:#94a3b8">Loading ticket details…</div>
+    </div>
+    ${others.length?`<div class="jira-related">📋 <strong>${others.length}</strong> other entr${others.length===1?'y':'ies'} also linked to <strong>${ji.ticketId}</strong> — ${others.map(r=>`<em>${r.name}</em>`).join(', ')}</div>`:''}
+  </div>`;
+
+  // Try to fetch live ticket data
+  const data=await _fetchJiraIssue(ji.ticketId);
+  const bodyEl=document.getElementById(containerId+'-body');
+  if(!bodyEl) return;
+  if(!data){
+    bodyEl.innerHTML=`<div style="font-size:12px;color:#94a3b8">Live data unavailable — <a href="${href}" target="_blank" style="color:#0369a1">open in Jira</a> to see details. Configure API credentials in Settings to enable live sync.</div>`;
+    return;
+  }
+  if(!data.fields){
+    bodyEl.innerHTML=`<div style="font-size:12px;color:#e11d48">Could not load ticket. Check your API credentials in Settings.</div>`;
+    return;
+  }
+  const f=data.fields;
+  const stName=f.status?.name||'—';
+  const stCat=(f.status?.statusCategory?.key||'').toLowerCase();
+  const stCls=stCat==='done'?'done':stCat==='indeterminate'?'inprogress':'todo';
+  bodyEl.innerHTML=`
+    <div class="jira-live-row"><span class="jira-live-label">Summary</span><span class="jira-live-val" style="flex:1">${f.summary||'—'}</span></div>
+    <div class="jira-live-row"><span class="jira-live-label">Status</span><span class="jira-status-pill ${stCls}">${stName}</span></div>
+    ${f.assignee?`<div class="jira-live-row"><span class="jira-live-label">Assignee</span><span class="jira-live-val">${f.assignee.displayName||'—'}</span></div>`:''}
+    ${f.priority?`<div class="jira-live-row"><span class="jira-live-label">Priority</span><span class="jira-live-val">${f.priority.name||'—'}</span></div>`:''}
+    ${f.issuetype?`<div class="jira-live-row"><span class="jira-live-label">Type</span><span class="jira-live-val">${f.issuetype.name||'—'}</span></div>`:''}
+  `;
+}
+
+// Load saved Jira config into Settings fields
+function loadJiraCfgIntoSettings(){
+  const c=getJiraCfg();
+  const u=document.getElementById('s-jira-url');
+  const e=document.getElementById('s-jira-email');
+  const t=document.getElementById('s-jira-token');
+  if(u) u.value=c.baseUrl||'';
+  if(e) e.value=c.email||'';
+  if(t) t.value=c.token?'••••••••••••••••':'';
 }
 
 // ── Link Preview ─────────────────────────────────────
