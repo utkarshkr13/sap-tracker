@@ -2,7 +2,7 @@
 name: SAP Tracker — Salescode.ai
 description: Full project memory for the SAP Integration Testing Tracker web app built for CCBCSA
 type: project
-updated: 2026-05-11
+updated: 2026-05-13
 ---
 
 # SAP Integration Testing Tracker
@@ -179,14 +179,15 @@ let _selectedCalDate = null; // selected calendar day (ISO string)
 let db = null;              // Firebase database instance
 let _cfgCache = null, _projectsCache = null, _projCfgCache = {};
 let _integCache = null, _signoffCache = null;
+let sfFil = {type:'',api:'',stage:'',rework:'',blocked:''};  // signoff filter state
 ```
 
-## App structure / panels (as of 2026-05-11)
+## App structure / panels (as of 2026-05-13)
 1. **Testing Data** — filterable+sortable table, row detail drawer, inline status/date edit, add/edit/delete, bulk select
 2. **Tracker** — ring-chart summary per Testing Set; worst-case overall status; Export Excel; click row → master detail modal
 3. **Analytics** — charts + session calendar (status-colored chips, click-to-expand day detail); Export Excel removed
 4. **Integration** — fully editable CRUD; SAP→SC + SC→SAP sections; Export Excel (2-sheet XLSX)
-5. **Signoff** — fully editable CRUD; 14-column DQR signoff table; clickable/editable DQR links
+5. **Signoff** — KPI bar, pipeline funnel, stage pills, inline editing, filter bar, row color coding, Jira link per row, blocked flag
 6. **Settings** (admin only) — manage team members, pending access requests, Clerk key, data reset
 
 ## Projects system (as of 2026-05-06)
@@ -229,8 +230,8 @@ let _integCache = null, _signoffCache = null;
 
 ### Signoff Tracker Panel
 - Nav tab: `#nt-signoff`, Panel: `#panel-signoff` (dynamically rendered)
-- 14 items, 14 columns: #, Name, Type, API Received, Rework Req, Dev Status, Dev DQR, Dev DQR Link, Dev Lead Signoff, Test Status, Test DQR, Tester DQR Link, QA Lead Signoff, Reason/Comment
-- Data in Firebase `signoff/{pid}` — fully editable CRUD
+- 14 seed items; data in Firebase `signoff/{pid}` — fully editable CRUD
+- **Overhauled 2026-05-13** — see "Features added 2026-05-13" below
 
 ### Calendar Revamp (Analytics panel)
 - Cells enlarged to min-height 84px
@@ -274,6 +275,82 @@ let _integCache = null, _signoffCache = null;
 - **New user Access Denied even after being added** (2026-05-11) → `getRoleForEmail` used stale localStorage/cache on new browser; fixed by adding `checkUserAuth(user)` async function that fetches fresh Firebase `config` before the role check
 - **Project name reverts on new device** (2026-05-11) → `migrateToProjects()` ran before Firebase loaded; saw empty localStorage → created new default project and overwrote Firebase; fixed by pre-loading Firebase projects into localStorage before `migrateToProjects` runs in `initApp`
 - **Vercel deploy fails** (2026-05-11) → `@vercel/static` builder deprecated; updated `vercel.json` to modern static config; also set git `user.email` to `ukumardj@gmail.com` so Vercel team auth passes
+
+## Features added 2026-05-13
+
+### Signoff Section Overhaul (7 features)
+
+**Data model additions:**
+- `blocked: Boolean` — marks entry as blocked
+- `jiraLink: String` — Jira/comment URL per signoff row
+- Both fields stored in Firebase `signoff/{pid}` and handled by modal + inline toggle
+
+**1. KPI bar** — 5 stat cards always visible at top:
+  - Total Items, APIs Received (apiReceived=Done + pending sub-label), Dev Signoffs (devLeadSignoff=Done), QA Signoffs (qaLeadSignoff=Done), Complete count + %
+  - If any blocked: 6th red card shows Blocked count
+
+**2. Pipeline funnel** — clickable horizontal bar showing count at each stage:
+  - API Pending → Dev In Progress → Dev DQR Pending → Dev Sign Pending → Testing → Test DQR Pending → QA Sign Pending → Complete
+  - Blocked items excluded from pipeline (shown separately below)
+  - Click any stage box to filter table to that stage; click again to clear
+
+**3. Stage column** — auto-calculated per row using `getSignoffStage(r)`:
+  ```js
+  if(r.blocked) → 'Blocked'
+  if(apiReceived!='Done') → 'API Pending'
+  if(devStatus!='Done') → 'Dev In Progress'
+  if(devDqr!='Done') → 'Dev DQR Pending'
+  if(devLeadSignoff!='Done') → 'Dev Sign Pending'
+  if(testStatus!='Done') → 'Testing'
+  if(testDqr!='Done') → 'Test DQR Pending'
+  if(qaLeadSignoff!='Done') → 'QA Sign Pending'
+  else → 'Complete'
+  ```
+  Each stage rendered as a colored pill (`stagePill(stage)`) using `STAGE_META` color map.
+
+**4. Inline cell editing** — for admin/editor, status columns render as `<select class="sf-isel">` calling `saveSfInline(rowId, field, val)` on change:
+  - apiReceived, devStatus, devDqr, devLeadSignoff, testStatus, testDqr, qaLeadSignoff, reworkReq
+  - Saves immediately to Firebase + localStorage, re-renders table
+
+**5. Filter bar** — `sfFil` state object `{type, api, stage, rework, blocked}`:
+  - Dropdowns: All Types/Master/Transaction, API status, Stage (all 9), Rework, Blocked
+  - "✕ Clear" button appears when any filter active
+  - Pipeline stage boxes also set `sfFil.stage` (click to filter, click again to clear)
+  - `applySfFil(key, val)`, `clearSfFil()`, `hasSfFilter()`
+
+**6. Row color coding:**
+  - `sf-row-complete` (light green) → stage = Complete
+  - `sf-row-blocked` (light red) → r.blocked = true
+  - `sf-row-api-pending` (light amber) → stage = API Pending
+
+**7. Jira link + Blocked flag per row:**
+  - Jira link shown as `🎫 COCA-123` or `💬 COCA-123` chip (using existing `parseJiraInfo()`)
+  - `editSfJiraLink(rowId)` — prompt to set/edit URL
+  - Blocked toggle button in Actions column: 🔴 to mark blocked, 🔓 to clear
+  - `toggleSfBlocked(rowId)` — flips `blocked` boolean, saves, re-renders
+  - Modal also has Jira link input + Blocked checkbox
+
+**New helper functions added:**
+- `getSignoffStage(r)` — pure stage calculation
+- `STAGE_META` — color map for all 9 stages
+- `stagePill(stage)` — renders colored pill HTML
+- `sfFil`, `applySfFil()`, `clearSfFil()`, `hasSfFilter()` — filter state
+- `saveSfInline(rowId, field, val)` — single-field Firebase save
+- `sfIsel(rowId, field, val, opts, canAct)` — renders inline select or sfCell
+- `SF_STAT_OPTS`, `SF_LEAD_OPTS`, `SF_API_OPTS`, `SF_RW_OPTS` — option arrays
+- `sfJiraChip(rowId, url, canAct)` — Jira chip display
+- `editSfJiraLink(rowId)` — prompt to edit Jira link
+- `toggleSfBlocked(rowId)` — flip blocked boolean
+
+**New CSS classes added:**
+- `.sf-isel` — inline select styling
+- `.sf-filter-bar`, `.sf-filter-clear` — filter bar
+- `.sf-pipeline`, `.sf-pipe-step`, `.sf-pipe-active`, `.sf-pipe-n`, `.sf-pipe-l` — pipeline funnel
+- `.sf-row-complete`, `.sf-row-blocked`, `.sf-row-api-pending` — row colors
+- `.sf-blocked-badge` — red "Blocked" badge inline with name
+- `.sf-kpi-bar`, `.sf-kpi-card`, `.sf-kpi-n`, `.sf-kpi-l`, `.sf-kpi-sub` — upgraded KPI cards
+
+---
 
 ## Deployment notes
 - Vercel CLI at `/opt/homebrew/bin/vercel`
