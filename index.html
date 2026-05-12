@@ -845,6 +845,13 @@ td.muted{color:var(--text3);font-size:12px}
               <option>Salescode</option><option>SAP</option><option>Both</option><option value="-">—</option>
             </select>
           </div>
+          <div class="fgrp"><label>Jira Link</label>
+            <select id="fil-link" onchange="applyF()">
+              <option value="">All</option>
+              <option value="yes">🔗 Has Link</option>
+              <option value="no">⚠️ No Link</option>
+            </select>
+          </div>
           <button class="btn-clr" onclick="clearF()">✕ Clear</button>
         </div>
         <!-- Bulk action bar (shown when rows are selected) -->
@@ -1306,10 +1313,10 @@ td.muted{color:var(--text3);font-size:12px}
       <div class="mfg"><label>Change Description</label>
         <textarea id="f-desc" placeholder="Describe the change, issue, or findings…"></textarea>
       </div>
-      <div class="mfg" style="margin-top:4px"><label>Attach Link</label>
+      <div class="mfg" style="margin-top:4px"><label>Jira / Comment Link</label>
         <div class="link-input-wrap">
           <span class="link-input-icon">🔗</span>
-          <input id="f-link" type="url" placeholder="https://… paste a URL to attach a link preview"/>
+          <input id="f-link" type="url" placeholder="https://… paste a Jira ticket URL or any link"/>
         </div>
       </div>
     </div>
@@ -1879,7 +1886,7 @@ let role = null; // 'admin' | 'editor' | 'viewer'
 let selectedIds = new Set(); // bulk selection
 let editId = null;
 let filterSet = 'all';
-let fil = {status:'', type:'', session:'', rework:'', rby:''};
+let fil = {status:'', type:'', session:'', rework:'', rby:'', link:''};
 
 function defaultCfg(){
   return { emailRoles:{'ukumardj@gmail.com':'admin'} };
@@ -2337,6 +2344,8 @@ function getVisible(){
     if(fil.session&&r.session!==fil.session) return false;
     if(fil.rework&&r.rework!==fil.rework) return false;
     if(fil.rby&&r.rby!==fil.rby) return false;
+    if(fil.link==='yes'&&!r.link) return false;
+    if(fil.link==='no'&&r.link) return false;
     return true;
   });
 }
@@ -2366,7 +2375,7 @@ function renderData(){
   document.getElementById('s-pct').textContent=kPct+'%';
   document.getElementById('s-pct-bar').style.width=kPct+'%';
 
-  const hasFilter=filterSet!=='all'||fil.status||fil.type||fil.session||fil.rework||fil.rby;
+  const hasFilter=filterSet!=='all'||fil.status||fil.type||fil.session||fil.rework||fil.rby||fil.link;
   document.getElementById('kpi-context').innerHTML= hasFilter
     ? `<span class="ctx-dot" style="background:#ea580c"></span> Filtered view · ${vis.length} of ${rows.length} entries`
     : `<span class="ctx-dot"></span> All ${rows.length} entries across all sessions`;
@@ -2762,11 +2771,12 @@ function applyF(){
   fil.session=document.getElementById('fil-session').value;
   fil.rework=document.getElementById('fil-rework').value;
   fil.rby=document.getElementById('fil-rby').value;
+  fil.link=document.getElementById('fil-link').value;
   selectedIds.clear(); renderData();
 }
 function clearF(){
-  filterSet='all'; fil={status:'',type:'',session:'',rework:'',rby:''};
-  ['fil-status','fil-type','fil-session','fil-rework','fil-rby'].forEach(id=>document.getElementById(id).value='');
+  filterSet='all'; fil={status:'',type:'',session:'',rework:'',rby:'',link:''};
+  ['fil-status','fil-type','fil-session','fil-rework','fil-rby','fil-link'].forEach(id=>document.getElementById(id).value='');
   document.querySelectorAll('.pf').forEach(b=>b.classList.remove('on'));
   document.querySelector('.pf').classList.add('on');
   selectedIds.clear(); renderData();
@@ -3159,7 +3169,7 @@ function openRowDrawer(id){
       <div class="rd-desc">${r.desc}</div>
     </div>`:''}
     ${r.link?`<div class="rd-section">
-      <div class="rd-section-title">Attached Link</div>
+      <div class="rd-section-title">Jira / Comment Link</div>
       <div id="rd-link-${r.id}"></div>
     </div>`:''}
   `;
