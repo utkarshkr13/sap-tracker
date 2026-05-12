@@ -3,7 +3,14 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="description" content="Salescode.ai — SAP Integration Testing Tracker for CCBCSA Van Sales implementation. Track test sessions, API readiness, signoff status, and Jira tickets."/>
+<meta name="theme-color" content="#1e40af"/>
+<meta property="og:title" content="Salescode.ai — SAP Integration Tracker"/>
+<meta property="og:description" content="Internal tracking tool for SAP Van Sales integration testing at CCBCSA."/>
+<meta property="og:type" content="website"/>
 <title>Salescode.ai — SAP Integration Tracker</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231e40af'/%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%233b82f6'/%3E%3Cstop offset='1' stop-color='%231d4ed8'/%3E%3C/linearGradient%3E%3Crect width='64' height='64' rx='14' fill='url(%23g)'/%3E%3Ctext x='32' y='46' text-anchor='middle' font-family='Arial%2CSans-serif' font-size='38' font-weight='900' fill='white'%3ES%3C/text%3E%3C/svg%3E"/>
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%233b82f6'/%3E%3Cstop offset='1' stop-color='%231d4ed8'/%3E%3C/linearGradient%3E%3Crect width='64' height='64' rx='14' fill='url(%23g)'/%3E%3Ctext x='32' y='46' text-anchor='middle' font-family='Arial%2CSans-serif' font-size='38' font-weight='900' fill='white'%3ES%3C/text%3E%3C/svg%3E"/>
 <!-- Vercel Analytics + Speed Insights (served by Vercel's edge once enabled in dashboard) -->
 <script defer src="/_vercel/insights/script.js"></script>
 <script defer src="/_vercel/speed-insights/script.js"></script>
@@ -2888,6 +2895,7 @@ function switchPanel(id,el){
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
   document.getElementById('panel-'+id).classList.add('active');
   el.classList.add('active');
+  window.scrollTo({top:0,behavior:'smooth'});
   if(id==='analytics') setTimeout(renderAnalytics,50);
   if(id==='integration') renderIntegration();
   if(id==='signoff') renderSignoff();
@@ -3956,19 +3964,20 @@ function renderSignoff(){
 
   // ── KPI counts (full dataset) ──
   const total=allData.length;
-  const apiDone=allData.filter(r=>r.apiReceived==='Done').length;
+  const devDoneCt=allData.filter(r=>r.devStatus==='Done').length;
   const devSignDone=allData.filter(r=>r.devLeadSignoff==='Done').length;
-  const qaSignDone=allData.filter(r=>r.qaLeadSignoff==='Done').length;
+  const testDoneCt=allData.filter(r=>r.testStatus==='Done').length;
+  const qaSignPending=allData.filter(r=>r.qaLeadSignoff==='Pending').length;
   const blockedCt=allData.filter(r=>r.blocked).length;
   const completeCt=allData.filter(r=>getSignoffStage(r)==='Complete').length;
 
   // ── KPI bar ──
   const kpiBar=`<div class="sf-kpi-bar">
-    <div class="sf-kpi-card"><div class="sf-kpi-n">${total}</div><div class="sf-kpi-l">Total Items</div></div>
-    <div class="sf-kpi-card"><div class="sf-kpi-n" style="color:#2563eb">${apiDone}</div><div class="sf-kpi-l">APIs Received</div><div class="sf-kpi-sub">${total-apiDone} pending</div></div>
-    <div class="sf-kpi-card"><div class="sf-kpi-n" style="color:#7c3aed">${devSignDone}</div><div class="sf-kpi-l">Dev Signoffs</div><div class="sf-kpi-sub">${total-devSignDone} pending</div></div>
-    <div class="sf-kpi-card"><div class="sf-kpi-n" style="color:#0e7490">${qaSignDone}</div><div class="sf-kpi-l">QA Signoffs</div><div class="sf-kpi-sub">${total-qaSignDone} pending</div></div>
-    <div class="sf-kpi-card"><div class="sf-kpi-n" style="color:#16a34a">${completeCt}</div><div class="sf-kpi-l">Complete</div><div class="sf-kpi-sub">${Math.round(completeCt/Math.max(total,1)*100)}% done</div></div>
+    <div class="sf-kpi-card"><div class="sf-kpi-n">${total}</div><div class="sf-kpi-l">Total Items</div><div class="sf-kpi-sub">${completeCt} complete</div></div>
+    <div class="sf-kpi-card"><div class="sf-kpi-n" style="color:#1d4ed8">${devDoneCt}</div><div class="sf-kpi-l">Dev Done</div><div class="sf-kpi-sub">${total-devDoneCt} remaining</div></div>
+    <div class="sf-kpi-card"><div class="sf-kpi-n" style="color:#7c3aed">${devSignDone}</div><div class="sf-kpi-l">Dev Signoff</div><div class="sf-kpi-sub">${total-devSignDone} pending</div></div>
+    <div class="sf-kpi-card"><div class="sf-kpi-n" style="color:#0e7490">${testDoneCt}</div><div class="sf-kpi-l">Test Done</div><div class="sf-kpi-sub">${total-testDoneCt} remaining</div></div>
+    <div class="sf-kpi-card" style="${qaSignPending?'border-color:#fde68a':''}"><div class="sf-kpi-n" style="color:${qaSignPending?'#b45309':'#16a34a'}">${qaSignPending}</div><div class="sf-kpi-l">QA Signoff Pending</div><div class="sf-kpi-sub">${total-qaSignPending} cleared</div></div>
     ${blockedCt?`<div class="sf-kpi-card" style="border-color:#fecaca"><div class="sf-kpi-n" style="color:#dc2626">${blockedCt}</div><div class="sf-kpi-l">Blocked</div></div>`:''}
   </div>`;
 
