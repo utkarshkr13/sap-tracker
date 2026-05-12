@@ -536,6 +536,36 @@ td.muted{color:var(--text3);font-size:12px}
 .sf-link-btn:hover{background:#2563eb;color:#fff;border-color:#2563eb}
 .sf-link-edit{background:none;border:1px dashed #bfdbfe;border-radius:6px;padding:3px 8px;font-size:10px;color:#94a3b8;cursor:pointer;font-family:inherit;transition:all .15s}
 .sf-link-edit:hover{border-color:#2563eb;color:#2563eb}
+/* ── Signoff inline select ── */
+.sf-isel{border:1px solid transparent;background:transparent;font-size:11px;font-weight:700;cursor:pointer;outline:none;padding:3px 6px;border-radius:6px;color:inherit;font-family:inherit;width:100%;transition:all .15s}
+.sf-isel:hover,.sf-isel:focus{border-color:#cbd5e1;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+/* ── Signoff filter bar ── */
+.sf-filter-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 14px;background:#f8fafc;border-radius:10px;margin-bottom:14px;border:1px solid #e2e8f0}
+.sf-filter-bar select{border:1px solid #e2e8f0;border-radius:7px;padding:5px 10px;font-size:12px;font-family:inherit;color:#475569;background:#fff;cursor:pointer;outline:none;height:30px;transition:border-color .15s}
+.sf-filter-bar select:focus{border-color:#2563eb}
+.sf-filter-bar label{font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;flex-shrink:0}
+.sf-filter-clear{background:none;border:1px solid #e2e8f0;border-radius:7px;padding:4px 12px;font-size:11px;font-weight:700;color:#64748b;cursor:pointer;font-family:inherit;height:30px;transition:all .15s}
+.sf-filter-clear:hover{border-color:#dc2626;color:#dc2626;background:#fef2f2}
+/* ── Pipeline funnel ── */
+.sf-pipeline{display:flex;align-items:stretch;overflow-x:auto;margin-bottom:18px;border-radius:10px;overflow:hidden;border:1px solid #e2e8f0;background:#fff}
+.sf-pipe-step{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;min-width:70px;padding:10px 8px;text-align:center;cursor:pointer;transition:all .15s;border-right:1px solid #e2e8f0;position:relative}
+.sf-pipe-step:last-child{border-right:none}
+.sf-pipe-step:hover{background:#f0f9ff}
+.sf-pipe-step.sf-pipe-active{background:#eff6ff;border-bottom:3px solid #2563eb}
+.sf-pipe-step .sf-pipe-n{font-size:22px;font-weight:800;line-height:1.1}
+.sf-pipe-step .sf-pipe-l{font-size:9px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.4px;margin-top:3px;line-height:1.3;white-space:nowrap}
+/* ── Row color coding ── */
+.sf-row-complete td{background:#f0fdf4}
+.sf-row-blocked td{background:#fff5f5}
+.sf-row-api-pending td{background:#fffbeb}
+/* ── Blocked badge ── */
+.sf-blocked-badge{display:inline-flex;align-items:center;gap:3px;background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;border-radius:5px;font-size:10px;font-weight:800;padding:1px 7px}
+/* ── KPI bar upgrade ── */
+.sf-kpi-bar{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:16px}
+.sf-kpi-card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:3px}
+.sf-kpi-n{font-size:26px;font-weight:800;line-height:1.1}
+.sf-kpi-l{font-size:11px;font-weight:600;color:#64748b;line-height:1.3}
+.sf-kpi-sub{font-size:10px;color:#94a3b8;margin-top:1px}
 /* ── Link Preview Card ── */
 .link-preview-card{display:flex;align-items:stretch;border:1.5px solid #e2e8f0;border-radius:12px;overflow:hidden;background:#fff;text-decoration:none;color:inherit;transition:box-shadow .2s,border-color .2s;cursor:pointer;margin-top:2px}
 .link-preview-card:hover{box-shadow:0 4px 20px rgba(79,70,229,.12);border-color:#a5b4fc}
@@ -1510,6 +1540,21 @@ td.muted{color:var(--text3);font-size:12px}
         </div>
         <div class="mfg"><label>QA Lead Signoff</label>
           <select id="sm-qalead"><option value="-">—</option><option>Pending</option><option>Done</option></select>
+        </div>
+      </div>
+      <div class="msec" style="margin-top:8px">Jira & Status</div>
+      <div class="mrow">
+        <div class="mfg" style="flex:2"><label>Jira / Comment Link (URL)</label>
+          <div class="link-input-wrap"><span class="link-input-icon">🔗</span>
+            <input id="sm-jiralink" type="url" placeholder="https://applicate.atlassian.net/..."/>
+          </div>
+        </div>
+        <div class="mfg" style="flex:0;min-width:160px">
+          <label>Blocked</label>
+          <div style="display:flex;align-items:center;gap:8px;padding:11px 0">
+            <input type="checkbox" id="sm-blocked" style="width:18px;height:18px;accent-color:#dc2626;cursor:pointer;flex-shrink:0"/>
+            <label for="sm-blocked" style="font-size:13px;color:#475569;cursor:pointer;font-weight:500;margin:0">Mark as Blocked</label>
+          </div>
         </div>
       </div>
       <div class="msec" style="margin-top:8px">Comment</div>
@@ -3745,10 +3790,13 @@ function openSignoffModal(id){
     document.getElementById('sm-testdqrlink').value=r.testerDqrLink||'';
     document.getElementById('sm-qalead').value=r.qaLeadSignoff||'-';
     document.getElementById('sm-comment').value=r.comment||'';
+    document.getElementById('sm-blocked').checked=r.blocked||false;
+    document.getElementById('sm-jiralink').value=r.jiraLink||'';
   } else {
-    ['sm-name','sm-devdqrlink','sm-testdqrlink','sm-comment'].forEach(id=>document.getElementById(id).value='');
+    ['sm-name','sm-devdqrlink','sm-testdqrlink','sm-comment','sm-jiralink'].forEach(id=>document.getElementById(id).value='');
     ['sm-apirecv','sm-rework','sm-devstat','sm-devdqr','sm-devlead','sm-teststat','sm-testdqr','sm-qalead'].forEach(id=>document.getElementById(id).value='-');
     document.getElementById('sm-type').value='Master';
+    document.getElementById('sm-blocked').checked=false;
   }
   document.getElementById('signoff-overlay').classList.add('open');
   setTimeout(()=>document.getElementById('sm-name').focus(),80);
@@ -3773,6 +3821,8 @@ function saveSignoffEntry(){
     testerDqrLink:document.getElementById('sm-testdqrlink').value.trim(),
     qaLeadSignoff:document.getElementById('sm-qalead').value,
     comment:document.getElementById('sm-comment').value.trim(),
+    blocked:document.getElementById('sm-blocked').checked||false,
+    jiraLink:document.getElementById('sm-jiralink').value.trim(),
   };
   if(_sfEditId){
     const idx=d.findIndex(r=>r.id===_sfEditId);
@@ -3818,61 +3868,226 @@ function editSfLink(rowId,field){
   saveSignoff(data); renderSignoff(); toast('✓ Link updated');
 }
 
-function renderSignoff(){
-  const data=loadSignoff();
-  const canAct=role==='admin'||role==='editor';
-  const devDone=data.filter(r=>r.devStatus==='Done').length;
-  const testDone=data.filter(r=>r.testStatus==='Done').length;
-  const devSignP=data.filter(r=>r.devLeadSignoff==='Pending').length;
-  const qaSignP=data.filter(r=>r.qaLeadSignoff==='Pending').length;
+// ── Stage helpers ──
+function getSignoffStage(r){
+  if(r.blocked) return 'Blocked';
+  if(r.apiReceived!=='Done') return 'API Pending';
+  if(r.devStatus!=='Done') return 'Dev In Progress';
+  if(r.devDqr!=='Done') return 'Dev DQR Pending';
+  if(r.devLeadSignoff!=='Done') return 'Dev Sign Pending';
+  if(r.testStatus!=='Done') return 'Testing';
+  if(r.testDqr!=='Done') return 'Test DQR Pending';
+  if(r.qaLeadSignoff!=='Done') return 'QA Sign Pending';
+  return 'Complete';
+}
+const STAGE_META={
+  'Blocked':         {color:'#dc2626',bg:'#fef2f2',border:'#fecaca'},
+  'API Pending':     {color:'#b45309',bg:'#fef9c3',border:'#fde68a'},
+  'Dev In Progress': {color:'#1d4ed8',bg:'#dbeafe',border:'#93c5fd'},
+  'Dev DQR Pending': {color:'#c2410c',bg:'#ffedd5',border:'#fdba74'},
+  'Dev Sign Pending':{color:'#7c3aed',bg:'#ede9fe',border:'#c4b5fd'},
+  'Testing':         {color:'#0e7490',bg:'#cffafe',border:'#a5f3fc'},
+  'Test DQR Pending':{color:'#c2410c',bg:'#ffedd5',border:'#fdba74'},
+  'QA Sign Pending': {color:'#7c3aed',bg:'#ede9fe',border:'#c4b5fd'},
+  'Complete':        {color:'#15803d',bg:'#dcfce7',border:'#86efac'},
+};
+function stagePill(stage){
+  const m=STAGE_META[stage]||{color:'#475569',bg:'#f1f5f9',border:'#e2e8f0'};
+  return `<span style="display:inline-flex;align-items:center;background:${m.bg};color:${m.color};border:1px solid ${m.border};border-radius:20px;font-size:10px;font-weight:700;padding:2px 9px;white-space:nowrap">${stage}</span>`;
+}
 
-  const kpi=`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:22px">
-    <div class="stat-card"><div class="stat-num">${data.length}</div><div class="stat-lbl">Total Items</div></div>
-    <div class="stat-card"><div class="stat-num" style="color:#16a34a">${devDone}</div><div class="stat-lbl">Dev Done</div></div>
-    <div class="stat-card"><div class="stat-num" style="color:#2563eb">${testDone}</div><div class="stat-lbl">Test Done</div></div>
-    <div class="stat-card"><div class="stat-num" style="color:#ea580c">${devSignP}</div><div class="stat-lbl">Dev Signoff Pending</div></div>
-    <div class="stat-card"><div class="stat-num" style="color:#dc2626">${qaSignP}</div><div class="stat-lbl">QA Signoff Pending</div></div>
+// ── Signoff filter state ──
+let sfFil={type:'',api:'',stage:'',rework:'',blocked:''};
+function applySfFil(key,val){sfFil[key]=val;renderSignoff();}
+function clearSfFil(){sfFil={type:'',api:'',stage:'',rework:'',blocked:''};renderSignoff();}
+function hasSfFilter(){return Object.values(sfFil).some(v=>v!=='');}
+
+// ── Inline cell save ──
+function saveSfInline(rowId,field,val){
+  const data=loadSignoff();
+  const r=data.find(x=>x.id===rowId);
+  if(!r) return;
+  r[field]=val;
+  saveSignoff(data);
+  renderSignoff();
+  toast('✓ Saved');
+}
+
+// ── Inline select cell ──
+function sfIsel(rowId,field,val,opts,canAct){
+  if(!canAct) return sfCell(val);
+  const optHtml=opts.map(o=>`<option value="${o.v}" ${(val||'-')===o.v?'selected':''}>${o.l}</option>`).join('');
+  return `<select class="sf-isel" onchange="saveSfInline(${rowId},'${field}',this.value)">${optHtml}</select>`;
+}
+const SF_STAT_OPTS=[{v:'-',l:'—'},{v:'Done',l:'Done'},{v:'Pending',l:'Pending'},{v:'DQR Pending / Doc Shared',l:'DQR Pending'}];
+const SF_LEAD_OPTS=[{v:'-',l:'—'},{v:'Pending',l:'Pending'},{v:'Done',l:'Done'}];
+const SF_API_OPTS=[{v:'-',l:'—'},{v:'Done',l:'Done'},{v:'Pending',l:'Pending'}];
+const SF_RW_OPTS=[{v:'-',l:'—'},{v:'Yes',l:'Yes'},{v:'No',l:'No'}];
+
+// ── Signoff Jira link chip ──
+function sfJiraChip(rowId,url,canAct){
+  if(!url) return canAct?`<button class="sf-link-edit" onclick="editSfJiraLink(${rowId});event.stopPropagation()">+ Add link</button>`:'<span class="sf-dash">—</span>';
+  const info=parseJiraInfo(url);
+  const chip=info.ticketId
+    ? `<span class="jira-chip${info.isComment?' comment':''}" title="${url}">${info.isComment?'💬':'🎫'} ${info.ticketId}</span>`
+    : `<a class="sf-link-btn" href="${url}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Link</a>`;
+  return chip+(canAct?` <button class="sf-link-edit" onclick="editSfJiraLink(${rowId});event.stopPropagation()">✎</button>`:'');
+}
+function editSfJiraLink(rowId){
+  const data=loadSignoff();
+  const r=data.find(x=>x.id===rowId);
+  if(!r) return;
+  const url=prompt('Enter Jira/Comment link URL:',r.jiraLink||'');
+  if(url===null) return;
+  r.jiraLink=url.trim();
+  saveSignoff(data); renderSignoff(); toast('✓ Jira link updated');
+}
+function toggleSfBlocked(rowId){
+  const data=loadSignoff();
+  const r=data.find(x=>x.id===rowId);
+  if(!r) return;
+  r.blocked=!r.blocked;
+  saveSignoff(data); renderSignoff(); toast(r.blocked?'🔴 Marked as Blocked':'✓ Block cleared');
+}
+
+function renderSignoff(){
+  const allData=loadSignoff();
+  const canAct=role==='admin'||role==='editor';
+
+  // ── KPI counts (full dataset) ──
+  const total=allData.length;
+  const apiDone=allData.filter(r=>r.apiReceived==='Done').length;
+  const devSignDone=allData.filter(r=>r.devLeadSignoff==='Done').length;
+  const qaSignDone=allData.filter(r=>r.qaLeadSignoff==='Done').length;
+  const blockedCt=allData.filter(r=>r.blocked).length;
+  const completeCt=allData.filter(r=>getSignoffStage(r)==='Complete').length;
+
+  // ── KPI bar ──
+  const kpiBar=`<div class="sf-kpi-bar">
+    <div class="sf-kpi-card"><div class="sf-kpi-n">${total}</div><div class="sf-kpi-l">Total Items</div></div>
+    <div class="sf-kpi-card"><div class="sf-kpi-n" style="color:#2563eb">${apiDone}</div><div class="sf-kpi-l">APIs Received</div><div class="sf-kpi-sub">${total-apiDone} pending</div></div>
+    <div class="sf-kpi-card"><div class="sf-kpi-n" style="color:#7c3aed">${devSignDone}</div><div class="sf-kpi-l">Dev Signoffs</div><div class="sf-kpi-sub">${total-devSignDone} pending</div></div>
+    <div class="sf-kpi-card"><div class="sf-kpi-n" style="color:#0e7490">${qaSignDone}</div><div class="sf-kpi-l">QA Signoffs</div><div class="sf-kpi-sub">${total-qaSignDone} pending</div></div>
+    <div class="sf-kpi-card"><div class="sf-kpi-n" style="color:#16a34a">${completeCt}</div><div class="sf-kpi-l">Complete</div><div class="sf-kpi-sub">${Math.round(completeCt/Math.max(total,1)*100)}% done</div></div>
+    ${blockedCt?`<div class="sf-kpi-card" style="border-color:#fecaca"><div class="sf-kpi-n" style="color:#dc2626">${blockedCt}</div><div class="sf-kpi-l">Blocked</div></div>`:''}
   </div>`;
 
-  const tbody=data.map((r,i)=>`<tr>
-    <td style="color:#8e8e93;font-size:12px">${i+1}</td>
-    <td><strong style="font-size:12px">${r.name}</strong></td>
-    <td><span class="${r.type==='Master'?'type-M':'type-T'}">${r.type}</span></td>
-    <td>${sfCell(r.apiReceived)}</td>
-    <td>${sfRework(r.reworkReq)}</td>
-    <td>${sfCell(r.devStatus)}</td>
-    <td>${sfCell(r.devDqr)}</td>
-    <td>${sfLink(r.id,'devDqrLink',r.devDqrLink)}</td>
-    <td>${sfCell(r.devLeadSignoff)}</td>
-    <td>${sfCell(r.testStatus)}</td>
-    <td>${sfCell(r.testDqr)}</td>
-    <td>${sfLink(r.id,'testerDqrLink',r.testerDqrLink)}</td>
-    <td>${sfCell(r.qaLeadSignoff)}</td>
-    <td class="sf-comment" title="${r.comment||''}">${r.comment||'—'}</td>
-    ${canAct?`<td><button class="act-edit" onclick="openSignoffModal(${r.id})">✏️</button><button class="act-del" onclick="deleteSignoffRow(${r.id})">🗑</button></td>`:'<td></td>'}
-  </tr>`).join('');
+  // ── Pipeline funnel ──
+  const PIPE_STAGES=['API Pending','Dev In Progress','Dev DQR Pending','Dev Sign Pending','Testing','Test DQR Pending','QA Sign Pending','Complete'];
+  const stageCounts={};
+  PIPE_STAGES.forEach(s=>stageCounts[s]=0);
+  allData.filter(r=>!r.blocked).forEach(r=>{ const s=getSignoffStage(r); if(stageCounts[s]!==undefined) stageCounts[s]++; });
+  const PIPE_LABELS={'API Pending':'API\nPending','Dev In Progress':'Dev In\nProgress','Dev DQR Pending':'Dev DQR\nPending','Dev Sign Pending':'Dev Sign\nPending','Testing':'Testing','Test DQR Pending':'Test DQR\nPending','QA Sign Pending':'QA Sign\nPending','Complete':'Complete'};
+  const PIPE_COLORS={'API Pending':'#b45309','Dev In Progress':'#1d4ed8','Dev DQR Pending':'#c2410c','Dev Sign Pending':'#7c3aed','Testing':'#0e7490','Test DQR Pending':'#c2410c','QA Sign Pending':'#7c3aed','Complete':'#15803d'};
+  const pipeSteps=PIPE_STAGES.map(s=>`<div class="sf-pipe-step${sfFil.stage===s?' sf-pipe-active':''}" onclick="applySfFil('stage','${sfFil.stage===s?'':s}')" title="Filter: ${s}">
+    <div class="sf-pipe-n" style="color:${PIPE_COLORS[s]||'#475569'}">${stageCounts[s]}</div>
+    <div class="sf-pipe-l" style="white-space:pre-line;text-align:center">${PIPE_LABELS[s]||s}</div>
+  </div>`).join('<div style="display:flex;align-items:center;color:#cbd5e1;font-size:12px;padding:0 2px">›</div>');
+  const pipeline=`<div style="margin-bottom:16px">
+    <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Pipeline</div>
+    <div class="sf-pipeline">${pipeSteps}</div>
+    ${blockedCt?`<div style="font-size:11px;color:#dc2626;font-weight:600;margin-top:4px">🔴 ${blockedCt} item${blockedCt>1?'s':''} blocked — excluded from pipeline above</div>`:''}
+  </div>`;
+
+  // ── Filter bar ──
+  const hasFilter=hasSfFilter();
+  const filterBar=`<div class="sf-filter-bar">
+    <label>Filter:</label>
+    <select onchange="applySfFil('type',this.value)">
+      <option value="">All Types</option>
+      <option value="Master" ${sfFil.type==='Master'?'selected':''}>Master</option>
+      <option value="Transaction" ${sfFil.type==='Transaction'?'selected':''}>Transaction</option>
+    </select>
+    <select onchange="applySfFil('api',this.value)">
+      <option value="">API: All</option>
+      <option value="Done" ${sfFil.api==='Done'?'selected':''}>API Received</option>
+      <option value="Pending" ${sfFil.api==='Pending'?'selected':''}>API Pending</option>
+    </select>
+    <select onchange="applySfFil('stage',this.value)">
+      <option value="">All Stages</option>
+      ${Object.keys(STAGE_META).map(s=>`<option value="${s}" ${sfFil.stage===s?'selected':''}>${s}</option>`).join('')}
+    </select>
+    <select onchange="applySfFil('rework',this.value)">
+      <option value="">Rework: All</option>
+      <option value="Yes" ${sfFil.rework==='Yes'?'selected':''}>Rework Yes</option>
+      <option value="No" ${sfFil.rework==='No'?'selected':''}>No Rework</option>
+    </select>
+    <select onchange="applySfFil('blocked',this.value)">
+      <option value="">Blocked: All</option>
+      <option value="yes" ${sfFil.blocked==='yes'?'selected':''}>Blocked Only</option>
+      <option value="no" ${sfFil.blocked==='no'?'selected':''}>Not Blocked</option>
+    </select>
+    ${hasFilter?`<button class="sf-filter-clear" onclick="clearSfFil()">✕ Clear</button>`:''}
+    <span style="margin-left:auto;font-size:11px;color:#94a3b8;font-weight:600" id="sf-count-lbl"></span>
+  </div>`;
+
+  // ── Apply filters ──
+  let data=allData.filter(r=>{
+    if(sfFil.type && r.type!==sfFil.type) return false;
+    if(sfFil.api && r.apiReceived!==sfFil.api) return false;
+    if(sfFil.stage && getSignoffStage(r)!==sfFil.stage) return false;
+    if(sfFil.rework && r.reworkReq!==sfFil.rework) return false;
+    if(sfFil.blocked==='yes' && !r.blocked) return false;
+    if(sfFil.blocked==='no' && r.blocked) return false;
+    return true;
+  });
+
+  // ── Table rows ──
+  const tbody=data.map((r,i)=>{
+    const stage=getSignoffStage(r);
+    let rowClass='';
+    if(stage==='Complete') rowClass='sf-row-complete';
+    else if(r.blocked) rowClass='sf-row-blocked';
+    else if(stage==='API Pending') rowClass='sf-row-api-pending';
+    const nameCell=`<strong style="font-size:12px">${r.name}</strong>${r.blocked?` <span class="sf-blocked-badge">🔴 Blocked</span>`:''}`;
+    return `<tr class="${rowClass}">
+      <td style="color:#8e8e93;font-size:12px">${i+1}</td>
+      <td>${nameCell}</td>
+      <td><span class="${r.type==='Master'?'type-M':'type-T'}">${r.type}</span></td>
+      <td>${sfIsel(r.id,'apiReceived',r.apiReceived,SF_API_OPTS,canAct)}</td>
+      <td>${sfIsel(r.id,'reworkReq',r.reworkReq,SF_RW_OPTS,canAct)}</td>
+      <td>${sfIsel(r.id,'devStatus',r.devStatus,SF_STAT_OPTS,canAct)}</td>
+      <td>${sfIsel(r.id,'devDqr',r.devDqr,SF_STAT_OPTS,canAct)}</td>
+      <td>${sfLink(r.id,'devDqrLink',r.devDqrLink)}</td>
+      <td>${sfIsel(r.id,'devLeadSignoff',r.devLeadSignoff,SF_LEAD_OPTS,canAct)}</td>
+      <td>${sfIsel(r.id,'testStatus',r.testStatus,SF_STAT_OPTS,canAct)}</td>
+      <td>${sfIsel(r.id,'testDqr',r.testDqr,SF_STAT_OPTS,canAct)}</td>
+      <td>${sfLink(r.id,'testerDqrLink',r.testerDqrLink)}</td>
+      <td>${sfIsel(r.id,'qaLeadSignoff',r.qaLeadSignoff,SF_LEAD_OPTS,canAct)}</td>
+      <td>${stagePill(stage)}</td>
+      <td>${sfJiraChip(r.id,r.jiraLink||'',canAct)}</td>
+      <td class="sf-comment" title="${r.comment||''}">${r.comment||'—'}</td>
+      <td>
+        ${canAct?`<button class="act-edit" onclick="openSignoffModal(${r.id})" title="Edit">✏️</button>
+        <button class="act-del" onclick="deleteSignoffRow(${r.id})" title="Delete">🗑</button>
+        <button class="sf-link-edit" style="font-size:10px;padding:2px 6px" onclick="toggleSfBlocked(${r.id})" title="${r.blocked?'Clear block':'Mark blocked'}">${r.blocked?'🔓':'🔴'}</button>`:''}
+      </td>
+    </tr>`;
+  }).join('');
 
   const tbl=`<div class="tracker-tbox">
     <div class="tracker-tbox-hdr" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
       <div>
         <div class="tracker-tbox-title">Signoff Status Tracker</div>
-        <div class="tracker-tbox-sub">${data.length} integrations · ${canAct?'Add, edit or delete rows below':'View only'}</div>
+        <div class="tracker-tbox-sub" id="sf-sub-lbl">${data.length} of ${allData.length} shown · ${canAct?'Click status cells to edit inline':'View only'}</div>
       </div>
       ${canAct?`<button class="btn-add-sm" onclick="openSignoffModal(null)">+ Add Entry</button>`:''}
     </div>
-    <div class="tbl-wrap"><table class="sf-tbl" style="min-width:1260px">
+    ${filterBar}
+    <div class="tbl-wrap"><table class="sf-tbl" style="min-width:1380px">
       <thead><tr>
         <th>#</th><th>Master / Transaction</th><th>Type</th>
         <th>API Received</th><th>Rework Req.</th>
         <th>Dev Status</th><th>Dev DQR</th><th>Dev DQR Link</th><th>Dev Lead Signoff</th>
         <th>Test Status</th><th>Test DQR</th><th>Tester DQR Link</th><th>QA Lead Signoff</th>
+        <th>Stage</th><th>Jira Link</th>
         <th>Reason / Comment</th>
-        ${canAct?'<th style="width:72px">Actions</th>':'<th></th>'}
+        <th style="width:88px">Actions</th>
       </tr></thead>
       <tbody>${tbody}</tbody>
     </table></div>
   </div>`;
-  document.getElementById('panel-signoff').innerHTML=kpi+tbl;
+  document.getElementById('panel-signoff').innerHTML=kpiBar+pipeline+tbl;
 }
 
 startClerk();
