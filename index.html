@@ -3301,21 +3301,25 @@ async function testJiraConnection(){
   res.innerHTML='<span style="color:#64748b">Testing…</span>';
   const data=await _fetchJiraIssue('_test_',c);
   // A 401 response still means the URL is reachable
-  if(data===null){res.innerHTML='<span style="color:#e11d48">❌ Could not reach Jira — check the URL and try again. CORS may block browser requests on some instances.</span>';}
-  else if(data&&data._corsOk){res.innerHTML='<span style="color:#15803d">✓ Connected to Jira successfully!</span>';}
+  if(data===null){res.innerHTML='<span style="color:#e11d48">❌ Could not reach Jira. Check the base URL and try again.</span>';}
+  else if(data&&data._corsOk){res.innerHTML=`<span style="color:#15803d">✓ Connected as <strong>${data.displayName||'unknown'}</strong></span>`;}
   else{res.innerHTML='<span style="color:#e11d48">❌ Auth failed — check your email and API token.</span>';}
 }
 
-// Fetch a Jira issue via REST API (returns null on network/CORS fail)
+// Fetch a Jira issue via the /api/jira Vercel proxy (avoids CORS)
 async function _fetchJiraIssue(ticketId, cfg){
   cfg=cfg||getJiraCfg();
   if(!cfg.baseUrl||!cfg.email||!cfg.token) return null;
   try{
-    const resp=await fetch(`${cfg.baseUrl}/rest/api/3/issue/${ticketId}?fields=summary,status,assignee,priority,issuetype`,{
-      headers:{'Authorization':'Basic '+btoa(cfg.email+':'+cfg.token),'Accept':'application/json'}
-    });
-    if(resp.status===404&&ticketId==='_test_') return {_corsOk:true}; // CORS ok, 404 expected for fake id
-    if(resp.status===200||resp.status===404) return Object.assign(await resp.json().catch(()=>({})),{_corsOk:true});
+    const auth=btoa(cfg.email+':'+cfg.token);
+    const isTest=ticketId==='_test_';
+    const url=isTest
+      ? `/api/jira?baseUrl=${encodeURIComponent(cfg.baseUrl)}`
+      : `/api/jira?ticket=${encodeURIComponent(ticketId)}&baseUrl=${encodeURIComponent(cfg.baseUrl)}`;
+    const resp=await fetch(url,{headers:{'x-jira-auth':auth}});
+    const data=await resp.json().catch(()=>({}));
+    if(isTest) return resp.ok?{_corsOk:true,displayName:data.displayName}:null;
+    if(resp.ok) return Object.assign(data,{_corsOk:true});
     return null;
   }catch(e){return null;}
 }
