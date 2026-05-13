@@ -1646,27 +1646,58 @@ let _projCfgCache = {};
 let _integCache = null;
 let _signoffCache = null;
 
+const FB_REST = 'https://sap-tracker-8c413-default-rtdb.firebaseio.com';
+// Direct REST API read — bypasses SDK, always works regardless of SDK init state
+async function fbRestGet(path){
+  try {
+    const r = await fetch(FB_REST+'/'+path+'.json');
+    if(!r.ok) return null;
+    return await r.json();
+  } catch(e){ console.warn('FB REST GET failed ('+path+'):',e); return null; }
+}
+// Direct REST API write — bypasses SDK, always works
+async function fbRestPut(path, val){
+  const r = await fetch(FB_REST+'/'+path+'.json', {
+    method:'PUT',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(val)
+  });
+  if(!r.ok) throw new Error('Firebase REST write failed: '+r.status);
+  return r.json();
+}
+
 function initFirebase(){
   try {
-    const fbApp = firebase.initializeApp(FB_CONFIG);
-    db = firebase.database();
-  } catch(e){ console.warn('Firebase init error:',e); }
+    // Guard against "app already initialized" on hot reloads
+    const fbApp = firebase.apps && firebase.apps.length
+      ? firebase.app()
+      : firebase.initializeApp(FB_CONFIG);
+    db = firebase.database(fbApp);
+  } catch(e){ console.warn('Firebase SDK init error (REST API will be used as fallback):',e); }
 }
 // Fire-and-forget write (existing call sites — swallows errors silently)
 function fbSet(path, val){
-  if(!db) return Promise.resolve();
-  return db.ref(path).set(val).catch(e=>console.warn('FB write failed ('+path+'):',e));
+  // Try SDK first, fall back to REST
+  if(db) db.ref(path).set(val).catch(()=>fbRestPut(path,val).catch(()=>{}));
+  else fbRestPut(path,val).catch(e=>console.warn('FB REST fallback failed ('+path+'):',e));
+  return Promise.resolve();
 }
-// Awaitable write — rejects on failure so callers can handle errors explicitly
-function fbWrite(path, val){
-  if(!db) return Promise.reject(new Error('Firebase not initialized'));
-  return db.ref(path).set(val);
+// Awaitable write — always uses REST API for reliability
+async function fbWrite(path, val){
+  return fbRestPut(path, val);
 }
-// Safe async read from Firebase
-async function fbGet(path){
+// Safe async read — tries SDK first, falls back to REST
+async function fbGetViaSDK(path){
   if(!db) return null;
   try { const s = await db.ref(path).get(); return s.val(); }
-  catch(e){ console.warn('FB read failed ('+path+'):',e); return null; }
+  catch(e){ return null; }
+}
+// Safe async read — REST first (always works), SDK as fallback
+async function fbGet(path){
+  const restVal = await fbRestGet(path);
+  if(restVal !== null) return restVal;
+  // Fallback: try SDK
+  return fbGetViaSDK(path);
 }
 // Firebase Realtime DB can return arrays as objects — always normalise to array
 function fbToArray(val){
