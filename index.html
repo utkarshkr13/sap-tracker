@@ -728,7 +728,8 @@ td.muted{color:var(--text3);font-size:12px}
       Email Admins to Request Access
     </a>
     <div class="ad-sent-msg" id="ad-sent">✅ Request sent! Admins have been notified. Try signing in again after approval.</div>
-    <p class="auth-footer-note" style="margin-top:8px">Admins will add your email with a role. Then sign in again.</p>
+    <p class="auth-footer-note" style="margin-top:8px">Already been added? Click below to re-check your permissions.</p>
+    <button class="ad-signout-btn" id="ad-recheck-btn" style="background:#eff6ff;border-color:#93c5fd;color:#1d4ed8;font-weight:600;margin-bottom:6px" onclick="(async()=>{const b=document.getElementById('ad-recheck-btn');b.textContent='Checking…';b.disabled=true;await window._retryAuth();b.textContent='✓ Check Access Again';b.disabled=false;})()">✓ Check Access Again</button>
     <button class="ad-signout-btn" onclick="logout()">← Sign out &amp; try a different account</button>
   </div>
 </div>
@@ -777,11 +778,11 @@ td.muted{color:var(--text3);font-size:12px}
     </div>
     <div class="nav-tab" onclick="switchPanel('integration',this)" id="nt-integration">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="2" cy="6" r="1" fill="currentColor" stroke="none"/><circle cx="2" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="2" cy="18" r="1" fill="currentColor" stroke="none"/></svg>
-      Integration
+      Integration <span class="nav-count" id="nc-integration">0</span>
     </div>
     <div class="nav-tab" onclick="switchPanel('signoff',this)" id="nt-signoff">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
-      Signoff
+      Signoff <span class="nav-count" id="nc-signoff">0</span>
     </div>
     <div class="nav-tab" onclick="switchPanel('settings',this)" id="nt-settings" style="display:none">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
@@ -1651,10 +1652,15 @@ function initFirebase(){
     db = firebase.database();
   } catch(e){ console.warn('Firebase init error:',e); }
 }
-// Safe fire-and-forget write to Firebase
+// Fire-and-forget write (existing call sites — swallows errors silently)
 function fbSet(path, val){
   if(!db) return Promise.resolve();
   return db.ref(path).set(val).catch(e=>console.warn('FB write failed ('+path+'):',e));
+}
+// Awaitable write — rejects on failure so callers can handle errors explicitly
+function fbWrite(path, val){
+  if(!db) return Promise.reject(new Error('Firebase not initialized'));
+  return db.ref(path).set(val);
 }
 // Safe async read from Firebase
 async function fbGet(path){
@@ -1983,7 +1989,8 @@ function initLogoClones(){
     t.innerHTML=''; t.appendChild(c);
   });
 }
-document.addEventListener('DOMContentLoaded',()=>{ initFirebase(); initLogoClones(); });
+initFirebase(); // must run before startClerk() — do NOT defer to DOMContentLoaded
+document.addEventListener('DOMContentLoaded',()=>{ initLogoClones(); });
 let clerkInstance = null;
 
 let rows = [];
@@ -2266,6 +2273,13 @@ async function startClerk(){
     // This ensures users added by admin on another device are recognised immediately
     // without needing the new user to have a prior localStorage cache.
     let _authInProgress = false;
+    // Exposed so the "Check Again" button on the access-denied screen can retry
+    window._retryAuth = async function(){
+      if(clerkInstance && clerkInstance.user){
+        _authInProgress = false; // allow retry
+        await checkUserAuth(clerkInstance.user);
+      }
+    };
     async function checkUserAuth(user){
       if(_authInProgress) return;
       _authInProgress = true;
@@ -2275,9 +2289,17 @@ async function startClerk(){
       const loadEl=document.getElementById('login-loading');
       if(loadEl) loadEl.style.display='block';
       try {
-        const fbCfg = await fbGet('config');
+        // Ensure Firebase is ready (guard against cold-start race)
+        if(!db) initFirebase();
+        // Attempt 1
+        let fbCfg = await fbGet('config');
+        // Attempt 2 — retry once after 1 s if Firebase returned nothing
+        if(!fbCfg){
+          await new Promise(r=>setTimeout(r,1000));
+          fbCfg = await fbGet('config');
+        }
         if(fbCfg){ _cfgCache=fbCfg; localStorage.setItem(CFGKEY,JSON.stringify(fbCfg)); }
-      } catch(e){ /* fall through to cached/default config */ }
+      } catch(e){ console.warn('Firebase config fetch failed:', e); }
       const r=getRoleForEmail(email);
       if(r){
         document.getElementById('login-screen').style.display='none';
@@ -3135,17 +3157,26 @@ function renderRoleList(){
   rl.innerHTML=html;
 }
 
-function addEmailRole(){
-  const email=(document.getElementById('s-new-email').value||'').trim().toLowerCase();
+async function addEmailRole(){
+  const emailInput=document.getElementById('s-new-email');
+  const email=(emailInput.value||'').trim().toLowerCase();
   const role=(document.getElementById('s-new-role').value||'viewer');
   if(!email||!email.includes('@')){ toast('⚠️ Enter a valid email'); return; }
   const cfg=getCfg();
   cfg.emailRoles=cfg.emailRoles||{};
   cfg.emailRoles[email]=role;
-  saveCfg(cfg);
-  document.getElementById('s-new-email').value='';
+  // Save to localStorage immediately so it's available in this session
+  _cfgCache=cfg; localStorage.setItem(CFGKEY,JSON.stringify(cfg));
+  // Await Firebase write to confirm it's persisted for other devices
+  try {
+    await fbWrite('config', cfg);
+    toast('✓ '+email+' added — they can now sign in');
+  } catch(e){
+    console.warn('addEmailRole Firebase write failed:', e);
+    toast('⚠️ Saved locally but Firebase sync failed. Try again.');
+  }
+  emailInput.value='';
   renderRoleList();
-  toast('✓ User added');
 }
 
 function changeEmailRole(email, newRole){
@@ -3682,6 +3713,8 @@ function apiStClass(s){
 
 function renderIntegration(){
   const all=loadInteg();
+  const nc=document.getElementById('nc-integration');
+  if(nc) nc.textContent=all.length;
   const sapSc=all.filter(r=>r.direction==='sap-sc');
   const scSap=all.filter(r=>r.direction==='sc-sap');
   const comp=all.filter(r=>r.status==='Completed').length;
@@ -3958,9 +3991,24 @@ function toggleSfBlocked(rowId){
   saveSignoff(data); renderSignoff(); toast(r.blocked?'🔴 Marked as Blocked':'✓ Block cleared');
 }
 
+function exportSignoffExcel(){
+  const data=loadSignoff();
+  if(!window.XLSX){toast('⚠ SheetJS not loaded');return;}
+  const rows=[['#','Name','Type','API Received','Rework Req','Dev Status','Dev DQR','Dev DQR Link','Dev Lead Signoff','Test Status','Test DQR','Tester DQR Link','QA Lead Signoff','Stage','Jira Link','Blocked','Comment'],
+    ...data.map((r,i)=>[i+1,r.name,r.type,r.apiReceived,r.reworkReq,r.devStatus,r.devDqr,r.devDqrLink||'',r.devLeadSignoff,r.testStatus,r.testDqr,r.testerDqrLink||'',r.qaLeadSignoff,getSignoffStage(r),r.jiraLink||'',r.blocked?'Yes':'No',r.comment||''])];
+  const wb=XLSX.utils.book_new();
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols']=[4,28,12,14,10,12,12,22,16,12,12,22,16,20,32,8,32].map(w=>({wch:w}));
+  XLSX.utils.book_append_sheet(wb,ws,'Signoff Status');
+  XLSX.writeFile(wb,'SAP_Signoff_Status.xlsx');
+  toast('✓ Excel exported');
+}
+
 function renderSignoff(){
   const allData=loadSignoff();
   const canAct=role==='admin'||role==='editor';
+  const nc=document.getElementById('nc-signoff');
+  if(nc) nc.textContent=allData.length;
 
   // ── KPI counts (full dataset) ──
   const total=allData.length;
