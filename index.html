@@ -2331,33 +2331,49 @@ async function startClerk(){
     async function checkUserAuth(user){
       if(_authInProgress) return;
       _authInProgress = true;
-      const email=(user.primaryEmailAddress?.emailAddress||'').toLowerCase();
+      // Extract email with multiple fallbacks — covers Gmail and Google Workspace accounts
+      const email=(
+        user.primaryEmailAddress?.emailAddress ||
+        user.emailAddresses?.[0]?.emailAddress ||
+        user.externalAccounts?.[0]?.emailAddress ||
+        ''
+      ).toLowerCase();
       const name=user.fullName||user.firstName||email;
-      // Show spinner while we fetch fresh config
       const loadEl=document.getElementById('login-loading');
       if(loadEl) loadEl.style.display='block';
       try {
         // Ensure Firebase is ready (guard against cold-start race)
         if(!db) initFirebase();
-        // Attempt 1
+        // Attempt 1 — fetch config from Firebase
         let fbCfg = await fbGet('config');
-        // Attempt 2 — retry once after 1 s if Firebase returned nothing
+        // Attempt 2 — retry once after 1.5 s if Firebase returned nothing
         if(!fbCfg){
-          await new Promise(r=>setTimeout(r,1000));
+          await new Promise(res=>setTimeout(res,1500));
           fbCfg = await fbGet('config');
         }
         if(fbCfg){ _cfgCache=fbCfg; localStorage.setItem(CFGKEY,JSON.stringify(fbCfg)); }
-      } catch(e){ console.warn('Firebase config fetch failed:', e); }
-      const r=getRoleForEmail(email);
-      if(r){
-        document.getElementById('login-screen').style.display='none';
-        document.getElementById('access-denied-screen').style.display='none';
-        initApp(r, email, name);
-      } else {
+        const r=getRoleForEmail(email);
+        if(r){
+          document.getElementById('login-screen').style.display='none';
+          document.getElementById('access-denied-screen').style.display='none';
+          // await initApp so _authInProgress stays true the whole time —
+          // prevents Clerk's repeated listener fires from re-entering this function
+          await initApp(r, email, name);
+        } else {
+          if(loadEl) loadEl.style.display='none';
+          showAccessDenied(email, name);
+        }
+      } catch(e){
+        console.error('checkUserAuth error:', e);
         if(loadEl) loadEl.style.display='none';
-        showAccessDenied(email, name);
+        // Show error on login screen so user isn't stuck on a blank page
+        const errEl=document.getElementById('login-err');
+        if(errEl){ errEl.style.display='block'; errEl.textContent='Sign-in error: '+e.message+' — try refreshing.'; }
+        document.getElementById('login-screen').style.display='flex';
+      } finally {
+        // Always release the lock — even if initApp throws
+        _authInProgress = false;
       }
-      _authInProgress = false;
     }
 
     // Listen for auth state changes (fires when user signs in via modal)
