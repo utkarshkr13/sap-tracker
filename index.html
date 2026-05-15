@@ -2163,7 +2163,7 @@ function nextId(){ return rows.length?Math.max(...rows.map(r=>r.id))+1:1; }
 const CLERK_PK_DEFAULT = 'pk_test_c21pbGluZy1vY2Vsb3QtNDIuY2xlcmsuYWNjb3VudHMuZGV2JA';
 function getClerkKey(){ return localStorage.getItem('clerk_pk')||CLERK_PK_DEFAULT; }
 
-function saveClerkKey(){
+async function saveClerkKey(){
   const key=(document.getElementById('clerk-pk-input').value||'').trim();
   if(!key.startsWith('pk_')){
     const e=document.getElementById('setup-err');
@@ -2172,6 +2172,11 @@ function saveClerkKey(){
     return;
   }
   localStorage.setItem('clerk_pk',key);
+  // Also persist in Firebase config so new users on other devices get the correct Clerk key
+  try {
+    const cfg = getCfg(); cfg.clerkPk = key; await fbWrite('config', cfg);
+    localStorage.setItem(CFGKEY, JSON.stringify(cfg)); _cfgCache = cfg;
+  } catch(e){ console.warn('Could not push Clerk key to Firebase:', e); }
   location.reload();
 }
 
@@ -2292,6 +2297,20 @@ function clerkFrontendApi(pk){
 }
 
 async function startClerk(){
+  // ── Bootstrap: pull config from Firebase so new devices get the real Clerk key ──
+  // Must happen BEFORE getClerkKey() — otherwise new users get the default test key.
+  if(!localStorage.getItem('clerk_pk')){
+    try {
+      const fbCfg = await fbRestGet('config');
+      if(fbCfg){
+        // Persist Clerk PK if admin has stored it in Firebase config
+        if(fbCfg.clerkPk) localStorage.setItem('clerk_pk', fbCfg.clerkPk);
+        // Also cache the email roles so auth check is instant later
+        _cfgCache = fbCfg;
+        localStorage.setItem(CFGKEY, JSON.stringify(fbCfg));
+      }
+    } catch(e){ console.warn('Bootstrap Firebase fetch failed:', e); }
+  }
   const pk=getClerkKey();
   if(!pk){
     document.getElementById('setup-screen').style.display='flex';
@@ -3147,12 +3166,19 @@ function bulkDelete(){
 // ═══════════════════════════════════════════════════
 // SETTINGS
 // ═══════════════════════════════════════════════════
-function updateClerkKey(){
+async function updateClerkKey(){
   const val=(document.getElementById('s-clerk-pk').value||'').trim();
   if(!val.startsWith('pk_')){ toast('⚠️ Key must start with "pk_"'); return; }
   localStorage.setItem('clerk_pk', val);
+  // Push to Firebase so all users get the correct Clerk key
+  try {
+    const cfg = getCfg(); cfg.clerkPk = val; await fbWrite('config', cfg);
+    localStorage.setItem(CFGKEY, JSON.stringify(cfg)); _cfgCache = cfg;
+    toast('✓ Clerk key saved & synced to Firebase — reload to apply');
+  } catch(e){
+    toast('✓ Clerk key saved locally — Firebase sync failed');
+  }
   document.getElementById('s-clerk-pk').value='';
-  toast('✓ Clerk key updated — reload to apply');
 }
 
 function renderRoleList(){
