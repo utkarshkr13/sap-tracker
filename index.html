@@ -16,9 +16,10 @@
 <script defer src="/_vercel/speed-insights/script.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<!-- Firebase Realtime Database (compat SDK — works in plain HTML/JS) -->
+<!-- Firebase SDKs (compat — works in plain HTML/JS) -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
@@ -1683,13 +1684,15 @@ async function fbRestPut(path, val){
   return r.json();
 }
 
+let auth = null;
 function initFirebase(){
   try {
     // Guard against "app already initialized" on hot reloads
     const fbApp = firebase.apps && firebase.apps.length
       ? firebase.app()
       : firebase.initializeApp(FB_CONFIG);
-    db = firebase.database(fbApp);
+    db   = firebase.database(fbApp);
+    auth = firebase.auth(fbApp);
   } catch(e){ console.warn('Firebase SDK init error (REST API will be used as fallback):',e); }
 }
 // Fire-and-forget write (existing call sites — swallows errors silently)
@@ -2039,7 +2042,7 @@ function initLogoClones(){
 }
 initFirebase(); // must run before startClerk() — do NOT defer to DOMContentLoaded
 document.addEventListener('DOMContentLoaded',()=>{ initLogoClones(); });
-let clerkInstance = null;
+let clerkInstance = null; // kept for legacy references — auth now uses Firebase
 
 let rows = [];
 let role = null; // 'admin' | 'editor' | 'viewer'
@@ -2158,27 +2161,8 @@ function saveData(){ localStorage.setItem(getDKey(),JSON.stringify(rows)); fbSet
 function nextId(){ return rows.length?Math.max(...rows.map(r=>r.id))+1:1; }
 
 // ═══════════════════════════════════════════════════
-// AUTH — Clerk Google OAuth
+// AUTH — Firebase Google Sign-In
 // ═══════════════════════════════════════════════════
-const CLERK_PK_DEFAULT = 'pk_test_c21pbGluZy1vY2Vsb3QtNDIuY2xlcmsuYWNjb3VudHMuZGV2JA';
-function getClerkKey(){ return localStorage.getItem('clerk_pk')||CLERK_PK_DEFAULT; }
-
-async function saveClerkKey(){
-  const key=(document.getElementById('clerk-pk-input').value||'').trim();
-  if(!key.startsWith('pk_')){
-    const e=document.getElementById('setup-err');
-    e.style.display='block';
-    e.textContent='Key must start with "pk_". Get it from dashboard.clerk.com → API Keys.';
-    return;
-  }
-  localStorage.setItem('clerk_pk',key);
-  // Also persist in Firebase config so new users on other devices get the correct Clerk key
-  try {
-    const cfg = getCfg(); cfg.clerkPk = key; await fbWrite('config', cfg);
-    localStorage.setItem(CFGKEY, JSON.stringify(cfg)); _cfgCache = cfg;
-  } catch(e){ console.warn('Could not push Clerk key to Firebase:', e); }
-  location.reload();
-}
 
 const RKEY='sap_requests_v1';
 
@@ -2245,174 +2229,113 @@ function handleRequestClick(){
 }
 
 async function signInWithGoogle(){
-  if(!clerkInstance) return;
-  const btn = document.getElementById('google-btn');
-  if(btn){ btn.classList.add('loading'); btn.style.pointerEvents='none'; }
+  const btn=document.getElementById('google-btn');
   const showErr=(msg)=>{
-    if(btn){ btn.classList.remove('loading'); btn.style.pointerEvents=''; }
-    const err=document.getElementById('login-err');
-    err.style.display='block';
-    err.textContent=msg;
+    if(btn){btn.classList.remove('loading');btn.style.pointerEvents='';}
+    const e=document.getElementById('login-err');
+    if(e){e.style.display='block';e.textContent=msg;}
   };
-  // Try direct Google OAuth (1 tap — skips the Clerk modal entirely)
+  if(!auth){ showErr('Firebase not ready — please refresh.'); return; }
+  if(btn){btn.classList.add('loading');btn.style.pointerEvents='none';}
   try {
-    const siObj = clerkInstance.client?.signIn || clerkInstance.signIn;
-    if(siObj && typeof siObj.create === 'function'){
-      const res = await siObj.create({
-        strategy: 'oauth_google',
-        redirectUrl: window.location.href,
-        actionCompleteRedirectUrl: window.location.href,
-      });
-      const redirectUrl = res?.firstFactorVerification?.externalVerificationRedirectURL
-                       || res?.verifications?.externalAccount?.redirectUrl;
-      if(redirectUrl){
-        window.location.href = redirectUrl;
-        return;
-      }
-    }
-  } catch(_){}
-  // Fallback: open Clerk's sign-in modal (reliable, 2 taps)
-  try {
-    if(btn){ btn.classList.remove('loading'); btn.style.pointerEvents=''; }
-    clerkInstance.openSignIn({
-      afterSignInUrl: window.location.href,
-      afterSignUpUrl: window.location.href,
-    });
+    const provider = new firebase.auth.GoogleAuthProvider();
+    provider.setCustomParameters({prompt:'select_account'});
+    await auth.signInWithPopup(provider);
+    // onAuthStateChanged will fire and handle the rest
   } catch(e){
-    showErr('Could not open sign-in: '+(e.message||'Please try again.'));
+    if(e.code==='auth/popup-blocked'){
+      // Fallback to redirect if popup is blocked
+      try { await auth.signInWithRedirect(new firebase.auth.GoogleAuthProvider()); }
+      catch(e2){ showErr('Sign-in failed: '+(e2.message||'Please try again.')); }
+    } else if(e.code!=='auth/popup-closed-by-user'){
+      showErr('Sign-in failed: '+(e.message||'Please try again.'));
+    }
+    if(btn){btn.classList.remove('loading');btn.style.pointerEvents='';}
   }
 }
 
 async function logout(){
-  if(clerkInstance) try{ await clerkInstance.signOut(); }catch(e){}
+  if(auth) try{ await auth.signOut(); }catch(e){}
   location.reload();
 }
 
-// Decode publishable key → Clerk Frontend API host
-function clerkFrontendApi(pk){
-  try{
-    const b64=pk.replace(/^pk_(test|live)_/,'');
-    return 'https://'+atob(b64).replace(/\$$/,'');
-  }catch(e){ return null; }
-}
-
 async function startClerk(){
-  // ── Bootstrap: pull config from Firebase so new devices get the real Clerk key ──
-  // Must happen BEFORE getClerkKey() — otherwise new users get the default test key.
-  if(!localStorage.getItem('clerk_pk')){
+  document.getElementById('login-screen').style.display='flex';
+  const loadEl=document.getElementById('login-loading');
+
+  let _authInProgress=false;
+  window._retryAuth=async function(){
+    _authInProgress=false;
+    const u=auth&&auth.currentUser;
+    if(u) await checkUserAuth(u);
+  };
+
+  async function checkUserAuth(fbUser){
+    if(_authInProgress) return;
+    _authInProgress=true;
+    if(loadEl) loadEl.style.display='block';
+    const googleBtn=document.getElementById('google-btn-wrap');
+    if(googleBtn) googleBtn.style.display='none';
+    const email=(fbUser.email||'').toLowerCase();
+    const name=fbUser.displayName||email;
     try {
-      const fbCfg = await fbRestGet('config');
-      if(fbCfg){
-        // Persist Clerk PK if admin has stored it in Firebase config
-        if(fbCfg.clerkPk) localStorage.setItem('clerk_pk', fbCfg.clerkPk);
-        // Also cache the email roles so auth check is instant later
-        _cfgCache = fbCfg;
-        localStorage.setItem(CFGKEY, JSON.stringify(fbCfg));
+      if(!db||!auth) initFirebase();
+      // Fetch fresh config from Firebase (always — so newly-added emails are recognised)
+      let fbCfg=await fbGet('config');
+      if(!fbCfg){
+        await new Promise(r=>setTimeout(r,1500));
+        fbCfg=await fbGet('config');
       }
-    } catch(e){ console.warn('Bootstrap Firebase fetch failed:', e); }
+      if(fbCfg){_cfgCache=fbCfg;localStorage.setItem(CFGKEY,JSON.stringify(fbCfg));}
+      const r=getRoleForEmail(email);
+      if(r){
+        document.getElementById('login-screen').style.display='none';
+        document.getElementById('access-denied-screen').style.display='none';
+        await initApp(r,email,name);
+      } else {
+        if(loadEl) loadEl.style.display='none';
+        showAccessDenied(email,name);
+      }
+    } catch(e){
+      console.error('checkUserAuth error:',e);
+      if(loadEl) loadEl.style.display='none';
+      const errEl=document.getElementById('login-err');
+      if(errEl){errEl.style.display='block';errEl.textContent='Sign-in error: '+e.message+' — try refreshing.';}
+      document.getElementById('login-screen').style.display='flex';
+      if(googleBtn) googleBtn.style.display='block';
+    } finally {
+      _authInProgress=false;
+    }
   }
-  const pk=getClerkKey();
-  if(!pk){
-    document.getElementById('setup-screen').style.display='flex';
+
+  if(!auth){ initFirebase(); }
+  if(!auth){
+    const errEl=document.getElementById('login-err');
+    if(errEl){errEl.style.display='block';errEl.textContent='Firebase not available. Please refresh.';}
+    if(loadEl) loadEl.style.display='none';
     return;
   }
-  document.getElementById('login-screen').style.display='flex';
+
+  // Handle redirect result first (for browsers that blocked the popup)
   try {
-    // Only load SDK once — never delete window.Clerk (breaks OAuth callback processing)
-    if(!window.__clerkLoaded){
-      const host=clerkFrontendApi(pk)||'https://smiling-ocelot-42.clerk.accounts.dev';
-      await new Promise((resolve,reject)=>{
-        const s=document.createElement('script');
-        s.setAttribute('data-clerk-publishable-key', pk);
-        s.src=host+'/npm/@clerk/clerk-js@latest/dist/clerk.browser.js';
-        s.onload=()=>{ window.__clerkLoaded=true; resolve(); };
-        s.onerror=()=>reject(new Error('Failed to load Clerk SDK — check internet connection.'));
-        document.head.appendChild(s);
-      });
+    const result=await auth.getRedirectResult();
+    if(result&&result.user){
+      await checkUserAuth(result.user);
+      return;
     }
+  } catch(e){ console.warn('getRedirectResult error:',e); }
 
-    if(!window.Clerk) throw new Error('Clerk SDK did not initialise. Try a hard refresh.');
-
-    await window.Clerk.load();
-    clerkInstance=window.Clerk;
-
-    // Async auth check — always fetches fresh config from Firebase before role lookup.
-    // This ensures users added by admin on another device are recognised immediately
-    // without needing the new user to have a prior localStorage cache.
-    let _authInProgress = false;
-    // Exposed so the "Check Again" button on the access-denied screen can retry
-    window._retryAuth = async function(){
-      if(clerkInstance && clerkInstance.user){
-        _authInProgress = false; // allow retry
-        await checkUserAuth(clerkInstance.user);
-      }
-    };
-    async function checkUserAuth(user){
-      if(_authInProgress) return;
-      _authInProgress = true;
-      // Extract email with multiple fallbacks — covers Gmail and Google Workspace accounts
-      const email=(
-        user.primaryEmailAddress?.emailAddress ||
-        user.emailAddresses?.[0]?.emailAddress ||
-        user.externalAccounts?.[0]?.emailAddress ||
-        ''
-      ).toLowerCase();
-      const name=user.fullName||user.firstName||email;
-      const loadEl=document.getElementById('login-loading');
-      if(loadEl) loadEl.style.display='block';
-      try {
-        // Ensure Firebase is ready (guard against cold-start race)
-        if(!db) initFirebase();
-        // Attempt 1 — fetch config from Firebase
-        let fbCfg = await fbGet('config');
-        // Attempt 2 — retry once after 1.5 s if Firebase returned nothing
-        if(!fbCfg){
-          await new Promise(res=>setTimeout(res,1500));
-          fbCfg = await fbGet('config');
-        }
-        if(fbCfg){ _cfgCache=fbCfg; localStorage.setItem(CFGKEY,JSON.stringify(fbCfg)); }
-        const r=getRoleForEmail(email);
-        if(r){
-          document.getElementById('login-screen').style.display='none';
-          document.getElementById('access-denied-screen').style.display='none';
-          // await initApp so _authInProgress stays true the whole time —
-          // prevents Clerk's repeated listener fires from re-entering this function
-          await initApp(r, email, name);
-        } else {
-          if(loadEl) loadEl.style.display='none';
-          showAccessDenied(email, name);
-        }
-      } catch(e){
-        console.error('checkUserAuth error:', e);
-        if(loadEl) loadEl.style.display='none';
-        // Show error on login screen so user isn't stuck on a blank page
-        const errEl=document.getElementById('login-err');
-        if(errEl){ errEl.style.display='block'; errEl.textContent='Sign-in error: '+e.message+' — try refreshing.'; }
-        document.getElementById('login-screen').style.display='flex';
-      } finally {
-        // Always release the lock — even if initApp throws
-        _authInProgress = false;
-      }
-    }
-
-    // Listen for auth state changes (fires when user signs in via modal)
-    clerkInstance.addListener(({user})=>{
-      if(user) checkUserAuth(user);
-    });
-
-    if(clerkInstance.user){
-      // Already signed in (e.g. returning visit with active session)
-      checkUserAuth(clerkInstance.user);
+  // Listen for auth state changes
+  auth.onAuthStateChanged(async(user)=>{
+    if(user){
+      await checkUserAuth(user);
     } else {
-      document.getElementById('login-loading').style.display='none';
-      document.getElementById('google-btn-wrap').style.display='block';
+      _authInProgress=false;
+      if(loadEl) loadEl.style.display='none';
+      const googleBtn=document.getElementById('google-btn-wrap');
+      if(googleBtn) googleBtn.style.display='block';
     }
-  } catch(e){
-    document.getElementById('login-loading').style.display='none';
-    const err=document.getElementById('login-err');
-    err.style.display='block';
-    err.textContent='Auth error: '+(e.message||'Invalid Clerk key.');
-  }
+  });
 }
 
 async function initApp(r, email='', displayName=''){
