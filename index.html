@@ -753,6 +753,8 @@ td.muted{color:var(--text3);font-size:12px}
 .mp-claude-sec{border-top:1px dashed var(--border);padding-top:18px;margin-top:4px}
 .mp-claude-btn{padding:10px 18px;background:linear-gradient(135deg,#6d28d9,#4f46e5);color:#fff;border:none;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 2px 8px rgba(79,70,229,.25);white-space:nowrap}
 .mp-claude-btn:hover{filter:brightness(1.08)}
+.mp-mand{background:none;border:none;cursor:pointer;font-size:15px;color:#cbd5e1;line-height:1;padding:2px}
+.mp-mand.on{color:#f59e0b}
 /* Column picker modal */
 #mp-col-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:2000;align-items:center;justify-content:center}
 #mp-col-overlay.open{display:flex}
@@ -1435,6 +1437,28 @@ td.muted{color:var(--text3);font-size:12px}
           <div id="jira-test-result" style="margin-top:10px;font-size:12px"></div>
         </div>
 
+        <!-- Master Registry -->
+        <div class="settings-card">
+          <h3>🗂 Master Registry (per project)</h3>
+          <p>The canonical list of masters for this project — each linked to its Jira issue key. Used to reliably connect testing, signoff, mapping and live Jira. Auto-generate from existing data + the epic, then fix any Jira keys.</p>
+          <div style="display:flex;gap:10px;margin:14px 0">
+            <button class="btn-upd" onclick="regenRegistry()">⚙️ Auto-generate / Refresh</button>
+            <button class="btn-upd" style="background:#f8fafc;color:#475569;border:1.5px solid #e2e8f0" onclick="saveRegistryEdits()">Save Edits</button>
+          </div>
+          <div id="registry-list" style="font-size:12px"></div>
+        </div>
+
+        <!-- Read-only share -->
+        <div class="settings-card">
+          <h3>🔗 Read-only Share Link</h3>
+          <p>A view-only link to this project — recipients see all tabs but cannot edit. No sign-in required.</p>
+          <div style="display:flex;gap:10px;margin-top:12px;align-items:center;flex-wrap:wrap">
+            <input id="share-link-input" type="text" readonly class="mp-link-input" style="flex:1;min-width:240px" value=""/>
+            <button class="btn-upd" onclick="genShareLink()">Generate</button>
+            <button class="btn-upd" style="background:#475569" onclick="copyShareLink()">⧉ Copy</button>
+          </div>
+        </div>
+
         <!-- Data management -->
         <div class="settings-card">
           <h3>🗑 Data Management</h3>
@@ -1789,9 +1813,17 @@ td.muted{color:var(--text3);font-size:12px}
           <input id="np-desc" type="text" placeholder="Brief description (optional)"/>
         </div>
       </div>
-      <div style="display:flex;align-items:center;gap:10px;padding:4px 0 8px">
-        <input type="checkbox" id="np-copy" style="width:16px;height:16px;cursor:pointer;accent-color:var(--primary)"/>
-        <label for="np-copy" style="font-size:13px;color:var(--text2);cursor:pointer">Copy data from current project as starting point</label>
+      <div class="mfg" style="margin-bottom:8px">
+        <label>Start from</label>
+        <select id="np-start" onchange="document.getElementById('np-copy-row').style.display=this.value==='copy'?'flex':'none'">
+          <option value="blank">Blank project</option>
+          <option value="sap">SAP integration template (standard masters + signoff stages)</option>
+          <option value="copy">Copy current project's data</option>
+        </select>
+      </div>
+      <div id="np-copy-row" style="display:none;align-items:center;gap:10px;padding:4px 0 8px">
+        <input type="checkbox" id="np-copy" style="width:16px;height:16px;cursor:pointer;accent-color:var(--primary)" checked/>
+        <label for="np-copy" style="font-size:13px;color:var(--text2);cursor:pointer">Copy all data from current project as starting point</label>
       </div>
     </div>
     <div class="mftr">
@@ -2030,7 +2062,18 @@ function getDKey(){ return 'sap_data_'+getActivePid(); }
 function getIntegKey(){ return 'sap_integ_'+getActivePid(); }
 function getSignoffKey(){ return 'sap_signoff_'+getActivePid(); }
 
-function createProject(name,client,desc,copyFrom){
+// Standard SAP Van Sales master/transaction catalog used by the "SAP template"
+const SAP_TEMPLATE_MASTERS=[
+  {name:'Employee Master',type:'Master'},{name:'Item Master (SKU)',type:'Master'},{name:'Price Master',type:'Master'},
+  {name:'Customer Master',type:'Master'},{name:'New Customer Master',type:'Master'},{name:'Vehicle Master',type:'Master'},
+  {name:'Route Master',type:'Master'},{name:'Asset Master (CDE)',type:'Master'},{name:'Authorized Item List',type:'Master'},
+  {name:'Journey Plan',type:'Master'},{name:'Channel Master',type:'Master'},{name:'Promotion Master',type:'Master'},
+  {name:'Sales Orders',type:'Transaction'},{name:'Sales Invoice',type:'Transaction'},{name:'Load Request',type:'Transaction'},
+  {name:'Loads',type:'Transaction'},{name:'Unloads',type:'Transaction'},{name:'Variance',type:'Transaction'},
+  {name:'Credit Notes',type:'Transaction'},{name:'Debit Notes',type:'Transaction'},{name:'Inventory',type:'Transaction'},
+  {name:'Collection',type:'Transaction'}
+];
+function createProject(name,client,desc,copyFrom,template){
   const pid='proj_'+Date.now();
   const projs=loadProjects();
   projs.push({id:pid,name:name||'New Project',client:client||'',description:desc||'',createdAt:new Date().toISOString().slice(0,10)});
@@ -2039,6 +2082,13 @@ function createProject(name,client,desc,copyFrom){
     ['sap_data_','sap_integ_','sap_signoff_','sap_proj_'].forEach(k=>{
       const v=localStorage.getItem(k+copyFrom); if(v) localStorage.setItem(k+pid,v);
     });
+  } else if(template==='sap'){
+    const integ=SAP_TEMPLATE_MASTERS.map((m,i)=>({id:i+1,direction:'sap-sc',name:m.name,type:m.type,apiDate:'',apiStatus:'TBD',scDate:'',delivDate:'',status:'-',note:''}));
+    const sign=SAP_TEMPLATE_MASTERS.map((m,i)=>({id:i+1,name:m.name,type:m.type,apiReceived:'Pending',reworkReq:'-',devStatus:'-',devDqr:'-',devDqrLink:'',devLeadSignoff:'-',testStatus:'-',testDqr:'-',testerDqrLink:'',qaLeadSignoff:'-',comment:''}));
+    const registry=SAP_TEMPLATE_MASTERS.map(m=>({name:m.name,aliases:[],jiraKey:''}));
+    localStorage.setItem('sap_integ_'+pid,JSON.stringify(integ)); fbSet('integration/'+pid,integ);
+    localStorage.setItem('sap_signoff_'+pid,JSON.stringify(sign)); fbSet('signoff/'+pid,sign);
+    saveProjCfg(pid,{sessions:[],catalog:SAP_TEMPLATE_MASTERS.map(m=>m.name),masters:registry,epicKey:''});
   } else {
     saveProjCfg(pid,{sessions:[],catalog:[]});
   }
@@ -2048,7 +2098,7 @@ function createProject(name,client,desc,copyFrom){
 async function switchProject(pid){
   setActivePid(pid);
   // Clear per-project caches so stale data isn't shown
-  _integCache=null; _signoffCache=null; _mappingCache=null; _mpSelectedItem=null;
+  _integCache=null; _signoffCache=null; _mappingCache=null; _mpSelectedItem=null; _mastersCache=null;
   loadData(); // render from localStorage cache immediately (fast)
   updateTopbarProject();
   renderAll();
@@ -2097,7 +2147,8 @@ function renderProjDropdown(){
 function openNewProjModal(){
   closeProjDropdown();
   ['np-name','np-client','np-desc'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
-  const cb=document.getElementById('np-copy'); if(cb) cb.checked=false;
+  const st=document.getElementById('np-start'); if(st) st.value='blank';
+  const cr=document.getElementById('np-copy-row'); if(cr) cr.style.display='none';
   document.getElementById('new-proj-overlay').classList.add('open');
 }
 function closeNewProjModal(){ document.getElementById('new-proj-overlay').classList.remove('open'); }
@@ -2107,8 +2158,10 @@ function saveNewProject(){
   if(!name){alert('Project name is required');return;}
   const client=(document.getElementById('np-client').value||'').trim();
   const desc=(document.getElementById('np-desc').value||'').trim();
-  const copy=document.getElementById('np-copy').checked;
-  const pid=createProject(name,client,desc,copy?getActivePid():null);
+  const start=(document.getElementById('np-start')||{}).value||'blank';
+  const copy=start==='copy';
+  const template=start==='sap'?'sap':null;
+  const pid=createProject(name,client,desc,copy?getActivePid():null,template);
   switchProject(pid);
   if(role==='admin') renderSettingsProj();
   closeNewProjModal();
@@ -2450,6 +2503,17 @@ async function logout(){
 }
 
 async function startClerk(){
+  // ── Read-only share mode: ?share=<pid> bypasses login into a locked viewer ──
+  const _sharePid=getShareParam();
+  if(_sharePid){
+    if(!auth){ initFirebase(); }
+    document.getElementById('login-screen').style.display='none';
+    try{ const fbP=await fbGet('projects'); if(fbP){ const pa=fbToArray(fbP); if(pa&&pa.length){ _projectsCache=pa; localStorage.setItem(PROJ_LIST_KEY,JSON.stringify(pa)); } } }catch(e){}
+    setActivePid(_sharePid);
+    document.body.classList.add('share-view');
+    await initApp('viewer','','Shared View');
+    return;
+  }
   document.getElementById('login-screen').style.display='flex';
   const loadEl=document.getElementById('login-loading');
 
@@ -3136,6 +3200,8 @@ function switchPanel(id,el){
     renderRoleList();
     if(role==='admin') renderSettingsProj();
     loadJiraCfgIntoSettings();
+    renderRegistryList();
+    genShareLink();
   }
 }
 
@@ -3586,10 +3652,11 @@ function saveJiraCfg_ui(){
     email:(document.getElementById('s-jira-email').value||'').trim(),
     // keep existing token if the field still shows the masked placeholder
     token:(tokenInput && !/^•+$/.test(tokenInput))?tokenInput:(prev.token||''),
-    epicKey:epicVal||prev.epicKey||'COCA-626',
   };
   if(!c.baseUrl){toast('⚠️ Enter your Jira base URL');return;}
   _persistJiraCfg(c);
+  // epic key is per-project now
+  saveEpicKey(epicVal||getEpicKey());
   _mastersCache=null; // force refetch with new settings
   toast('✓ Jira config saved');
 }
@@ -3691,7 +3758,7 @@ function loadJiraCfgIntoSettings(){
   if(e) e.value=c.email||'';
   if(t) t.value=c.token?'••••••••••••••••':'';
   const ep=document.getElementById('s-jira-epic');
-  if(ep) ep.value=c.epicKey||'COCA-626';
+  if(ep) ep.value=getEpicKey();
 }
 
 // ═══════════════════════════════════════════════════
@@ -3701,8 +3768,84 @@ let _mastersCache=null;       // last processed list
 let _mastersFetchedAt=null;
 let _mstExpanded={};           // key → bool (expanded subtasks)
 
-function getEpicKey(){ return (getJiraCfg().epicKey||'COCA-626').trim().toUpperCase(); }
-function saveEpicKey(k){ const c=getJiraCfg(); c.epicKey=(k||'').trim().toUpperCase(); _persistJiraCfg(c); }
+// Epic key is PER-PROJECT (stored in proj_config). Falls back to legacy global jira_config.epicKey, then COCA-626.
+function getEpicKey(){ const pc=loadProjCfg(getActivePid())||{}; return ((pc.epicKey||getJiraCfg().epicKey||'COCA-626')+'').trim().toUpperCase(); }
+function saveEpicKey(k){ const pid=getActivePid(); const pc=loadProjCfg(pid)||{}; pc.epicKey=(k||'').trim().toUpperCase(); saveProjCfg(pid,pc); _mastersCache=null; }
+// ── Canonical master registry (per-project) ──
+// Each entry: { name, aliases:[..], jiraKey }
+function getRegistry(){ const pc=loadProjCfg(getActivePid())||{}; return pc.masters||[]; }
+function saveRegistry(list){ const pid=getActivePid(); const pc=loadProjCfg(pid)||{}; pc.masters=list; saveProjCfg(pid,pc); }
+// Resolve a free-text name to a registry entry (by name or alias), else null
+function resolveMaster(name){
+  const reg=getRegistry(); if(!reg.length) return null;
+  return reg.find(e=> _nameMatches(e.name,name) || (e.aliases||[]).some(a=>_nameMatches(a,name)) ) || null;
+}
+// Find the Jira issue for a master: registry jiraKey first, then fuzzy summary match against loaded epic children
+function findJiraForMaster(name){
+  const e=resolveMaster(name);
+  if(e&&e.jiraKey&&_mastersCache){ const hit=_mastersCache.find(d=>d.key===e.jiraKey); if(hit) return hit; }
+  if(_mastersCache) return _mastersCache.find(d=>_nameMatches(d.summary,name))||null;
+  return null;
+}
+// Gather every distinct master name known across testing/integration/signoff/registry
+function allMasterNames(){
+  const set=new Map(); // normalised → display name
+  const add=n=>{ if(!n) return; const k=_normName(n); if(k&&!set.has(k)) set.set(k,n); };
+  getRegistry().forEach(e=>add(e.name));
+  (typeof rows!=='undefined'?rows:[]).forEach(r=>add(r.name));
+  loadInteg().forEach(r=>add(r.name));
+  loadSignoff().forEach(r=>add(r.name));
+  return [...set.values()].sort((a,b)=>a.localeCompare(b));
+}
+// Auto-build / refresh the registry from existing data + epic children
+async function autoSeedRegistry(){
+  let epic=null;
+  try{ const md=await loadMasters(false); if(md&&!md.error) epic=md; }catch(e){}
+  const names=allMasterNames();
+  const existing=getRegistry();
+  const byName={}; existing.forEach(e=>byName[_normName(e.name)]=e);
+  const list=names.map(n=>{
+    const prev=byName[_normName(n)]||{};
+    let jiraKey=prev.jiraKey||'';
+    if(!jiraKey && epic){ const hit=epic.find(d=>_nameMatches(d.summary,n)); if(hit) jiraKey=hit.key; }
+    return { name:n, aliases:prev.aliases||[], jiraKey };
+  });
+  saveRegistry(list);
+  return list;
+}
+// Registry Settings UI
+async function regenRegistry(){ toast('⏳ Building registry…'); await autoSeedRegistry(); renderRegistryList(); toast('✓ Registry refreshed'); }
+function renderRegistryList(){
+  const el=document.getElementById('registry-list'); if(!el) return;
+  const reg=getRegistry();
+  if(!reg.length){ el.innerHTML='<div style="color:#94a3b8;padding:10px 0">No registry yet — click <strong>Auto-generate</strong>.</div>'; return; }
+  const cfg=getJiraCfg();
+  el.innerHTML=`<table class="mp-tbl" style="font-size:12px"><thead><tr><th>Master</th><th style="width:140px">Jira Key</th><th style="width:90px">Linked</th></tr></thead><tbody>${
+    reg.map((e,i)=>`<tr>
+      <td>${esc(e.name)}</td>
+      <td><input data-reg="${i}" value="${esc(e.jiraKey||'')}" placeholder="e.g. COCA-628" style="width:120px;border:1px solid var(--border);border-radius:6px;padding:4px 6px;font-family:inherit;font-size:12px"/></td>
+      <td>${e.jiraKey?'<span style="color:#16a34a;font-weight:700">✓</span>':'<span style="color:#cbd5e1">—</span>'}</td>
+    </tr>`).join('')}</tbody></table>`;
+}
+function saveRegistryEdits(){
+  const reg=getRegistry();
+  document.querySelectorAll('#registry-list input[data-reg]').forEach(inp=>{
+    const i=+inp.getAttribute('data-reg'); if(reg[i]) reg[i].jiraKey=inp.value.trim().toUpperCase();
+  });
+  saveRegistry(reg); renderRegistryList(); toast('✓ Registry saved');
+}
+// ── Read-only share link ──
+function genShareLink(){
+  const pid=getActivePid();
+  const url=location.origin+location.pathname+'?share='+encodeURIComponent(pid);
+  const inp=document.getElementById('share-link-input'); if(inp) inp.value=url;
+  return url;
+}
+async function copyShareLink(){
+  const url=genShareLink();
+  try{ await navigator.clipboard.writeText(url); toast('✓ Share link copied'); }catch(e){ toast('Link: '+url); }
+}
+function getShareParam(){ try{ return new URLSearchParams(location.search).get('share'); }catch(e){ return null; } }
 
 // Status → done? (covers "Closed", "Done", "Development Done", category=done)
 function jiraIsDone(status){
@@ -3796,6 +3939,7 @@ async function renderMastersPanel(){
       <span class="mst-epic-chip">🎯 Epic ${epic}</span>
       <div class="mst-refresh">
         <span class="mst-updated" id="mst-updated"></span>
+        <button style="background:linear-gradient(135deg,#6d28d9,#4f46e5)" onclick="exportProjectToClaude()">✦ Export project to Claude</button>
         <button onclick="refreshMasters()">↻ Refresh</button>
       </div>
     </div>
@@ -3841,7 +3985,10 @@ function renderMastersBody(data){
     const childBtn=d.hasChild?`<button class="mst-expand" onclick="toggleMstExpand('${d.key}')">${_mstExpanded[d.key]?'▾':'▸'} ${d.subs.length} child</button>`:'';
     const childFlag=d.hasChild?`<span class="mst-childflag" title="Has child work">⌕ child work</span>`:'';
     const dev=d.devDone?'<span class="mst-sign yes" title="Dev story done/closed">✓</span>':'<span class="mst-sign no">○</span>';
-    const tester=d.testSub?(d.testerDone?'<span class="mst-sign yes" title="Testing subtask closed">✓</span>':'<span class="mst-sign no" title="Testing subtask open">○</span>'):'<span class="mst-sign na" title="No testing subtask found">N/A</span>';
+    const canAct=role==='admin'||role==='editor';
+    const tester=d.testSub
+      ?(d.testerDone?'<span class="mst-sign yes" title="Testing subtask closed">✓</span>':'<span class="mst-sign no" title="Testing subtask open">○</span>')
+      :(canAct?`<button class="mst-expand" style="background:#ede9fe;color:#6d28d9" title="Create testing subtask in Jira" onclick="createTestingSubtask('${d.key}',${JSON.stringify(d.summary).replace(/"/g,'&quot;')})">＋ Test Jira</button>`:'<span class="mst-sign na" title="No testing subtask">N/A</span>');
     const [ovc,ovl]=ovMeta(d.overall);
     let sub='';
     if(d.hasChild && _mstExpanded[d.key]){
@@ -3872,6 +4019,29 @@ function renderMastersBody(data){
     <div style="font-size:11px;color:var(--text3);margin-top:10px">Dev Signoff = master story Done/Closed · Tester Signoff = testing / QA-Sanity subtask Done/Closed · Complete = both. Refetched live from Jira on open.</div>`;
 }
 function toggleMstExpand(key){ _mstExpanded[key]=!_mstExpanded[key]; renderMastersBody(_mastersCache); }
+
+// Create a "<Master> Testing" sub-task under a master story in Jira
+async function createTestingSubtask(parentKey, parentSummary){
+  const cfg=getJiraCfg();
+  if(!cfg.baseUrl||!cfg.email||!cfg.token){ toast('⚠️ Configure Jira in Settings first'); return; }
+  if(!confirm('Create a Testing sub-task under '+parentKey+' ("'+parentSummary+' Testing")?')) return;
+  const auth=btoa(cfg.email+':'+cfg.token);
+  const bu=encodeURIComponent(cfg.baseUrl);
+  toast('⏳ Creating testing sub-task…');
+  try{
+    // find the Sub-task issue type id
+    const itr=await fetch(`/api/jira?path=issuetype&baseUrl=${bu}`,{headers:{'x-jira-auth':auth}});
+    const its=await itr.json().catch(()=>[]);
+    const sub=(Array.isArray(its)?its:[]).find(t=>t.subtask);
+    if(!sub||!sub.id){ toast('⚠️ No Sub-task issue type found in this Jira'); return; }
+    const projectKey=(parentKey.split('-')[0]||'').toUpperCase();
+    const body={fields:{project:{key:projectKey},parent:{key:parentKey},summary:parentSummary+' Testing',issuetype:{id:sub.id}}};
+    const cr=await fetch(`/api/jira?create=1&baseUrl=${bu}`,{method:'POST',headers:{'x-jira-auth':auth,'content-type':'application/json'},body:JSON.stringify(body)});
+    const cd=await cr.json().catch(()=>({}));
+    if(cr.ok&&cd.key){ toast('✓ Created '+cd.key); _mastersCache=null; refreshMasters(); }
+    else { toast('⚠️ Create failed — '+((cd.errorMessages&&cd.errorMessages[0])||'check Jira permissions')); console.warn('Jira create failed',cd); }
+  }catch(e){ toast('⚠️ Create failed'); console.warn(e); }
+}
 
 // Jira auto-signoff section embedded in the Signoff tab
 async function renderJiraSignoffSection(containerId){
@@ -4680,9 +4850,10 @@ function renderMpMain(){
       ${cellHtml(i,'salescode',false)}
       ${cellHtml(i,'sap',false)}
       ${cellHtml(i,'api',true)}
+      <td style="width:50px;text-align:center"><button class="mp-mand ${rows[i].mand?'on':''}" onclick="mpToggleMand(${i})" title="Toggle mandatory">${rows[i].mand?'★':'☆'}</button></td>
       <td style="width:36px;text-align:center"><button class="mp-del-row" onclick="mpDeleteRow(${i})" title="Delete row">✕</button></td>
     </tr>`).join('')
-    : `<tr><td colspan="7" style="padding:28px;text-align:center;color:#94a3b8;font-size:13px">No mapping yet — click <strong>Paste Import</strong> or <strong>+ Add Row</strong></td></tr>`;
+    : `<tr><td colspan="8" style="padding:28px;text-align:center;color:#94a3b8;font-size:13px">No mapping yet — click <strong>Paste Import</strong> or <strong>+ Add Row</strong></td></tr>`;
 
   return `
     <div class="mp-main-hdr">
@@ -4718,12 +4889,14 @@ function renderMpMain(){
               <th>Salescode Field</th>
               <th>SAP Mapped Field</th>
               <th>SAP API Key</th>
+              <th style="width:50px;text-align:center">Mand.</th>
               <th style="width:36px"></th>
             </tr></thead>
             <tbody>${tblRows}</tbody>
           </table>
         </div>
         ${rows.length?`<div style="margin-top:10px;display:flex;gap:8px;justify-content:flex-end">
+          <button class="mp-link-btn" style="background:#0ea5e9;font-size:12px;padding:7px 14px" onclick="validateMapping()" title="Check each SAP API key against the imported JSON">✓ Validate</button>
           <button class="mp-link-btn" style="background:#16a34a;font-size:12px;padding:7px 14px" onclick="exportMpCsv()">⬇ Export CSV</button>
         </div>`:''}
       </div>
@@ -4780,6 +4953,27 @@ function mpDeleteRow(idx){
   renderMappingPanel();
 }
 
+function mpToggleMand(idx){
+  const m=loadMappings(); const rows=(m[_mpSelectedItem]||{}).rows;
+  if(!rows||!rows[idx]) return;
+  rows[idx].mand=!rows[idx].mand; saveMappings(m); renderMappingPanel();
+}
+// Validate each SAP API key against the keys imported from JSON (if any)
+function validateMapping(){
+  const m=loadMappings(); const mm=m[_mpSelectedItem]||{}; const rows=mm.rows||[];
+  if(!rows.length){ toast('No rows to validate'); return; }
+  const keys=mm.apiKeys||null;
+  let issues=0;
+  rows.forEach((r,i)=>{
+    const cell=document.getElementById('mpc-'+i+'-api');
+    let bad=false;
+    if(!String(r.api||'').trim()) bad=true;
+    else if(keys&&keys.length&&!keys.includes(r.api)) bad=true;
+    if(cell){ cell.style.boxShadow=bad?'0 0 0 2px #fca5a5':''; cell.style.background=bad?'#fef2f2':''; }
+    if(bad) issues++;
+  });
+  toast(issues?('⚠️ '+issues+' API key(s) missing or not in the imported JSON'):(keys?'✓ All API keys match the imported JSON':'✓ No empty API keys (no JSON imported to cross-check)'));
+}
 // ── Mapping: keyboard grid navigation ──────────────────
 const MP_COLS=['salescode','sap','api'];
 function _mpRows(){ const m=loadMappings(); return (m[_mpSelectedItem]||{}).rows||[]; }
@@ -4941,9 +5135,9 @@ async function buildMasterClaudeMd(name){
   const integ=loadInteg().filter(r=>_nameMatches(r.name,name));
   // Signoff
   const sign=loadSignoff().filter(r=>_nameMatches(r.name,name));
-  // Jira (best-effort, live)
+  // Jira (best-effort, live) — registry jiraKey first, then fuzzy
   let jira=null;
-  try{ const md=await loadMasters(false); if(md&&!md.error) jira=md.find(d=>_nameMatches(d.summary,name))||null; }catch(e){}
+  try{ await loadMasters(false); jira=findJiraForMaster(name); }catch(e){}
 
   let out=`# SAP Integration Context — ${name}\n\n`;
   out+=`> Project: **${proj}** · Generated: ${today} · Source: Salescode.ai SAP Integration Tracker\n\n`;
@@ -4964,7 +5158,7 @@ async function buildMasterClaudeMd(name){
 
   out+=`## Field Mapping (${mrows.length})\n`;
   if(m.sheetLink) out+=`Reference sheet: ${m.sheetLink}\n\n`;
-  out+=_mdTable(['#','Salescode Field','SAP Mapped Field','SAP API Key'], mrows.map((r,i)=>[i+1,r.salescode,r.sap,r.api]))+'\n';
+  out+=_mdTable(['#','Salescode Field','SAP Mapped Field','SAP API Key','Mandatory'], mrows.map((r,i)=>[i+1,r.salescode,r.sap,r.api,r.mand?'Yes':'']))+'\n';
 
   out+=`## Testing History (${test.length})\n`;
   out+=_mdTable(['Set','Session','Date','Status','Rework','Rework By','By When','Change Description'],
@@ -4999,6 +5193,21 @@ async function copyMasterToClaude(){
   const md=await buildMasterClaudeMd(name);
   try{ await navigator.clipboard.writeText(md); toast('✓ Context copied to clipboard'); }
   catch(e){ toast('⚠️ Copy failed — use Export instead'); }
+}
+// Export EVERY master in the project into one Markdown bundle
+async function exportProjectToClaude(){
+  const proj=(loadProjects().find(p=>p.id===getActivePid())||{}).name||'project';
+  const names=allMasterNames();
+  if(!names.length){ toast('⚠️ No masters found'); return; }
+  toast('⏳ Building project context ('+names.length+' masters)…');
+  try{ await loadMasters(false); }catch(e){}
+  let out=`# SAP Integration Context Pack — ${proj}\n\n> ${names.length} masters · Generated ${new Date().toISOString().slice(0,10)} · Salescode.ai SAP Integration Tracker\n\nThis bundle contains the full context for every master in the project. Each section below is one master.\n\n---\n\n`;
+  for(const n of names){ out+=(await buildMasterClaudeMd(n))+'\n\n---\n\n'; }
+  const a=document.createElement('a');
+  a.href='data:text/markdown;charset=utf-8,'+encodeURIComponent(out);
+  a.download=proj.replace(/[^a-z0-9]/gi,'_')+'_ALL_masters_claude_context.md';
+  a.click();
+  toast('✓ Project context pack downloaded');
 }
 
 // ── Paste Import Modal ────────────────────────────────
@@ -5066,6 +5275,12 @@ function confirmMpPaste(){
   const mappings=loadMappings();
   if(!mappings[_mpSelectedItem]) mappings[_mpSelectedItem]={sheetLink:''};
   mappings[_mpSelectedItem].rows=parsed;
+  // store the canonical list of API keys (from JSON) for later validation
+  let apiKeys=[];
+  const t=(api||'').trim();
+  if(t.startsWith('{')||t.startsWith('[')){ try{ apiKeys=flattenJsonKeys(JSON.parse(t)); }catch(e){ apiKeys=t.split('\n').map(s=>s.trim()).filter(Boolean); } }
+  else { apiKeys=t.split('\n').map(s=>s.trim()).filter(Boolean); }
+  mappings[_mpSelectedItem].apiKeys=apiKeys;
   saveMappings(mappings);
   closeMpPasteModal();
   toast('✓ '+parsed.length+' rows imported');

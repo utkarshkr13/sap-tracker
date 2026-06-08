@@ -12,18 +12,36 @@ const ISSUE_FIELDS = 'summary,status,assignee,priority,issuetype,duedate,customf
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'x-jira-auth, content-type');
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
 
-  const { ticket, baseUrl, path, jql, fields, maxResults } = req.query;
+  const { ticket, baseUrl, path, jql, fields, maxResults, create } = req.query;
   const auth = req.headers['x-jira-auth'];
 
   if (!baseUrl || !auth) {
     return res.status(400).json({ error: 'Missing baseUrl or auth header' });
+  }
+
+  // ── POST: create an issue (e.g. a testing sub-task) ──
+  if (req.method === 'POST') {
+    let body = req.body;
+    if (typeof body === 'string') { try { body = JSON.parse(body); } catch (e) { body = {}; } }
+    try {
+      const resp = await fetch(`${baseUrl}/rest/api/3/issue`, {
+        method: 'POST',
+        headers: { 'Authorization': `Basic ${auth}`, 'Accept': 'application/json', 'Content-Type': 'application/json' },
+        body: JSON.stringify(body || {}),
+      });
+      const text = await resp.text();
+      let data; try { data = JSON.parse(text); } catch (e) { data = { raw: text }; }
+      return res.status(resp.status).json(data);
+    } catch (e) {
+      return res.status(500).json({ error: e.message });
+    }
   }
 
   // Build the Jira REST URL
