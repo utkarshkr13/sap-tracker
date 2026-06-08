@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<meta name="description" content="Salescode.ai — SAP Integration Testing Tracker for CCBCSA Van Sales implementation. Track test sessions, API readiness, signoff status, and Jira tickets."/>
+<meta name="description" content="Salescode.ai — SAP Integration Testing Tracker for CCBCSA. Track test sessions, API readiness, signoff status, and Jira tickets."/>
 <meta name="theme-color" content="#1e40af"/>
 <meta property="og:title" content="Salescode.ai — SAP Integration Tracker"/>
-<meta property="og:description" content="Internal tracking tool for SAP Van Sales integration testing at CCBCSA."/>
+<meta property="og:description" content="Internal tracking tool for SAP integration testing at CCBCSA."/>
 <meta property="og:type" content="website"/>
 <title>Salescode.ai — SAP Integration Tracker</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231e40af'/%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%233b82f6'/%3E%3Cstop offset='1' stop-color='%231d4ed8'/%3E%3C/linearGradient%3E%3Crect width='64' height='64' rx='14' fill='url(%23g)'/%3E%3Ctext x='32' y='46' text-anchor='middle' font-family='Arial%2CSans-serif' font-size='38' font-weight='900' fill='white'%3ES%3C/text%3E%3C/svg%3E"/>
@@ -613,6 +613,50 @@ td.muted{color:var(--text3);font-size:12px}
 .jira-status-pill.todo{background:#f1f5f9;color:#475569}
 .jira-related{padding:8px 14px;background:#fafafa;border-top:1px solid #f1f5f9;font-size:11.5px;color:#64748b}
 .jira-related strong{color:#0369a1}
+/* ── SAP Masters (epic) panel ── */
+.mst-hdr{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.mst-hdr h2{font-size:18px;font-weight:800;color:var(--text);margin:0}
+.mst-epic-chip{font-size:11px;font-weight:700;background:#e0f2fe;color:#0369a1;border:1px solid #7dd3fc;border-radius:6px;padding:3px 9px}
+.mst-refresh{margin-left:auto;display:flex;gap:8px;align-items:center}
+.mst-refresh button{padding:8px 14px;background:var(--primary);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+.mst-refresh button:hover{background:var(--primary-dark)}
+.mst-updated{font-size:11px;color:var(--text3)}
+.mst-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:16px}
+.mst-kpi{background:#fff;border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+.mst-kpi .n{font-size:22px;font-weight:800;color:var(--text)}
+.mst-kpi .l{font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-top:2px}
+.mst-tbl{width:100%;border-collapse:collapse;font-size:13px;background:#fff;border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.mst-tbl th{background:#f8fafc;color:#64748b;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;padding:10px 12px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
+.mst-tbl td{padding:10px 12px;border-bottom:1px solid var(--border2);color:var(--text2);vertical-align:middle}
+.mst-tbl tr:last-child td{border-bottom:none}
+.mst-tbl tbody tr:hover td{background:#f8fafc}
+.mst-key{font-weight:700;color:#0369a1;font-size:11px;text-decoration:none}
+.mst-key:hover{text-decoration:underline}
+.mst-name{font-weight:600;color:var(--text)}
+.mst-expand{cursor:pointer;color:#6366f1;font-size:11px;font-weight:700;background:#eef2ff;border:none;border-radius:5px;padding:2px 7px;margin-left:6px;font-family:inherit}
+.mst-childflag{display:inline-block;font-size:10px;font-weight:700;background:#fef3c7;color:#92400e;border-radius:5px;padding:1px 6px;margin-left:6px}
+.mst-stpill{font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;background:#f1f5f9;color:#475569;white-space:nowrap}
+.mst-stpill.done{background:#dcfce7;color:#15803d}
+.mst-stpill.prog{background:#dbeafe;color:#1d4ed8}
+.mst-stpill.todo{background:#f1f5f9;color:#64748b}
+.mst-stpill.delay{background:#fee2e2;color:#b91c1c}
+.mst-sign{font-size:14px;font-weight:800;text-align:center}
+.mst-sign.yes{color:#16a34a}
+.mst-sign.no{color:#cbd5e1}
+.mst-sign.na{color:#94a3b8;font-size:10px;font-weight:700}
+.mst-overall{font-size:11px;font-weight:700;padding:3px 10px;border-radius:6px;white-space:nowrap}
+.mst-ov-complete{background:#dcfce7;color:#15803d}
+.mst-ov-testing{background:#dbeafe;color:#1d4ed8}
+.mst-ov-dev{background:#fef9c3;color:#a16207}
+.mst-ov-na{background:#f1f5f9;color:#64748b}
+.mst-subrow td{background:#fafbff;padding:0}
+.mst-subwrap{padding:8px 12px 8px 40px;display:flex;flex-direction:column;gap:5px}
+.mst-sub{display:flex;align-items:center;gap:8px;font-size:12px}
+.mst-sub.testing{font-weight:700}
+.mst-sub-tag{font-size:9px;font-weight:800;background:#ede9fe;color:#6d28d9;border-radius:4px;padding:1px 6px;text-transform:uppercase}
+.mst-empty,.mst-loading{padding:48px 20px;text-align:center;color:var(--text3);font-size:14px}
+.mst-warn{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:10px;padding:14px 16px;font-size:13px;margin-bottom:14px}
+.mst-warn a{color:#9a3412;font-weight:700}
 .sf-tbl th{background:#f8fafc;color:#8e8e93;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;padding:9px 12px;border-bottom:1px solid #f2f2f7;position:sticky;top:0;z-index:5;white-space:nowrap}
 .sf-tbl td{padding:10px 12px;border-bottom:1px solid #fafafa;font-size:12px;color:#1c1c1e;vertical-align:middle}
 .sf-tbl tbody tr:hover td{background:#fafafa}
@@ -638,6 +682,92 @@ td.muted{color:var(--text3);font-size:12px}
   .topbar{padding:0 16px}
   .nav{padding:0 16px}
   .mrow{grid-template-columns:1fr}
+}
+
+/* ══ MAPPING PANEL ═══════════════════════════════════════════════════ */
+.mp-layout{display:grid;grid-template-columns:260px 1fr;gap:18px;height:calc(100vh - 140px);min-height:500px}
+.mp-sidebar{background:#fff;border:1px solid var(--border);border-radius:12px;overflow:hidden;display:flex;flex-direction:column}
+.mp-sidebar-hdr{padding:14px 16px 12px;border-bottom:1px solid var(--border);font-size:13px;font-weight:700;color:var(--text);background:#fafafa}
+.mp-list{overflow-y:auto;flex:1}
+.mp-item{padding:11px 16px;font-size:13px;cursor:pointer;border-bottom:1px solid var(--border2);transition:background .15s;display:flex;align-items:center;gap:8px;color:var(--text2)}
+.mp-item:hover{background:var(--primary-light)}
+.mp-item.active{background:var(--primary-light);color:var(--primary);font-weight:600}
+.mp-item .mp-badge{margin-left:auto;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;background:#e0e7ff;color:#3730a3;white-space:nowrap}
+.mp-item .mp-badge.mapped{background:#d1fae5;color:#065f46}
+.mp-type-divider{padding:7px 16px 4px;font-size:10px;font-weight:700;letter-spacing:.6px;color:var(--text3);text-transform:uppercase;background:#f8fafc}
+.mp-main{background:#fff;border:1px solid var(--border);border-radius:12px;display:flex;flex-direction:column;overflow:hidden}
+.mp-main-hdr{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.mp-main-title{font-size:16px;font-weight:700;color:var(--text);flex:1;min-width:160px}
+.mp-main-body{flex:1;overflow-y:auto;padding:20px}
+.mp-section{margin-bottom:24px}
+.mp-section-label{font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--text3);margin-bottom:8px}
+.mp-link-row{display:flex;gap:8px;align-items:center}
+.mp-link-input{flex:1;border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;font-family:inherit;color:var(--text);outline:none;transition:border .15s}
+.mp-link-input:focus{border-color:var(--primary)}
+.mp-link-btn{padding:9px 16px;background:var(--primary);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap}
+.mp-link-btn:hover{background:var(--primary-dark)}
+.mp-open-link{padding:9px 14px;background:#eff6ff;color:var(--primary);border:1.5px solid #bfdbfe;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;text-decoration:none;white-space:nowrap}
+.mp-open-link:hover{background:#dbeafe}
+/* Drop zone */
+.mp-dropzone{border:2.5px dashed #cbd5e1;border-radius:12px;padding:32px 20px;text-align:center;cursor:pointer;transition:all .2s;background:#fafafa;position:relative}
+.mp-dropzone:hover,.mp-dropzone.drag-over{border-color:var(--primary);background:var(--primary-light)}
+.mp-dropzone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.mp-dropzone svg{display:block;margin:0 auto 10px;color:#94a3b8}
+.mp-dropzone.drag-over svg{color:var(--primary)}
+.mp-dz-title{font-size:14px;font-weight:600;color:var(--text2);margin-bottom:4px}
+.mp-dz-sub{font-size:12px;color:var(--text3)}
+/* Mapping table */
+.mp-tbl{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
+.mp-tbl th{background:#f1f5f9;padding:9px 12px;font-weight:700;text-align:left;border-bottom:2px solid var(--border);color:var(--text);font-size:12px;white-space:nowrap}
+.mp-tbl td{padding:8px 12px;border-bottom:1px solid var(--border2);color:var(--text2);vertical-align:top}
+.mp-tbl tr:hover td{background:#f8fafc}
+.mp-tbl .mp-mandatory-yes{display:inline-block;padding:2px 8px;background:#fee2e2;color:#991b1b;font-size:11px;font-weight:700;border-radius:4px}
+.mp-tbl .mp-mandatory-no{display:inline-block;padding:2px 8px;background:#f1f5f9;color:#64748b;font-size:11px;font-weight:700;border-radius:4px}
+.mp-empty{text-align:center;padding:40px 20px;color:var(--text3);font-size:14px}
+.mp-tbl-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
+.mp-clear-btn{padding:7px 14px;background:#fee2e2;color:#b91c1c;border:none;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+.mp-clear-btn:hover{background:#fecaca}
+.mp-stat-chip{font-size:11px;padding:3px 10px;border-radius:6px;font-weight:700;background:#e0e7ff;color:#3730a3}
+.mp-none{display:flex;align-items:center;justify-content:center;height:100%;flex-direction:column;gap:10px;color:var(--text3)}
+.mp-cell{min-height:22px;padding:3px 6px;border-radius:4px;outline:none;font-size:13px;font-family:inherit;white-space:pre-wrap;word-break:break-word}
+.mp-cell:focus{background:#eff6ff;box-shadow:0 0 0 2px #bfdbfe}
+.mp-cell-mono{font-family:monospace;font-size:12px;color:#1d4ed8}
+.mp-del-row{background:none;border:none;color:#cbd5e1;cursor:pointer;font-size:14px;padding:2px 4px;border-radius:4px;line-height:1}
+.mp-del-row:hover{background:#fee2e2;color:#dc2626}
+/* ── Mapping reorder + keyboard grid ── */
+.mp-drag{cursor:grab;color:#cbd5e1;font-size:14px;user-select:none;text-align:center;line-height:1}
+.mp-drag:hover{color:#6366f1}
+.mp-tbl tr.mp-dragging{opacity:.4}
+.mp-tbl tr.mp-drop-target td{box-shadow:inset 0 2px 0 #6366f1}
+.mp-rowmove{display:inline-flex;flex-direction:column;gap:1px}
+.mp-rowmove button{background:none;border:none;color:#cbd5e1;cursor:pointer;font-size:9px;line-height:1;padding:0 2px;border-radius:3px}
+.mp-rowmove button:hover{color:#6366f1;background:#eef2ff}
+.mp-celwrap{position:relative}
+.mp-nudge{position:absolute;right:1px;top:50%;transform:translateY(-50%);display:none;flex-direction:column;gap:1px;background:#fff;border:1px solid #e2e8f0;border-radius:4px;box-shadow:0 1px 3px rgba(0,0,0,.08);z-index:3}
+.mp-celwrap:hover .mp-nudge{display:flex}
+.mp-nudge button{background:none;border:none;color:#94a3b8;cursor:pointer;font-size:8px;line-height:1;padding:1px 3px}
+.mp-nudge button:hover{color:#0f766e;background:#ecfdf5}
+.mp-tbl tr.mp-row-focus td{background:#f5f3ff}
+.mp-khint{font-size:11px;color:var(--text3);margin:2px 0 12px;display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+.mp-khint kbd{background:#f1f5f9;border:1px solid #e2e8f0;border-bottom-width:2px;border-radius:4px;padding:1px 5px;font-size:10px;font-family:inherit;font-weight:700;color:#475569}
+/* Column picker modal */
+#mp-col-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:2000;align-items:center;justify-content:center}
+#mp-col-overlay.open{display:flex}
+.mp-col-modal{background:#fff;border-radius:16px;padding:28px;width:100%;max-width:480px;box-shadow:0 24px 80px rgba(0,0,0,.22)}
+.mp-col-modal h3{font-size:17px;font-weight:800;margin:0 0 4px;color:var(--text)}
+.mp-col-modal p{font-size:13px;color:var(--text2);margin:0 0 20px}
+.mp-col-row{margin-bottom:14px}
+.mp-col-row label{display:block;font-size:12px;font-weight:700;color:var(--text);margin-bottom:5px}
+.mp-col-row select{width:100%;border:1.5px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit;color:var(--text);outline:none;background:#fff}
+.mp-col-row select:focus{border-color:var(--primary)}
+.mp-col-preview{background:#f8fafc;border-radius:8px;padding:10px 12px;font-size:12px;color:var(--text2);margin-bottom:16px;line-height:1.6}
+.mp-col-actions{display:flex;gap:10px;margin-top:4px}
+.mp-col-cancel{flex:1;padding:10px;background:#f1f5f9;color:var(--text2);border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
+.mp-col-confirm{flex:1;padding:10px;background:var(--primary);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
+.mp-col-confirm:hover{background:var(--primary-dark)}
+@media(max-width:768px){
+  .mp-layout{grid-template-columns:1fr;height:auto}
+  .mp-sidebar{max-height:220px}
 }
 </style>
 </head>
@@ -784,6 +914,14 @@ td.muted{color:var(--text3);font-size:12px}
     <div class="nav-tab" onclick="switchPanel('signoff',this)" id="nt-signoff">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
       Signoff <span class="nav-count" id="nc-signoff">0</span>
+    </div>
+    <div class="nav-tab" onclick="switchPanel('masters',this)" id="nt-masters">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7l10-4 10 4-10 4z"/><path d="M2 7v10l10 4 10-4V7"/><path d="M12 11v10"/></svg>
+      SAP Masters <span class="nav-count" id="nc-masters">0</span>
+    </div>
+    <div class="nav-tab" onclick="switchPanel('mapping',this)" id="nt-mapping">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M17.5 17.5l3 3M17.5 20.5l3-3"/><line x1="17.5" y1="17.5" x2="20.5" y2="17.5" style="display:none"/></svg>
+      Mapping
     </div>
     <div class="nav-tab" onclick="switchPanel('settings',this)" id="nt-settings" style="display:none">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
@@ -1279,6 +1417,9 @@ td.muted{color:var(--text3);font-size:12px}
                 <input id="s-jira-token" type="password" placeholder="Paste your Jira API token…" autocomplete="off"/>
               </div>
             </div>
+            <div class="mfg" style="margin-bottom:0"><label>SAP Masters Epic Key</label>
+              <input id="s-jira-epic" type="text" placeholder="e.g. COCA-626"/>
+            </div>
           </div>
           <div style="display:flex;gap:10px;margin-top:14px">
             <button class="btn-upd" onclick="saveJiraCfg_ui()">Save Jira Config</button>
@@ -1306,6 +1447,12 @@ td.muted{color:var(--text3);font-size:12px}
 
     <!-- ══ PANEL: SIGNOFF TRACKER ══ -->
     <div class="panel" id="panel-signoff"></div>
+
+    <!-- ══ PANEL: SAP MASTERS (Jira Epic) ══ -->
+    <div class="panel" id="panel-masters"></div>
+
+    <!-- ══ PANEL: MAPPING ══ -->
+    <div class="panel" id="panel-mapping"></div>
 
   </div><!-- /main -->
 </div><!-- /app -->
@@ -1489,6 +1636,36 @@ td.muted{color:var(--text3);font-size:12px}
   </div>
 </div>
 
+<!-- ══ MAPPING PASTE IMPORT MODAL ══ -->
+<div id="mp-paste-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2000;overflow-y:auto;padding:40px 16px">
+  <div style="background:#fff;border-radius:18px;padding:28px;width:100%;max-width:720px;box-shadow:0 24px 80px rgba(0,0,0,.22);margin:auto">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+      <div style="flex:1;font-size:18px;font-weight:800;color:#0f172a">Paste Import</div>
+      <button onclick="closeMpPasteModal()" style="background:none;border:none;font-size:20px;color:#94a3b8;cursor:pointer;padding:2px 6px">✕</button>
+    </div>
+    <p style="font-size:13px;color:#64748b;margin:0 0 20px;line-height:1.5">Paste each column below — one field per line. For SAP API you can paste the raw JSON and it will auto-extract the keys.</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px">
+      <div>
+        <div style="font-size:11px;font-weight:700;color:#1e3a8a;letter-spacing:.4px;text-transform:uppercase;margin-bottom:6px">Salescode Field</div>
+        <textarea id="mp-paste-sc" rows="16" oninput="mpPastePreview()" onpaste="setTimeout(mpPastePreview,50)" placeholder="SalesManType&#10;Order/Return&#10;OrderNumber&#10;…" style="width:100%;border:1.5px solid #e2e8f0;border-radius:8px;padding:10px;font-size:12px;font-family:monospace;resize:vertical;outline:none;line-height:1.6"></textarea>
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:700;color:#0f766e;letter-spacing:.4px;text-transform:uppercase;margin-bottom:6px">SAP Mapped Field</div>
+        <textarea id="mp-paste-sap" rows="16" oninput="mpPastePreview()" onpaste="setTimeout(mpPastePreview,50)" placeholder="Sales mode&#10;Order type&#10;Order number&#10;…" style="width:100%;border:1.5px solid #e2e8f0;border-radius:8px;padding:10px;font-size:12px;font-family:monospace;resize:vertical;outline:none;line-height:1.6"></textarea>
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:700;color:#7c3aed;letter-spacing:.4px;text-transform:uppercase;margin-bottom:6px">SAP API (JSON or keys)</div>
+        <textarea id="mp-paste-api" rows="16" oninput="mpPastePreview()" onpaste="setTimeout(mpPastePreview,50)" placeholder='{"sales_mode":"DD",&#10; "order_type":"",&#10; …}&#10;&#10;— or paste keys one per line —&#10;sales_mode&#10;order_type' style="width:100%;border:1.5px solid #e2e8f0;border-radius:8px;padding:10px;font-size:12px;font-family:monospace;resize:vertical;outline:none;line-height:1.6"></textarea>
+      </div>
+    </div>
+    <div id="mp-paste-preview" style="display:none;margin-bottom:16px;padding:12px;background:#f8fafc;border-radius:8px;font-size:12px;overflow-x:auto"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button onclick="closeMpPasteModal()" style="padding:10px 20px;background:#f1f5f9;color:#475569;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit">Cancel</button>
+      <button onclick="confirmMpPaste()" style="padding:10px 24px;background:#1d4ed8;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit">Import Mapping</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ SIGNOFF MODAL ══ -->
 <div class="overlay" id="signoff-overlay">
   <div class="modal" style="max-width:680px">
@@ -1646,6 +1823,11 @@ let _projectsCache = null;
 let _projCfgCache = {};
 let _integCache = null;
 let _signoffCache = null;
+let _mappingCache = null;
+let _mpSelectedItem = null;
+let _mpPendingRows = null;
+let _mpPendingCols = null;
+let _mpDragRow = null;
 
 const FB_REST = 'https://sap-tracker-8c413-default-rtdb.firebaseio.com';
 // Firebase RTDB forbids '.' in key names — encode/decode transparently
@@ -1730,7 +1912,7 @@ function fbToArray(val){
 async function loadAllFromFirebase(pid){
   if(!db || !pid) return;
   try {
-    const [cfg, projects, projCfg, data, integ, signoff, requests, jiraCfg] = await Promise.all([
+    const [cfg, projects, projCfg, data, integ, signoff, requests, jiraCfg, mappingFb] = await Promise.all([
       fbGet('config'),
       fbGet('projects'),
       fbGet('proj_config/'+pid),
@@ -1738,7 +1920,8 @@ async function loadAllFromFirebase(pid){
       fbGet('integration/'+pid),
       fbGet('signoff/'+pid),
       fbGet('requests'),
-      fbGet('jira_config')
+      fbGet('jira_config'),
+      fbGet('mappings/'+pid)
     ]);
     if(cfg)      { _cfgCache=cfg;          localStorage.setItem(CFGKEY,JSON.stringify(cfg)); }
     if(projects) { _projectsCache=fbToArray(projects); localStorage.setItem(PROJ_LIST_KEY,JSON.stringify(_projectsCache)); }
@@ -1751,6 +1934,7 @@ async function loadAllFromFirebase(pid){
     if(sf) { _signoffCache=sf; localStorage.setItem('sap_signoff_'+pid,JSON.stringify(sf)); }
     if(requests) { const ra=fbToArray(requests); if(ra) localStorage.setItem(RKEY,JSON.stringify(ra)); }
     if(jiraCfg)  { localStorage.setItem('sap_jira_cfg',JSON.stringify(jiraCfg)); }
+    if(mappingFb){ _mappingCache=mappingFb; localStorage.setItem(getMappingKey(),JSON.stringify(mappingFb)); }
     return true;
   } catch(e){ console.warn('loadAllFromFirebase error:',e); return false; }
 }
@@ -1861,7 +2045,7 @@ function createProject(name,client,desc,copyFrom){
 async function switchProject(pid){
   setActivePid(pid);
   // Clear per-project caches so stale data isn't shown
-  _integCache=null; _signoffCache=null;
+  _integCache=null; _signoffCache=null; _mappingCache=null; _mpSelectedItem=null;
   loadData(); // render from localStorage cache immediately (fast)
   updateTopbarProject();
   renderAll();
@@ -1869,6 +2053,8 @@ async function switchProject(pid){
   if(ap&&ap.classList.contains('active')) renderIntegration();
   const sp=document.getElementById('panel-signoff');
   if(sp&&sp.classList.contains('active')) renderSignoff();
+  const mp=document.getElementById('panel-mapping');
+  if(mp&&mp.classList.contains('active')) renderMappingPanel();
   closeProjDropdown();
   const p=loadProjects().find(x=>x.id===pid);
   toast('Switched to '+(p?p.name:'project'));
@@ -1878,6 +2064,7 @@ async function switchProject(pid){
   renderAll();
   if(ap&&ap.classList.contains('active')) renderIntegration();
   if(sp&&sp.classList.contains('active')) renderSignoff();
+  if(mp&&mp.classList.contains('active')) renderMappingPanel();
 }
 
 function updateTopbarProject(){
@@ -2675,7 +2862,17 @@ function exportTrackerExcel(){
   XLSX.writeFile(wb,'SAP_Tracker_Summary.xlsx');
 }
 
-function renderAll(){ renderData(); renderTracker(); }
+function renderAll(){
+  renderData();
+  renderTracker();
+  // Keep nav counts accurate even if those panels aren't active
+  const ni=document.getElementById('nc-integration');
+  if(ni) ni.textContent=loadInteg().length;
+  const ns=document.getElementById('nc-signoff');
+  if(ns) ns.textContent=loadSignoff().length;
+  // Re-render mapping sidebar if that panel is active
+  if(document.getElementById('panel-mapping')&&document.getElementById('panel-mapping').classList.contains('active')) renderMappingPanel();
+}
 
 // ═══════════════════════════════════════════════════
 // ANALYTICS
@@ -2927,6 +3124,8 @@ function switchPanel(id,el){
   if(id==='analytics') setTimeout(renderAnalytics,50);
   if(id==='integration') renderIntegration();
   if(id==='signoff') renderSignoff();
+  if(id==='masters') renderMastersPanel();
+  if(id==='mapping') renderMappingPanel();
   if(id==='settings'){
     const pk=getClerkKey();
     const inp=document.getElementById('s-clerk-pk');
@@ -3376,13 +3575,19 @@ function getJiraCfg(){ return JSON.parse(localStorage.getItem(JIRA_CFG_KEY)||'{}
 function _persistJiraCfg(c){ localStorage.setItem(JIRA_CFG_KEY,JSON.stringify(c)); fbSet('jira_config',c); }
 
 function saveJiraCfg_ui(){
+  const prev=getJiraCfg();
+  const tokenInput=(document.getElementById('s-jira-token').value||'').trim();
+  const epicVal=(document.getElementById('s-jira-epic')?document.getElementById('s-jira-epic').value:'').trim().toUpperCase();
   const c={
     baseUrl:(document.getElementById('s-jira-url').value||'').trim().replace(/\/+$/,''),
     email:(document.getElementById('s-jira-email').value||'').trim(),
-    token:(document.getElementById('s-jira-token').value||'').trim(),
+    // keep existing token if the field still shows the masked placeholder
+    token:(tokenInput && !/^•+$/.test(tokenInput))?tokenInput:(prev.token||''),
+    epicKey:epicVal||prev.epicKey||'COCA-626',
   };
   if(!c.baseUrl){toast('⚠️ Enter your Jira base URL');return;}
   _persistJiraCfg(c);
+  _mastersCache=null; // force refetch with new settings
   toast('✓ Jira config saved');
 }
 function clearJiraCfg(){
@@ -3482,7 +3687,223 @@ function loadJiraCfgIntoSettings(){
   if(u) u.value=c.baseUrl||'';
   if(e) e.value=c.email||'';
   if(t) t.value=c.token?'••••••••••••••••':'';
+  const ep=document.getElementById('s-jira-epic');
+  if(ep) ep.value=c.epicKey||'COCA-626';
 }
+
+// ═══════════════════════════════════════════════════
+// SAP MASTERS — live epic view + auto signoff from Jira
+// ═══════════════════════════════════════════════════
+let _mastersCache=null;       // last processed list
+let _mastersFetchedAt=null;
+let _mstExpanded={};           // key → bool (expanded subtasks)
+
+function getEpicKey(){ return (getJiraCfg().epicKey||'COCA-626').trim().toUpperCase(); }
+function saveEpicKey(k){ const c=getJiraCfg(); c.epicKey=(k||'').trim().toUpperCase(); _persistJiraCfg(c); }
+
+// Status → done? (covers "Closed", "Done", "Development Done", category=done)
+function jiraIsDone(status){
+  if(!status) return false;
+  const cat=((status.statusCategory&&status.statusCategory.key)||'').toLowerCase();
+  const nm=(status.name||'').toLowerCase();
+  return cat==='done' || /closed|done|complete/.test(nm);
+}
+function jiraStCls(status){
+  if(!status) return 'todo';
+  if(jiraIsDone(status)) return 'done';
+  const nm=(status.name||'').toLowerCase();
+  if(/delay|block/.test(nm)) return 'delay';
+  const cat=((status.statusCategory&&status.statusCategory.key)||'').toLowerCase();
+  if(cat==='indeterminate'||/dev|progress/.test(nm)) return 'prog';
+  return 'todo';
+}
+// Is a subtask the testing/QA-Sanity ticket?
+function isTestingSub(sub){
+  const s=((sub.fields&&sub.fields.summary)||'').toLowerCase();
+  return /test|qa\s*sanity/.test(s);
+}
+function fmtDate(d){ if(!d) return '—'; try{ return new Date(d).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});}catch(e){return d;} }
+
+// Process raw Jira issues into master/signoff rows
+function processMasterIssues(issues){
+  return issues.map(it=>{
+    const f=it.fields||{};
+    const subs=f.subtasks||[];
+    const testSub=subs.find(isTestingSub)||null;
+    const devDone=jiraIsDone(f.status);
+    const testerDone=testSub?jiraIsDone(testSub.fields.status):null; // null = N/A (no test jira)
+    let overall;
+    if(testSub){ overall = (devDone&&testerDone)?'complete':(devDone?'testing':'dev'); }
+    else { overall = devDone?'na':'dev'; }
+    return {
+      key:it.key,
+      summary:f.summary||'—',
+      status:f.status,
+      assignee:(f.assignee&&f.assignee.displayName)||null,
+      start:f.customfield_10015||null,
+      due:f.duedate||null,
+      subs, testSub, devDone, testerDone, overall,
+      hasChild:subs.length>0
+    };
+  });
+}
+
+async function fetchEpicChildren(){
+  const cfg=getJiraCfg();
+  if(!cfg.baseUrl||!cfg.email||!cfg.token) return {error:'nocfg'};
+  const epic=getEpicKey();
+  const auth=btoa(cfg.email+':'+cfg.token);
+  const jql=`parent=${epic} ORDER BY created ASC`;
+  const url=`/api/jira?jql=${encodeURIComponent(jql)}&baseUrl=${encodeURIComponent(cfg.baseUrl)}`;
+  try{
+    const resp=await fetch(url,{headers:{'x-jira-auth':auth}});
+    const data=await resp.json().catch(()=>({}));
+    if(!resp.ok||!data.issues) return {error:'fetch',raw:data};
+    return {issues:data.issues, epic};
+  }catch(e){ return {error:'net'}; }
+}
+
+async function loadMasters(force){
+  if(_mastersCache && !force) return _mastersCache;
+  const r=await fetchEpicChildren();
+  if(r.error) return r;
+  _mastersCache=processMasterIssues(r.issues);
+  _mastersFetchedAt=new Date();
+  const nc=document.getElementById('nc-masters'); if(nc) nc.textContent=_mastersCache.length;
+  return _mastersCache;
+}
+
+function ovMeta(o){
+  return {complete:['mst-ov-complete','Complete'],testing:['mst-ov-testing','In Testing'],dev:['mst-ov-dev','In Dev'],na:['mst-ov-na','Test N/A']}[o]||['mst-ov-na','—'];
+}
+
+async function renderMastersPanel(){
+  const p=document.getElementById('panel-masters');
+  if(!p) return;
+  const epic=getEpicKey();
+  const cfg=getJiraCfg();
+  if(!cfg.baseUrl||!cfg.email||!cfg.token){
+    p.innerHTML=`<div class="mst-warn">⚠️ Jira isn't configured yet. Add your Jira URL, email and API token in <strong>Settings → Jira Integration</strong>, then set the SAP Masters epic key.</div>`;
+    return;
+  }
+  // show shell + loading
+  p.innerHTML=`
+    <div class="mst-hdr">
+      <h2>SAP Masters</h2>
+      <span class="mst-epic-chip">🎯 Epic ${epic}</span>
+      <div class="mst-refresh">
+        <span class="mst-updated" id="mst-updated"></span>
+        <button onclick="refreshMasters()">↻ Refresh</button>
+      </div>
+    </div>
+    <div id="mst-body"><div class="mst-loading">Loading epic ${epic} from Jira…</div></div>`;
+  const data=await loadMasters(false);
+  renderMastersBody(data);
+}
+async function refreshMasters(){
+  const b=document.getElementById('mst-body'); if(b) b.innerHTML='<div class="mst-loading">Refreshing from Jira…</div>';
+  const data=await loadMasters(true);
+  renderMastersBody(data);
+}
+function renderMastersBody(data){
+  const b=document.getElementById('mst-body'); if(!b) return;
+  if(data && data.error){
+    b.innerHTML=`<div class="mst-warn">⚠️ Couldn't load epic <strong>${getEpicKey()}</strong> from Jira. Check the epic key and your Jira credentials in Settings, then hit Refresh.</div>`;
+    return;
+  }
+  const up=document.getElementById('mst-updated');
+  if(up&&_mastersFetchedAt) up.textContent='Updated '+_mastersFetchedAt.toLocaleTimeString();
+  if(!data.length){ b.innerHTML='<div class="mst-empty">No child issues found under this epic.</div>'; return; }
+
+  const complete=data.filter(d=>d.overall==='complete').length;
+  const testing=data.filter(d=>d.overall==='testing').length;
+  const indev=data.filter(d=>d.overall==='dev').length;
+  const devDone=data.filter(d=>d.devDone).length;
+  const testerDone=data.filter(d=>d.testerDone===true).length;
+
+  const kpis=`<div class="mst-kpis">
+    <div class="mst-kpi"><div class="n">${data.length}</div><div class="l">Masters</div></div>
+    <div class="mst-kpi"><div class="n" style="color:#16a34a">${complete}</div><div class="l">Complete</div></div>
+    <div class="mst-kpi"><div class="n" style="color:#1d4ed8">${testing}</div><div class="l">In Testing</div></div>
+    <div class="mst-kpi"><div class="n" style="color:#a16207">${indev}</div><div class="l">In Dev</div></div>
+    <div class="mst-kpi"><div class="n">${devDone}/${data.length}</div><div class="l">Dev Signoff</div></div>
+    <div class="mst-kpi"><div class="n">${testerDone}/${data.length}</div><div class="l">Tester Signoff</div></div>
+  </div>`;
+
+  const cfg=getJiraCfg();
+  const browse=k=>`${cfg.baseUrl}/browse/${k}`;
+  const rows=data.map(d=>{
+    const stName=(d.status&&d.status.name)||'—';
+    const stCls=jiraStCls(d.status);
+    const childBtn=d.hasChild?`<button class="mst-expand" onclick="toggleMstExpand('${d.key}')">${_mstExpanded[d.key]?'▾':'▸'} ${d.subs.length} child</button>`:'';
+    const childFlag=d.hasChild?`<span class="mst-childflag" title="Has child work">⌕ child work</span>`:'';
+    const dev=d.devDone?'<span class="mst-sign yes" title="Dev story done/closed">✓</span>':'<span class="mst-sign no">○</span>';
+    const tester=d.testSub?(d.testerDone?'<span class="mst-sign yes" title="Testing subtask closed">✓</span>':'<span class="mst-sign no" title="Testing subtask open">○</span>'):'<span class="mst-sign na" title="No testing subtask found">N/A</span>';
+    const [ovc,ovl]=ovMeta(d.overall);
+    let sub='';
+    if(d.hasChild && _mstExpanded[d.key]){
+      const items=d.subs.map(s=>{
+        const t=isTestingSub(s);
+        const sst=(s.fields.status&&s.fields.status.name)||'—';
+        const scls=jiraStCls(s.fields.status);
+        return `<div class="mst-sub${t?' testing':''}"><a class="mst-key" href="${browse(s.key)}" target="_blank" rel="noopener">${s.key}</a>${t?'<span class="mst-sub-tag">testing</span>':''}<span style="flex:1">${esc(s.fields.summary||'')}</span><span class="mst-stpill ${scls}">${esc(sst)}</span></div>`;
+      }).join('');
+      sub=`<tr class="mst-subrow"><td colspan="8"><div class="mst-subwrap">${items}</div></td></tr>`;
+    }
+    return `<tr>
+      <td><a class="mst-key" href="${browse(d.key)}" target="_blank" rel="noopener">${d.key}</a></td>
+      <td><span class="mst-name">${esc(d.summary)}</span>${childFlag}${childBtn}</td>
+      <td><span class="mst-stpill ${stCls}">${esc(stName)}</span></td>
+      <td>${esc(d.assignee||'—')}</td>
+      <td>${fmtDate(d.start)}</td>
+      <td>${fmtDate(d.due)}</td>
+      <td style="text-align:center">${dev}</td>
+      <td style="text-align:center">${tester}</td>
+      <td><span class="mst-overall ${ovc}">${ovl}</span></td>
+    </tr>${sub}`;
+  }).join('');
+
+  b.innerHTML=kpis+`<div style="overflow-x:auto"><table class="mst-tbl">
+    <thead><tr><th>Key</th><th>Master</th><th>Jira Status</th><th>Assignee</th><th>Start</th><th>Due</th><th style="text-align:center">Dev<br>Signoff</th><th style="text-align:center">Tester<br>Signoff</th><th>Overall</th></tr></thead>
+    <tbody>${rows}</tbody></table></div>
+    <div style="font-size:11px;color:var(--text3);margin-top:10px">Dev Signoff = master story Done/Closed · Tester Signoff = testing / QA-Sanity subtask Done/Closed · Complete = both. Refetched live from Jira on open.</div>`;
+}
+function toggleMstExpand(key){ _mstExpanded[key]=!_mstExpanded[key]; renderMastersBody(_mastersCache); }
+
+// Jira auto-signoff section embedded in the Signoff tab
+async function renderJiraSignoffSection(containerId){
+  const el=document.getElementById(containerId); if(!el) return;
+  const cfg=getJiraCfg();
+  if(!cfg.baseUrl||!cfg.email||!cfg.token){ el.innerHTML=''; return; }
+  el.innerHTML='<div class="mst-loading" style="padding:20px">Loading live Jira signoff…</div>';
+  const data=await loadMasters(false);
+  if(!data||data.error){ el.innerHTML=`<div class="mst-warn">⚠️ Live Jira signoff unavailable — check epic key & credentials in Settings.</div>`; return; }
+  const complete=data.filter(d=>d.overall==='complete').length;
+  const cfg2=getJiraCfg(); const browse=k=>`${cfg2.baseUrl}/browse/${k}`;
+  const rows=data.map(d=>{
+    const dev=d.devDone?'<span class="mst-sign yes">✓</span>':'<span class="mst-sign no">○</span>';
+    const tester=d.testSub?(d.testerDone?'<span class="mst-sign yes">✓</span>':'<span class="mst-sign no">○</span>'):'<span class="mst-sign na">N/A</span>';
+    const [ovc,ovl]=ovMeta(d.overall);
+    const tkey=d.testSub?`<a class="mst-key" href="${browse(d.testSub.key)}" target="_blank" rel="noopener">${d.testSub.key}</a>`:'<span style="color:#cbd5e1">—</span>';
+    return `<tr>
+      <td><a class="mst-key" href="${browse(d.key)}" target="_blank" rel="noopener">${d.key}</a></td>
+      <td><span class="mst-name">${esc(d.summary)}</span></td>
+      <td>${tkey}</td>
+      <td style="text-align:center">${dev}</td>
+      <td style="text-align:center">${tester}</td>
+      <td><span class="mst-overall ${ovc}">${ovl}</span></td>
+    </tr>`;
+  }).join('');
+  el.innerHTML=`<div class="mst-hdr" style="margin:4px 0 12px">
+      <h2 style="font-size:16px">🔄 Auto Signoff from Jira</h2>
+      <span class="mst-epic-chip">Epic ${getEpicKey()} · ${complete}/${data.length} complete</span>
+      <div class="mst-refresh"><button onclick="refreshJiraSignoff('${containerId}')">↻ Refresh</button></div>
+    </div>
+    <div style="overflow-x:auto"><table class="mst-tbl">
+    <thead><tr><th>Master Jira</th><th>Master</th><th>Testing Jira</th><th style="text-align:center">Dev<br>Signoff</th><th style="text-align:center">Tester<br>Signoff</th><th>Overall</th></tr></thead>
+    <tbody>${rows}</tbody></table></div>`;
+}
+async function refreshJiraSignoff(containerId){ await loadMasters(true); renderJiraSignoffSection(containerId); }
 
 // ── Link Preview ─────────────────────────────────────
 // Renders a rich link preview card (OG image + title + domain) into containerId.
@@ -4157,7 +4578,393 @@ function renderSignoff(){
       <tbody>${tbody}</tbody>
     </table></div>
   </div>`;
-  document.getElementById('panel-signoff').innerHTML=kpiBar+pipeline+tbl;
+  const jiraAuto=`<div id="sf-jira-auto" style="margin-bottom:20px"></div>`;
+  document.getElementById('panel-signoff').innerHTML=jiraAuto+kpiBar+pipeline+tbl;
+  renderJiraSignoffSection('sf-jira-auto');
+}
+
+// ═══════════════════════════════════════════════════
+// MAPPING PANEL
+// ═══════════════════════════════════════════════════
+
+function getMappingKey(){ return 'sap_mapping_'+getActivePid(); }
+
+function loadMappings(){
+  if(_mappingCache) return _mappingCache;
+  const s=localStorage.getItem(getMappingKey());
+  _mappingCache = s ? JSON.parse(s) : {};
+  return _mappingCache;
+}
+function saveMappings(d){
+  _mappingCache=d;
+  localStorage.setItem(getMappingKey(),JSON.stringify(d));
+  fbSet('mappings/'+getActivePid(), d);
+}
+function getMappingItems(){
+  // Build unique list from live Testing Data rows (deduplicated by name, ordered Masters first)
+  const seen=new Set();
+  const masters=[], txns=[];
+  (rows||[]).forEach(r=>{
+    if(!r.name||seen.has(r.name)) return;
+    seen.add(r.name);
+    if(r.type==='Transaction') txns.push({name:r.name,type:'Transaction'});
+    else masters.push({name:r.name,type:'Master'});
+  });
+  return [...masters,...txns];
+}
+
+// Flatten a JSON object into dot-notation keys (e.g. items[].product_code)
+function flattenJsonKeys(obj, prefix='', out=[]){
+  if(obj===null||typeof obj!=='object') return out;
+  if(Array.isArray(obj)){
+    if(obj.length>0) flattenJsonKeys(obj[0], prefix.replace(/\.$/,'')+'[].', out);
+  } else {
+    for(const[k,v] of Object.entries(obj)){
+      const path = prefix+k;
+      if(v!==null && typeof v==='object') flattenJsonKeys(v, path+'.', out);
+      else out.push(path);
+    }
+  }
+  return out;
+}
+
+// ── Render ──────────────────────────────────────────
+function renderMappingPanel(){
+  const items=getMappingItems();
+  const mappings=loadMappings();
+  let masterItems='',txnItems='';
+  items.forEach(item=>{
+    const rows=(mappings[item.name]||{}).rows||[];
+    const hasLink=!!(mappings[item.name]||{}).sheetLink;
+    const badge=rows.length?`<span class="mp-badge mapped">${rows.length} rows</span>`:hasLink?`<span class="mp-badge">link</span>`:'';
+    const active=_mpSelectedItem===item.name?' active':'';
+    const h=`<div class="mp-item${active}" data-mpname="${esc(item.name)}" onclick="selectMpItem(this.dataset.mpname)">${esc(item.name)}${badge}</div>`;
+    if(item.type==='Master') masterItems+=h; else txnItems+=h;
+  });
+  const sidebar=`<div class="mp-sidebar"><div class="mp-sidebar-hdr">Integrations</div><div class="mp-list"><div class="mp-type-divider">Masters</div>${masterItems}<div class="mp-type-divider">Transactions</div>${txnItems}</div></div>`;
+  const main=`<div class="mp-main" id="mp-main-content">${renderMpMain()}</div>`;
+  document.getElementById('panel-mapping').innerHTML=`<div class="mp-layout">${sidebar}${main}</div>`;
+}
+
+function renderMpMain(){
+  if(!_mpSelectedItem) return `
+    <div style="display:flex;align-items:center;justify-content:center;height:100%">
+      <div style="text-align:center;padding:40px 24px">
+        <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" style="margin:0 auto 16px"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        <div style="font-size:15px;color:#94a3b8;font-weight:500">Select an integration from the left to view or edit its mapping</div>
+      </div>
+    </div>`;
+
+  const mappings=loadMappings();
+  const m=mappings[_mpSelectedItem]||{};
+  const rows=m.rows||[];
+  const link=m.sheetLink||'';
+  const openBtn=link?`<a class="mp-open-link" href="${link}" target="_blank" rel="noopener">↗ Open</a>`:'';
+
+  // Build editable table rows
+  const n=rows.length;
+  const cellHtml=(i,field,mono)=>`<td><div class="mp-celwrap">`+
+    `<div class="mp-cell${mono?' mp-cell-mono':''}" id="mpc-${i}-${field}" contenteditable="true" data-r="${i}" data-f="${field}" `+
+    `onkeydown="mpCellKey(event,${i},'${field}')" onfocus="mpRowFocus(${i})" onblur="mpCellEdit(${i},'${field}',this.innerText.trim())">${esc(rows[i][field]||'')}</div>`+
+    `<div class="mp-nudge"><button onclick="mpNudgeCell(${i},'${field}',-1)" title="Move this field up (Alt+↑)">▲</button>`+
+    `<button onclick="mpNudgeCell(${i},'${field}',1)" title="Move this field down (Alt+↓)">▼</button></div></td>`;
+  const tblRows=n ? rows.map((r,i)=>`
+    <tr id="mprow-${i}" data-r="${i}">
+      <td class="mp-drag" draggable="true" title="Drag to reorder row"
+        ondragstart="mpRowDragStart(event,${i})" ondragover="mpRowDragOver(event,${i})" ondragleave="mpRowDragLeave(event,${i})" ondrop="mpRowDrop(event,${i})" ondragend="mpRowDragEnd(event)">⠿</td>
+      <td style="width:24px;color:#94a3b8;font-size:11px;text-align:center">${i+1}</td>
+      <td style="width:24px"><span class="mp-rowmove"><button onclick="mpMoveRow(${i},-1)" title="Move row up (Ctrl+↑)">▲</button><button onclick="mpMoveRow(${i},1)" title="Move row down (Ctrl+↓)">▼</button></span></td>
+      ${cellHtml(i,'salescode',false)}
+      ${cellHtml(i,'sap',false)}
+      ${cellHtml(i,'api',true)}
+      <td style="width:36px;text-align:center"><button class="mp-del-row" onclick="mpDeleteRow(${i})" title="Delete row">✕</button></td>
+    </tr>`).join('')
+    : `<tr><td colspan="7" style="padding:28px;text-align:center;color:#94a3b8;font-size:13px">No mapping yet — click <strong>Paste Import</strong> or <strong>+ Add Row</strong></td></tr>`;
+
+  return `
+    <div class="mp-main-hdr">
+      <div class="mp-main-title">${_mpSelectedItem}</div>
+      ${rows.length?`<span class="mp-stat-chip">${rows.length} fields</span>`:''}
+      <button class="mp-link-btn" style="background:#0f766e" onclick="openMpPasteModal()">&#8595; Paste Import</button>
+      <button class="mp-link-btn" onclick="mpAddRow()">+ Add Row</button>
+      ${rows.length?`<button class="mp-clear-btn" style="padding:8px 14px;border-radius:8px" onclick="clearMpMapping()">Clear All</button>`:''}
+    </div>
+    <div class="mp-main-body">
+      <div class="mp-section">
+        <div class="mp-section-label">Mapping Sheet / Reference Link</div>
+        <div class="mp-link-row">
+          <input class="mp-link-input" id="mp-link-input" type="url" placeholder="https://docs.google.com/spreadsheets/…" value="${esc(link)}"/>
+          ${openBtn}
+          <button class="mp-link-btn" onclick="saveMpLink()">Save</button>
+        </div>
+      </div>
+      <div class="mp-section">
+        <div class="mp-section-label" style="margin-bottom:6px">Field Mapping</div>
+        ${n?`<div class="mp-khint">
+          <span><kbd>Enter</kbd> next row · <kbd>Shift</kbd>+<kbd>Enter</kbd> up</span>
+          <span><kbd>Tab</kbd> next column · <kbd>Shift</kbd>+<kbd>Tab</kbd> back</span>
+          <span><kbd>Alt</kbd>+<kbd>↑</kbd>/<kbd>↓</kbd> nudge this field</span>
+          <span><kbd>Ctrl</kbd>+<kbd>↑</kbd>/<kbd>↓</kbd> move whole row · or drag <span style="color:#6366f1">⠿</span></span>
+        </div>`:''}
+        <div style="overflow-x:auto">
+          <table class="mp-tbl" id="mp-tbl">
+            <thead><tr>
+              <th style="width:24px"></th>
+              <th style="width:24px">#</th>
+              <th style="width:24px"></th>
+              <th>Salescode Field</th>
+              <th>SAP Mapped Field</th>
+              <th>SAP API Key</th>
+              <th style="width:36px"></th>
+            </tr></thead>
+            <tbody>${tblRows}</tbody>
+          </table>
+        </div>
+        ${rows.length?`<div style="margin-top:10px;display:flex;gap:8px;justify-content:flex-end">
+          <button class="mp-link-btn" style="background:#16a34a;font-size:12px;padding:7px 14px" onclick="exportMpCsv()">⬇ Export CSV</button>
+        </div>`:''}
+      </div>
+    </div>`;
+}
+
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function selectMpItem(name){
+  _mpSelectedItem=name;
+  renderMappingPanel();
+}
+
+function saveMpLink(){
+  const inp=document.getElementById('mp-link-input');
+  if(!inp) return;
+  const link=inp.value.trim();
+  const mappings=loadMappings();
+  if(!mappings[_mpSelectedItem]) mappings[_mpSelectedItem]={rows:[]};
+  mappings[_mpSelectedItem].sheetLink=link;
+  saveMappings(mappings);
+  toast('✓ Sheet link saved');
+  renderMappingPanel();
+}
+
+function mpCellEdit(idx,field,val){
+  const mappings=loadMappings();
+  if(!mappings[_mpSelectedItem]||!mappings[_mpSelectedItem].rows) return;
+  mappings[_mpSelectedItem].rows[idx][field]=val.trim();
+  saveMappings(mappings);
+}
+
+function mpAddRow(){
+  const mappings=loadMappings();
+  if(!mappings[_mpSelectedItem]) mappings[_mpSelectedItem]={rows:[],sheetLink:''};
+  mappings[_mpSelectedItem].rows.push({salescode:'',sap:'',api:''});
+  saveMappings(mappings);
+  renderMappingPanel();
+}
+
+function mpDeleteRow(idx){
+  const mappings=loadMappings();
+  if(!mappings[_mpSelectedItem]) return;
+  mappings[_mpSelectedItem].rows.splice(idx,1);
+  saveMappings(mappings);
+  renderMappingPanel();
+}
+
+// ── Mapping: keyboard grid navigation ──────────────────
+const MP_COLS=['salescode','sap','api'];
+function _mpRows(){ const m=loadMappings(); return (m[_mpSelectedItem]||{}).rows||[]; }
+function mpRowFocus(i){
+  document.querySelectorAll('#mp-tbl tr.mp-row-focus').forEach(t=>t.classList.remove('mp-row-focus'));
+  const tr=document.getElementById('mprow-'+i); if(tr) tr.classList.add('mp-row-focus');
+}
+function mpFocusCell(i,field){
+  // defer to allow DOM (re)render
+  requestAnimationFrame(()=>{
+    const el=document.getElementById('mpc-'+i+'-'+field);
+    if(!el) return;
+    el.focus();
+    // place caret at end
+    const sel=window.getSelection(); const range=document.createRange();
+    range.selectNodeContents(el); range.collapse(false);
+    sel.removeAllRanges(); sel.addRange(range);
+    mpRowFocus(i);
+  });
+}
+function mpSaveCellFromDom(i,field){
+  const el=document.getElementById('mpc-'+i+'-'+field);
+  if(el) mpCellEdit(i,field,el.innerText.trim());
+}
+function mpCellKey(e,i,field){
+  const ci=MP_COLS.indexOf(field);
+  const rows=_mpRows();
+  const n=rows.length;
+  // Alt+Arrow → nudge this cell within its column
+  if(e.altKey && (e.key==='ArrowUp'||e.key==='ArrowDown')){
+    e.preventDefault(); mpSaveCellFromDom(i,field);
+    mpNudgeCell(i,field, e.key==='ArrowDown'?1:-1); return;
+  }
+  // Ctrl/Cmd+Arrow → move whole row
+  if((e.ctrlKey||e.metaKey) && (e.key==='ArrowUp'||e.key==='ArrowDown')){
+    e.preventDefault(); mpSaveCellFromDom(i,field);
+    mpMoveRow(i, e.key==='ArrowDown'?1:-1); return;
+  }
+  // Enter → next/prev row, same column
+  if(e.key==='Enter'){
+    e.preventDefault(); mpSaveCellFromDom(i,field);
+    if(e.shiftKey){ if(i>0) mpFocusCell(i-1,field); return; }
+    if(i+1<n){ mpFocusCell(i+1,field); }
+    else { mpAddRow(); mpFocusCell(n,field); } // new row appended at index n
+    return;
+  }
+  // Tab → next/prev column (wrap to adjacent row)
+  if(e.key==='Tab'){
+    e.preventDefault(); mpSaveCellFromDom(i,field);
+    if(e.shiftKey){
+      if(ci>0) mpFocusCell(i,MP_COLS[ci-1]);
+      else if(i>0) mpFocusCell(i-1,MP_COLS[MP_COLS.length-1]);
+    } else {
+      if(ci<MP_COLS.length-1) mpFocusCell(i,MP_COLS[ci+1]);
+      else if(i+1<n) mpFocusCell(i+1,MP_COLS[0]);
+      else { mpAddRow(); mpFocusCell(n,MP_COLS[0]); }
+    }
+    return;
+  }
+  // plain Arrow Up/Down → vertical navigation within column
+  if(e.key==='ArrowUp' && i>0){ e.preventDefault(); mpSaveCellFromDom(i,field); mpFocusCell(i-1,field); return; }
+  if(e.key==='ArrowDown' && i+1<n){ e.preventDefault(); mpSaveCellFromDom(i,field); mpFocusCell(i+1,field); return; }
+}
+// Move just one field up/down within its column (realign a single offset column)
+function mpNudgeCell(i,field,dir){
+  const mappings=loadMappings();
+  const rows=(mappings[_mpSelectedItem]||{}).rows;
+  if(!rows) return;
+  const j=i+dir;
+  if(j<0||j>=rows.length) return;
+  const tmp=rows[i][field]; rows[i][field]=rows[j][field]; rows[j][field]=tmp;
+  saveMappings(mappings);
+  renderMappingPanel();
+  mpFocusCell(j,field);
+}
+// Move an entire mapping row (locked triple) up/down
+function mpMoveRow(i,dir){
+  const mappings=loadMappings();
+  const rows=(mappings[_mpSelectedItem]||{}).rows;
+  if(!rows) return;
+  const j=i+dir;
+  if(j<0||j>=rows.length) return;
+  const tmp=rows[i]; rows[i]=rows[j]; rows[j]=tmp;
+  saveMappings(mappings);
+  renderMappingPanel();
+  mpFocusCell(j,'salescode');
+}
+// ── Mapping: drag-to-reorder rows ──────────────────────
+function mpRowDragStart(e,i){ _mpDragRow=i; const tr=document.getElementById('mprow-'+i); if(tr) tr.classList.add('mp-dragging'); e.dataTransfer.effectAllowed='move'; try{e.dataTransfer.setData('text/plain',String(i));}catch(_){} }
+function mpRowDragOver(e,i){ e.preventDefault(); e.dataTransfer.dropEffect='move'; const tr=document.getElementById('mprow-'+i); if(tr&&i!==_mpDragRow) tr.classList.add('mp-drop-target'); }
+function mpRowDragLeave(e,i){ const tr=document.getElementById('mprow-'+i); if(tr) tr.classList.remove('mp-drop-target'); }
+function mpRowDrop(e,i){
+  e.preventDefault();
+  const from=_mpDragRow;
+  if(from===null||from===i) return;
+  const mappings=loadMappings();
+  const rows=(mappings[_mpSelectedItem]||{}).rows;
+  if(!rows) return;
+  const moved=rows.splice(from,1)[0];
+  rows.splice(i,0,moved);
+  saveMappings(mappings);
+  renderMappingPanel();
+  mpFocusCell(i,'salescode');
+}
+function mpRowDragEnd(e){ _mpDragRow=null; document.querySelectorAll('#mp-tbl tr.mp-dragging,#mp-tbl tr.mp-drop-target').forEach(t=>t.classList.remove('mp-dragging','mp-drop-target')); }
+
+function clearMpMapping(){
+  if(!confirm('Clear all mapping rows for "'+_mpSelectedItem+'"?')) return;
+  const mappings=loadMappings();
+  if(mappings[_mpSelectedItem]) mappings[_mpSelectedItem].rows=[];
+  saveMappings(mappings);
+  renderMappingPanel();
+  toast('🗑 Mapping cleared');
+}
+
+function exportMpCsv(){
+  const mappings=loadMappings();
+  const rows=(mappings[_mpSelectedItem]||{}).rows||[];
+  if(!rows.length){ toast('⚠️ No rows to export'); return; }
+  const lines=[['Salescode Field','SAP Mapped Field','SAP API Key'],...rows.map(r=>[r.salescode,r.sap,r.api])];
+  const csv=lines.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download=(_mpSelectedItem||'mapping').replace(/[^a-z0-9]/gi,'_')+'_mapping.csv';
+  a.click();
+}
+
+// ── Paste Import Modal ────────────────────────────────
+function openMpPasteModal(){
+  const el=document.getElementById('mp-paste-overlay');
+  el.style.display='block';
+  ['mp-paste-sc','mp-paste-sap','mp-paste-api'].forEach(id=>{ document.getElementById(id).value=''; });
+  document.getElementById('mp-paste-preview').innerHTML='';
+  document.getElementById('mp-paste-preview').style.display='none';
+}
+function closeMpPasteModal(){
+  document.getElementById('mp-paste-overlay').style.display='none';
+}
+
+function mpPastePreview(){
+  const sc=document.getElementById('mp-paste-sc').value.trim();
+  const sap=document.getElementById('mp-paste-sap').value.trim();
+  const api=document.getElementById('mp-paste-api').value.trim();
+  if(!sc&&!sap&&!api){ document.getElementById('mp-paste-preview').style.display='none'; return; }
+
+  const parsed=parseMpPaste(sc,sap,api);
+  const prev=document.getElementById('mp-paste-preview');
+  prev.style.display='block';
+  if(!parsed.length){ prev.innerHTML='<div style="color:#dc2626;font-size:12px">No rows detected — check your input</div>'; return; }
+  const rows=parsed.map((r,i)=>`<tr><td style="color:#94a3b8;font-size:11px;text-align:center">${i+1}</td><td>${esc(r.salescode)}</td><td>${esc(r.sap)}</td><td style="font-family:monospace;font-size:11px;color:#1d4ed8">${esc(r.api)}</td></tr>`).join('');
+  prev.innerHTML=`<div style="font-size:11px;color:#64748b;margin-bottom:6px;font-weight:600">${parsed.length} rows detected:</div>
+    <div style="max-height:280px;overflow-y:auto;border:1px solid #e2e8f0;border-radius:6px">
+    <table class="mp-tbl" style="font-size:12px"><thead><tr><th style="position:sticky;top:0;background:#f1f5f9">#</th><th style="position:sticky;top:0;background:#f1f5f9">Salescode Field</th><th style="position:sticky;top:0;background:#f1f5f9">SAP Mapped Field</th><th style="position:sticky;top:0;background:#f1f5f9">SAP API Key</th></tr></thead><tbody>${rows}</tbody></table>
+    </div>`;
+}
+
+function parseMpPaste(scTxt,sapTxt,apiTxt){
+  const scLines=scTxt?scTxt.split('\n').map(s=>s.trim()).filter(s=>s):[];
+  const sapLines=sapTxt?sapTxt.split('\n').map(s=>s.trim()).filter(s=>s):[];
+
+  // API: detect JSON or plain lines
+  let apiLines=[];
+  if(apiTxt){
+    const trimmed=apiTxt.trim();
+    if(trimmed.startsWith('{') || trimmed.startsWith('[')){
+      try{
+        const obj=JSON.parse(trimmed);
+        apiLines=flattenJsonKeys(obj);
+      } catch(e){ apiLines=trimmed.split('\n').map(s=>s.trim()).filter(s=>s); }
+    } else {
+      apiLines=trimmed.split('\n').map(s=>s.trim()).filter(s=>s);
+    }
+  }
+
+  const maxLen=Math.max(scLines.length,sapLines.length,apiLines.length);
+  if(!maxLen) return [];
+  const rows=[];
+  for(let i=0;i<maxLen;i++){
+    rows.push({ salescode:scLines[i]||'', sap:sapLines[i]||'', api:apiLines[i]||'' });
+  }
+  return rows;
+}
+
+function confirmMpPaste(){
+  const sc=document.getElementById('mp-paste-sc').value.trim();
+  const sap=document.getElementById('mp-paste-sap').value.trim();
+  const api=document.getElementById('mp-paste-api').value.trim();
+  const parsed=parseMpPaste(sc,sap,api);
+  if(!parsed.length){ toast('⚠️ Nothing to import — paste at least one column'); return; }
+  const mappings=loadMappings();
+  if(!mappings[_mpSelectedItem]) mappings[_mpSelectedItem]={sheetLink:''};
+  mappings[_mpSelectedItem].rows=parsed;
+  saveMappings(mappings);
+  closeMpPasteModal();
+  toast('✓ '+parsed.length+' rows imported');
+  renderMappingPanel();
 }
 
 startClerk();
