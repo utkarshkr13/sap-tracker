@@ -750,6 +750,9 @@ td.muted{color:var(--text3);font-size:12px}
 .mp-tbl tr.mp-row-focus td{background:#f5f3ff}
 .mp-khint{font-size:11px;color:var(--text3);margin:2px 0 12px;display:flex;gap:14px;flex-wrap:wrap;align-items:center}
 .mp-khint kbd{background:#f1f5f9;border:1px solid #e2e8f0;border-bottom-width:2px;border-radius:4px;padding:1px 5px;font-size:10px;font-family:inherit;font-weight:700;color:#475569}
+.mp-claude-sec{border-top:1px dashed var(--border);padding-top:18px;margin-top:4px}
+.mp-claude-btn{padding:10px 18px;background:linear-gradient(135deg,#6d28d9,#4f46e5);color:#fff;border:none;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 2px 8px rgba(79,70,229,.25);white-space:nowrap}
+.mp-claude-btn:hover{filter:brightness(1.08)}
 /* Column picker modal */
 #mp-col-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:2000;align-items:center;justify-content:center}
 #mp-col-overlay.open{display:flex}
@@ -4724,6 +4727,14 @@ function renderMpMain(){
           <button class="mp-link-btn" style="background:#16a34a;font-size:12px;padding:7px 14px" onclick="exportMpCsv()">⬇ Export CSV</button>
         </div>`:''}
       </div>
+      <div class="mp-section mp-claude-sec">
+        <div class="mp-section-label" style="margin-bottom:8px">🤖 Hand-off to a Developer / Claude</div>
+        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+          <button class="mp-claude-btn" onclick="exportMasterToClaude()">✦ Export to Claude</button>
+          <button class="mp-link-btn" style="background:#475569;font-size:12px;padding:9px 14px" onclick="copyMasterToClaude()">⧉ Copy to clipboard</button>
+          <div style="font-size:12px;color:var(--text3);flex:1;min-width:200px">Downloads a single Markdown context pack for <strong>${esc(_mpSelectedItem)}</strong> — the field mapping plus all testing history, the integration timeline, signoff status, and live Jira (status, assignee, dates, testing subtask). Drop it into Claude to build this integration fast.</div>
+        </div>
+      </div>
     </div>`;
 }
 
@@ -4894,6 +4905,100 @@ function exportMpCsv(){
   a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
   a.download=(_mpSelectedItem||'mapping').replace(/[^a-z0-9]/gi,'_')+'_mapping.csv';
   a.click();
+}
+
+// ── Export to Claude: full context pack for one master ──
+function _normName(s){ return String(s||'').toLowerCase().replace(/\(.*?\)/g,'').replace(/[^a-z0-9]+/g,' ').trim(); }
+function _nameMatches(a,b){
+  const na=_normName(a), nb=_normName(b);
+  if(!na||!nb) return false;
+  if(na===nb) return true;
+  // token-overlap: share the leading word(s) e.g. "employee master"
+  const ta=na.split(' '), tb=nb.split(' ');
+  const core=ta.filter(w=>w.length>2&&w!=='master'&&w!=='transaction');
+  if(core.length && core.every(w=>nb.includes(w))) return true;
+  const coreb=tb.filter(w=>w.length>2&&w!=='master'&&w!=='transaction');
+  if(coreb.length && coreb.every(w=>na.includes(w))) return true;
+  return na.includes(nb)||nb.includes(na);
+}
+function _mdTable(headers,rowsArr){
+  if(!rowsArr.length) return '_None recorded._\n';
+  const esc2=v=>String(v==null?'':v).replace(/\|/g,'\\|').replace(/\n/g,' ');
+  let out='| '+headers.join(' | ')+' |\n|'+headers.map(()=>'---').join('|')+'|\n';
+  rowsArr.forEach(r=>{ out+='| '+r.map(esc2).join(' | ')+' |\n'; });
+  return out;
+}
+async function buildMasterClaudeMd(name){
+  const proj=(loadProjects().find(p=>p.id===getActivePid())||{}).name||'this project';
+  const today=new Date().toISOString().slice(0,10);
+  // Mapping
+  const mappings=loadMappings();
+  const m=mappings[name]||{};
+  const mrows=m.rows||[];
+  // Testing data
+  const test=(typeof rows!=='undefined'?rows:[]).filter(r=>_nameMatches(r.name,name));
+  // Integration
+  const integ=loadInteg().filter(r=>_nameMatches(r.name,name));
+  // Signoff
+  const sign=loadSignoff().filter(r=>_nameMatches(r.name,name));
+  // Jira (best-effort, live)
+  let jira=null;
+  try{ const md=await loadMasters(false); if(md&&!md.error) jira=md.find(d=>_nameMatches(d.summary,name))||null; }catch(e){}
+
+  let out=`# SAP Integration Context — ${name}\n\n`;
+  out+=`> Project: **${proj}** · Generated: ${today} · Source: Salescode.ai SAP Integration Tracker\n\n`;
+  out+=`## How to use this file\nYou are helping build/verify the SAP ↔ Salescode integration for the **${name}** master. Everything below — the field mapping, testing history, integration timeline, signoff status, and live Jira state — is the full known context for this master. Use it to scaffold the integration code, validate field mappings, and flag gaps.\n\n`;
+
+  if(jira){
+    out+=`## Jira (live, epic ${getEpicKey()})\n`;
+    out+=`- **Issue:** ${jira.key} — ${jira.summary}\n`;
+    out+=`- **Status:** ${(jira.status&&jira.status.name)||'—'}  |  **Assignee:** ${jira.assignee||'—'}\n`;
+    out+=`- **Start date:** ${jira.start||'—'}  |  **Due date:** ${jira.due||'—'}\n`;
+    out+=`- **Dev signoff:** ${jira.devDone?'✓ done':'pending'}  |  **Tester signoff:** ${jira.testSub?(jira.testerDone?'✓ done':'pending'):'N/A'}  |  **Overall:** ${ovMeta(jira.overall)[1]}\n`;
+    if(jira.subs&&jira.subs.length){
+      out+=`- **Child work / subtasks:**\n`;
+      jira.subs.forEach(s=>{ out+=`  - ${s.key}: ${(s.fields.summary||'')} — ${((s.fields.status||{}).name)||'—'}${isTestingSub(s)?' _(testing)_':''}\n`; });
+    }
+    out+='\n';
+  }
+
+  out+=`## Field Mapping (${mrows.length})\n`;
+  if(m.sheetLink) out+=`Reference sheet: ${m.sheetLink}\n\n`;
+  out+=_mdTable(['#','Salescode Field','SAP Mapped Field','SAP API Key'], mrows.map((r,i)=>[i+1,r.salescode,r.sap,r.api]))+'\n';
+
+  out+=`## Testing History (${test.length})\n`;
+  out+=_mdTable(['Set','Session','Date','Status','Rework','Rework By','By When','Change Description'],
+    test.map(r=>[r.set,r.session,r.date,r.status,r.rework,r.rby,r.rwhen,r.desc]))+'\n';
+
+  out+=`## Integration Timeline (${integ.length})\n`;
+  out+=_mdTable(['Direction','Type','SAP API Readiness','API Status','SC Completion','Delivery','Status','Note'],
+    integ.map(r=>[r.direction==='sap-sc'?'SAP→SC':'SC→SAP',r.type,r.apiDate,r.apiStatus,r.scDate,r.delivDate,r.status,r.note]))+'\n';
+
+  out+=`## Signoff Status (${sign.length})\n`;
+  out+=_mdTable(['API Recd','Rework','Dev Status','Dev DQR','Dev Lead','Test Status','Test DQR','QA Lead','Comment'],
+    sign.map(r=>[r.apiReceived,r.reworkReq,r.devStatus,r.devDqr,r.devLeadSignoff,r.testStatus,r.testDqr,r.qaLeadSignoff,r.comment]))+'\n';
+
+  // Raw JSON for precise machine context
+  out+=`## Raw data (JSON)\n\`\`\`json\n`+JSON.stringify({master:name,project:proj,jira:jira&&{key:jira.key,summary:jira.summary,status:(jira.status||{}).name,assignee:jira.assignee,start:jira.start,due:jira.due,devSignoff:jira.devDone,testerSignoff:jira.testerDone,overall:jira.overall,subtasks:(jira.subs||[]).map(s=>({key:s.key,summary:s.fields.summary,status:(s.fields.status||{}).name}))},mapping:mrows,testing:test,integration:integ,signoff:sign},null,2)+`\n\`\`\`\n`;
+  return out;
+}
+async function exportMasterToClaude(){
+  const name=_mpSelectedItem;
+  if(!name){ toast('⚠️ Select a master first'); return; }
+  toast('⏳ Building context pack…');
+  const md=await buildMasterClaudeMd(name);
+  const a=document.createElement('a');
+  a.href='data:text/markdown;charset=utf-8,'+encodeURIComponent(md);
+  a.download=name.replace(/[^a-z0-9]/gi,'_')+'_claude_context.md';
+  a.click();
+  toast('✓ Context pack downloaded');
+}
+async function copyMasterToClaude(){
+  const name=_mpSelectedItem;
+  if(!name){ toast('⚠️ Select a master first'); return; }
+  const md=await buildMasterClaudeMd(name);
+  try{ await navigator.clipboard.writeText(md); toast('✓ Context copied to clipboard'); }
+  catch(e){ toast('⚠️ Copy failed — use Export instead'); }
 }
 
 // ── Paste Import Modal ────────────────────────────────
