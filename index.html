@@ -774,6 +774,18 @@ textarea.mp-ci{resize:vertical}
 /* ── Info tooltip (ⓘ) used across the app ── */
 .info-i{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:#e0e7ff;color:#4f46e5;font-size:10px;font-weight:800;font-style:normal;cursor:help;vertical-align:middle;margin-left:5px;position:relative;font-family:Georgia,serif;flex-shrink:0}
 .info-i:hover{background:#4f46e5;color:#fff}
+/* ── UX polish: sticky table heads, focus rings, button press, spinner ── */
+.mp-tbl thead th{position:sticky;top:0;z-index:6;box-shadow:0 1px 0 var(--border)}
+.mst-tbl thead th{position:sticky;top:0;z-index:6}
+.mp-main-body{scroll-behavior:smooth}
+button{transition:background .12s,filter .12s,transform .06s,box-shadow .12s}
+button:active{transform:translateY(1px)}
+input:focus-visible,select:focus-visible,textarea:focus-visible,[contenteditable]:focus-visible,button:focus-visible,.nav-tab:focus-visible{outline:2px solid #6366f1;outline-offset:1px}
+.spin{display:inline-block;width:15px;height:15px;border:2px solid #c7d2fe;border-top-color:#4f46e5;border-radius:50%;animation:spin .7s linear infinite;vertical-align:-3px;margin-right:7px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.mst-loading,.mp-empty,.mst-empty{animation:fadein .25s ease}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+.mp-link-btn:disabled,.mst-refresh button:disabled{opacity:.55;cursor:not-allowed}
 .info-i .info-pop{display:none;position:absolute;bottom:130%;left:50%;transform:translateX(-50%);background:#0f172a;color:#fff;font-size:11.5px;font-weight:400;font-family:inherit;line-height:1.5;padding:8px 11px;border-radius:8px;width:max-content;max-width:280px;white-space:normal;text-align:left;z-index:50;box-shadow:0 8px 24px rgba(0,0,0,.25);pointer-events:none}
 .info-i .info-pop::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:#0f172a}
 .info-i:hover .info-pop{display:block}
@@ -2331,6 +2343,17 @@ function initLogoClones(){
 }
 initFirebase(); // must run before startClerk() — do NOT defer to DOMContentLoaded
 document.addEventListener('DOMContentLoaded',()=>{ initLogoClones(); });
+// UX: Esc closes any open modal; clicking the dark backdrop closes it too
+function closeAllOverlays(){
+  ['digest-overlay','mp-paste-overlay'].forEach(id=>{const el=document.getElementById(id); if(el) el.style.display='none';});
+  ['new-proj-overlay','master-detail-overlay','mp-col-overlay'].forEach(id=>{const el=document.getElementById(id); if(el) el.classList.remove('open');});
+}
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeAllOverlays(); });
+document.addEventListener('click',e=>{
+  // backdrop click (target is the overlay container itself, not its inner card)
+  if(e.target&&e.target.id&&/^(digest-overlay|mp-paste-overlay)$/.test(e.target.id)) e.target.style.display='none';
+  if(e.target&&e.target.classList&&e.target.classList.contains('overlay')&&e.target.classList.contains('open')) e.target.classList.remove('open');
+});
 let clerkInstance = null; // kept for legacy references — auth now uses Firebase
 
 let rows = [];
@@ -3990,12 +4013,12 @@ async function renderMastersPanel(){
         <button onclick="refreshMasters()">↻ Refresh</button>
       </div>
     </div>
-    <div id="mst-body"><div class="mst-loading">Loading epic ${epic} from Jira…</div></div>`;
+    <div id="mst-body"><div class="mst-loading"><span class="spin"></span>Loading epic ${epic} from Jira…</div></div>`;
   const data=await loadMasters(false);
   renderMastersBody(data);
 }
 async function refreshMasters(){
-  const b=document.getElementById('mst-body'); if(b) b.innerHTML='<div class="mst-loading">Refreshing from Jira…</div>';
+  const b=document.getElementById('mst-body'); if(b) b.innerHTML='<div class="mst-loading"><span class="spin"></span>Refreshing from Jira…</div>';
   const data=await loadMasters(true);
   renderMastersBody(data);
 }
@@ -4103,7 +4126,7 @@ async function showMastersDigest(){
   const ov=document.getElementById('digest-overlay');
   const body=document.getElementById('digest-body');
   ov.style.display='block';
-  body.innerHTML='<div style="padding:24px;color:#94a3b8">Building digest from live Jira…</div>';
+  body.innerHTML='<div style="padding:24px;color:#94a3b8"><span class="spin"></span>Building digest from live Jira…</div>';
   const data=await loadMasters(false);
   if(!data||data.error){ body.innerHTML='<div class="mst-warn">⚠️ Could not load epic data — check Jira settings.</div>'; return; }
   _lastDigestText=buildMastersDigestText(data);
