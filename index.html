@@ -786,6 +786,44 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,[contenteditable
 .mst-loading,.mp-empty,.mst-empty{animation:fadein .25s ease}
 @keyframes fadein{from{opacity:0}to{opacity:1}}
 .mp-link-btn:disabled,.mst-refresh button:disabled{opacity:.55;cursor:not-allowed}
+/* ── New Project onboarding carousel (Apple/Google-inspired) ── */
+.onb-modal{position:relative;padding:0!important;overflow:hidden;max-width:660px!important}
+.onb-x{position:absolute;top:16px;right:16px;z-index:5;width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.7);backdrop-filter:blur(6px);border:none;font-size:15px;color:#475569;cursor:pointer}
+.onb-x:hover{background:#fff}
+.onb-viewport{overflow:hidden}
+.onb-track{display:flex;transition:transform .45s cubic-bezier(.4,0,.2,1)}
+.onb-slide{min-width:100%;box-sizing:border-box;padding:46px 48px 6px;text-align:center}
+.onb-hero{height:216px;border-radius:20px;background:linear-gradient(140deg,#eef2ff 0%,#faf5ff 55%,#fdf2f8 100%);border:1px solid #ebe9f7;display:flex;align-items:center;justify-content:center;overflow:hidden;margin-bottom:26px}
+.onb-eyebrow{font-size:11px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#6366f1;margin-bottom:9px}
+.onb-title{font-size:23px;font-weight:800;color:#0f172a;letter-spacing:-.5px;margin-bottom:11px;line-height:1.22}
+.onb-desc{font-size:14px;color:#64748b;line-height:1.6;max-width:440px;margin:0 auto;min-height:44px}
+.onb-footer{display:flex;align-items:center;justify-content:space-between;padding:20px 48px 30px;gap:12px}
+.onb-dots{display:flex;gap:7px}
+.onb-dot{width:7px;height:7px;border-radius:50%;background:#d8dade;cursor:pointer;transition:all .25s;border:none;padding:0}
+.onb-dot.on{background:#6366f1;width:22px;border-radius:4px}
+.onb-actions{display:flex;align-items:center;gap:10px}
+.onb-skip{background:none;border:none;color:#94a3b8;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
+.onb-skip:hover{color:#64748b}
+.onb-back{background:#f1f5f9;border:none;color:#475569;font-weight:600;font-size:13px;padding:10px 18px;border-radius:10px;cursor:pointer;font-family:inherit}
+.onb-next{background:linear-gradient(135deg,#6d28d9,#4f46e5);border:none;color:#fff;font-weight:700;font-size:14px;padding:11px 22px;border-radius:11px;cursor:pointer;font-family:inherit;box-shadow:0 4px 14px rgba(79,70,229,.3)}
+.onb-next:hover{filter:brightness(1.07)}
+/* mini UI mockups inside the hero */
+.mk{width:78%;border-radius:11px;background:#fff;box-shadow:0 14px 34px rgba(2,6,23,.13);overflow:hidden;animation:mkrise .5s ease}
+@keyframes mkrise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.mk-bar{height:26px;background:linear-gradient(90deg,#0f172a,#1e1b4b,#1e3a5f);display:flex;align-items:center;padding:0 9px;gap:5px}
+.mk-dot{width:6px;height:6px;border-radius:50%;background:#64748b}
+.mk-body{padding:9px}
+.mk-cards{display:flex;gap:6px}
+.mk-card{flex:1;border:1px solid #eef2f7;border-radius:7px;padding:7px}
+.mk-bignum{font-size:13px;font-weight:800;color:#1e293b;line-height:1}
+.mk-cap{height:4px;width:72%;background:#e5e7eb;border-radius:3px;margin-top:5px}
+.mk-row{display:flex;align-items:center;gap:7px;padding:6px 2px;border-top:1px solid #f4f6f9;font-size:9px;color:#64748b}
+.mk-row:first-child{border-top:none}
+.mk-chip{font-size:8px;font-weight:800;padding:1px 6px;border-radius:5px}
+.mk-grow{flex:1}
+.onb-form-hdr{padding:30px 40px 6px}
+.onb-form-hdr h2{font-size:21px;font-weight:800;color:#0f172a;margin:0 0 4px}
+.onb-form-hdr p{font-size:13px;color:#64748b;margin:0}
 .info-i .info-pop{display:none;position:absolute;bottom:130%;left:50%;transform:translateX(-50%);background:#0f172a;color:#fff;font-size:11.5px;font-weight:400;font-family:inherit;line-height:1.5;padding:8px 11px;border-radius:8px;width:max-content;max-width:280px;white-space:normal;text-align:left;z-index:50;box-shadow:0 8px 24px rgba(0,0,0,.25);pointer-events:none}
 .info-i .info-pop::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:#0f172a}
 .info-i:hover .info-pop{display:block}
@@ -963,10 +1001,6 @@ th .info-i{margin-left:4px}
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="2" cy="6" r="1" fill="currentColor" stroke="none"/><circle cx="2" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="2" cy="18" r="1" fill="currentColor" stroke="none"/></svg>
       Integration <span class="nav-count" id="nc-integration">0</span>
     </div>
-    <div class="nav-tab" onclick="switchPanel('signoff',this)" id="nt-signoff">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
-      Signoff <span class="nav-count" id="nc-signoff">0</span>
-    </div>
     <div class="nav-tab" onclick="switchPanel('masters',this)" id="nt-masters">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7l10-4 10 4-10 4z"/><path d="M2 7v10l10 4 10-4V7"/><path d="M12 11v10"/></svg>
       SAP Masters <span class="nav-count" id="nc-masters">0</span>
@@ -1058,10 +1092,8 @@ th .info-i{margin-left:4px}
             <div class="tbox-title">Testing Data <span class="tbox-meta" id="data-count"></span></div>
           </div>
           <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-            <div class="pill-filters">
+            <div class="pill-filters" id="set-filters">
               <button class="pf on" onclick="setSetF('all',this)">All</button>
-              <button class="pf" onclick="setSetF('Testing 1',this)">Testing 1</button>
-              <button class="pf" onclick="setSetF('Testing 2',this)">Testing 2</button>
             </div>
             <button id="btn-bulk-toggle" class="btn-export-sm" onclick="toggleBulkMode()" style="border:1px solid var(--border)">☑ Bulk Edit</button>
             <button id="btn-add" class="btn-save" onclick="openModal(null)" style="padding:7px 16px;font-size:12px;display:none">＋ Add Entry</button>
@@ -1495,6 +1527,17 @@ th .info-i{margin-left:4px}
           <div id="registry-list" style="font-size:12px"></div>
         </div>
 
+        <!-- Testing Sessions -->
+        <div class="settings-card">
+          <h3>🧪 Testing Sessions</h3>
+          <p>The testing rounds for this project (Testing 1, Testing 2, …). Add as many as you need — they appear in the Testing Data filters and the Add Entry form.</p>
+          <div id="testing-sets-list" style="margin:14px 0"></div>
+          <div style="display:flex;gap:10px;align-items:center;max-width:420px">
+            <input id="new-set-name" type="text" class="mp-link-input" placeholder="e.g. Testing 3" onkeydown="if(event.key==='Enter'){addTestingSet(this.value);this.value='';}"/>
+            <button class="btn-upd" onclick="addTestingSet(document.getElementById('new-set-name').value);document.getElementById('new-set-name').value='';">+ Add Session</button>
+          </div>
+        </div>
+
         <!-- Read-only share -->
         <div class="settings-card">
           <h3>🔗 Read-only Share Link</h3>
@@ -1842,51 +1885,123 @@ th .info-i{margin-left:4px}
 
 <div class="toast" id="toast"></div>
 
-<!-- ══ NEW PROJECT MODAL ══ -->
+<!-- ══ NEW PROJECT — onboarding carousel + form ══ -->
 <div class="overlay" id="new-proj-overlay">
-  <div class="modal" style="max-width:480px">
-    <div class="mhdr">
-      <div>
-        <h2>New Project</h2>
-        <div class="mhdr-sub">Set up a new tracking workspace</div>
+  <div class="modal onb-modal">
+    <button class="onb-x" onclick="closeNewProjModal()">✕</button>
+
+    <!-- STAGE 1 — feature intro carousel -->
+    <div id="onb-intro">
+      <div class="onb-viewport">
+        <div class="onb-track" id="onb-track">
+
+          <div class="onb-slide">
+            <div class="onb-hero">
+              <div class="mk">
+                <div class="mk-bar"><span class="mk-dot"></span><span class="mk-dot"></span><span class="mk-dot"></span><span style="margin-left:auto;color:#cbd5e1;font-size:8px;font-weight:700">CCBCSA SAP ▾</span></div>
+                <div class="mk-body"><div class="mk-cards">
+                  <div class="mk-card"><div class="mk-bignum">27</div><div class="mk-cap"></div></div>
+                  <div class="mk-card"><div class="mk-bignum" style="color:#16a34a">14</div><div class="mk-cap"></div></div>
+                  <div class="mk-card"><div class="mk-bignum" style="color:#2563eb">6</div><div class="mk-cap"></div></div>
+                  <div class="mk-card"><div class="mk-bignum" style="color:#4f46e5">52%</div><div class="mk-cap"></div></div>
+                </div></div>
+              </div>
+            </div>
+            <div class="onb-eyebrow">Salescode · SAP Integration Tracker</div>
+            <div class="onb-title">Your whole integration, in one place</div>
+            <div class="onb-desc">Track testing, API readiness, sign-off and live Jira status for every master and transaction — across as many projects as you run.</div>
+          </div>
+
+          <div class="onb-slide">
+            <div class="onb-hero">
+              <div class="mk">
+                <div class="mk-bar"><span style="color:#a5b4fc;font-size:8px;font-weight:800">⚡ API CONSOLE</span></div>
+                <div class="mk-body" style="padding:8px 10px">
+                  <div class="mk-row"><span style="color:#1e293b;font-weight:700">product_code</span><span class="mk-grow"></span><span class="mk-chip" style="background:#dbeafe;color:#1d4ed8">integer</span></div>
+                  <div class="mk-row"><span style="color:#1e293b;font-weight:700">item_name_en</span><span class="mk-grow"></span><span class="mk-chip" style="background:#dbeafe;color:#1d4ed8">varchar</span></div>
+                  <div class="mk-row"><span style="color:#1e293b;font-weight:700">creation_date</span><span class="mk-grow"></span><span class="mk-chip" style="background:#dcfce7;color:#15803d">date</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="onb-eyebrow">No-code mapping</div>
+            <div class="onb-title">Map any API without writing a transformer</div>
+            <div class="onb-desc">Drop the interface doc or hit the live API — fields and SQL types are detected automatically. Mark what's mandatory, map to Salescode, done.</div>
+          </div>
+
+          <div class="onb-slide">
+            <div class="onb-hero">
+              <div class="mk">
+                <div class="mk-bar"><span style="color:#a5b4fc;font-size:8px;font-weight:800">🎯 SAP MASTERS · live from Jira</span></div>
+                <div class="mk-body" style="padding:8px 10px">
+                  <div class="mk-row"><span style="color:#1e293b;font-weight:700">Employee Master</span><span class="mk-grow"></span><span class="mk-chip" style="background:#dcfce7;color:#15803d">Closed</span><span style="color:#16a34a;font-weight:800">✓✓</span></div>
+                  <div class="mk-row"><span style="color:#1e293b;font-weight:700">Customer Master</span><span class="mk-grow"></span><span class="mk-chip" style="background:#dbeafe;color:#1d4ed8">In Dev</span><span style="color:#cbd5e1;font-weight:800">○○</span></div>
+                  <div class="mk-row"><span style="color:#1e293b;font-weight:700">Route Master</span><span class="mk-grow"></span><span class="mk-chip" style="background:#dcfce7;color:#15803d">Closed</span><span style="color:#16a34a;font-weight:800">✓✓</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="onb-eyebrow">Automatic sign-off</div>
+            <div class="onb-title">Live from Jira, signed off automatically</div>
+            <div class="onb-desc">Each master pulls its status, assignee and dates from your Jira epic. Dev and Tester sign-off are derived the moment the tickets close.</div>
+          </div>
+
+          <div class="onb-slide">
+            <div class="onb-hero">
+              <div class="mk" style="width:70%">
+                <div class="mk-bar" style="background:linear-gradient(90deg,#065f46,#0f766e)"><span style="color:#a7f3d0;font-size:8px;font-weight:800">🧪 TEST PASSED</span></div>
+                <div class="mk-body" style="padding:12px 12px;text-align:center">
+                  <div style="font-size:11px;font-weight:800;color:#15803d">📦 6 records returned</div>
+                  <div style="font-size:8px;color:#64748b;margin:5px 0 9px">all mandatory fields present · types match</div>
+                  <div style="display:inline-block;background:linear-gradient(135deg,#6d28d9,#4f46e5);color:#fff;font-size:8px;font-weight:800;padding:5px 12px;border-radius:7px">✦ Export to Claude</div>
+                </div>
+              </div>
+            </div>
+            <div class="onb-eyebrow">Verify &amp; hand off</div>
+            <div class="onb-title">Test, validate, hand off in one click</div>
+            <div class="onb-desc">Re-hit the API to check record counts, missing mandatory data and type mismatches — then export a full context pack for any developer or for Claude.</div>
+          </div>
+
+        </div>
       </div>
-      <button class="btn-x" onclick="closeNewProjModal()">✕</button>
+      <div class="onb-footer">
+        <div class="onb-dots" id="onb-dots"></div>
+        <div class="onb-actions">
+          <button class="onb-skip" onclick="onbToForm()">Skip intro</button>
+          <button class="onb-back" id="onb-back" onclick="onbPrev()" style="display:none">Back</button>
+          <button class="onb-next" id="onb-next" onclick="onbNext()">Next →</button>
+        </div>
+      </div>
     </div>
-    <div class="mbody">
-      <div class="mrow">
-        <div class="mfg">
-          <label>Project Name *</label>
-          <input id="np-name" type="text" placeholder="e.g. CCBCSA Van Sales"/>
+
+    <!-- STAGE 2 — create form -->
+    <div id="onb-form" style="display:none">
+      <div class="onb-form-hdr">
+        <h2>Create your project</h2>
+        <p>A workspace for one client's SAP integration. You can change everything later in Settings.</p>
+      </div>
+      <div class="mbody">
+        <div class="mrow"><div class="mfg"><label>Project Name *</label>
+          <input id="np-name" type="text" placeholder="e.g. CCBCSA Van Sales"/></div></div>
+        <div class="mrow"><div class="mfg"><label>Client / Organisation</label>
+          <input id="np-client" type="text" placeholder="e.g. Coca-Cola South Africa"/></div></div>
+        <div class="mrow"><div class="mfg"><label>Description</label>
+          <input id="np-desc" type="text" placeholder="Brief description (optional)"/></div></div>
+        <div class="mfg" style="margin-bottom:8px">
+          <label>Start from</label>
+          <select id="np-start" onchange="document.getElementById('np-copy-row').style.display=this.value==='copy'?'flex':'none'">
+            <option value="sap">SAP integration template — standard masters &amp; sessions (recommended)</option>
+            <option value="blank">Blank project</option>
+            <option value="copy">Copy current project's data</option>
+          </select>
+        </div>
+        <div id="np-copy-row" style="display:none;align-items:center;gap:10px;padding:4px 0 8px">
+          <input type="checkbox" id="np-copy" style="width:16px;height:16px;cursor:pointer;accent-color:var(--primary)" checked/>
+          <label for="np-copy" style="font-size:13px;color:var(--text2);cursor:pointer">Copy all data from current project as starting point</label>
         </div>
       </div>
-      <div class="mrow">
-        <div class="mfg">
-          <label>Client / Organisation</label>
-          <input id="np-client" type="text" placeholder="e.g. Coca-Cola South Africa"/>
-        </div>
+      <div class="mftr">
+        <button class="btn-cancel" onclick="onbToIntro()">← Back to tour</button>
+        <button class="btn-save" onclick="saveNewProject()">Create Project</button>
       </div>
-      <div class="mrow">
-        <div class="mfg">
-          <label>Description</label>
-          <input id="np-desc" type="text" placeholder="Brief description (optional)"/>
-        </div>
-      </div>
-      <div class="mfg" style="margin-bottom:8px">
-        <label>Start from</label>
-        <select id="np-start" onchange="document.getElementById('np-copy-row').style.display=this.value==='copy'?'flex':'none'">
-          <option value="blank">Blank project</option>
-          <option value="sap">SAP integration template (standard masters + signoff stages)</option>
-          <option value="copy">Copy current project's data</option>
-        </select>
-      </div>
-      <div id="np-copy-row" style="display:none;align-items:center;gap:10px;padding:4px 0 8px">
-        <input type="checkbox" id="np-copy" style="width:16px;height:16px;cursor:pointer;accent-color:var(--primary)" checked/>
-        <label for="np-copy" style="font-size:13px;color:var(--text2);cursor:pointer">Copy all data from current project as starting point</label>
-      </div>
-    </div>
-    <div class="mftr">
-      <button class="btn-cancel" onclick="closeNewProjModal()">Cancel</button>
-      <button class="btn-save" onclick="saveNewProject()">Create Project</button>
     </div>
   </div>
 </div>
@@ -2104,6 +2219,39 @@ function getActivePid(){ return localStorage.getItem(PROJ_ACTIVE_KEY)||''; }
 function setActivePid(pid){ localStorage.setItem(PROJ_ACTIVE_KEY,pid); }
 function loadProjCfg(pid){ return _projCfgCache[pid] || JSON.parse(localStorage.getItem('sap_proj_'+pid)||'null') || {sessions:JSON.parse(JSON.stringify(DEFAULT_SESSIONS)),catalog:JSON.parse(JSON.stringify(DEFAULT_CATALOG))}; }
 function saveProjCfg(pid,cfg){ _projCfgCache[pid]=cfg; localStorage.setItem('sap_proj_'+pid,JSON.stringify(cfg)); fbSet('proj_config/'+pid,cfg); }
+// Per-project testing sessions/sets (default Testing 1 & 2; can add Testing 3, 4, …)
+function getTestingSets(){ const pc=loadProjCfg(getActivePid())||{}; return (pc.testingSets&&pc.testingSets.length)?pc.testingSets:['Testing 1','Testing 2']; }
+function saveTestingSets(list){ const pid=getActivePid(); const pc=loadProjCfg(pid)||{}; pc.testingSets=list; saveProjCfg(pid,pc); }
+function addTestingSet(name){
+  name=(name||'').trim(); if(!name) return;
+  const list=getTestingSets(); if(list.some(s=>s.toLowerCase()===name.toLowerCase())){ toast('⚠️ "'+name+'" already exists'); return; }
+  list.push(name); saveTestingSets(list); renderSetFilters(); renderTestingSetsSettings(); toast('✓ Added '+name);
+}
+function removeTestingSet(name){
+  const used=(typeof rows!=='undefined'?rows:[]).some(r=>r.set===name);
+  if(used){ toast('⚠️ "'+name+'" has entries — reassign or delete them first'); return; }
+  if(!confirm('Remove testing session "'+name+'"?')) return;
+  saveTestingSets(getTestingSets().filter(s=>s!==name)); renderSetFilters(); renderTestingSetsSettings(); toast('🗑 Removed '+name);
+}
+function renderTestingSetsSettings(){
+  const el=document.getElementById('testing-sets-list'); if(!el) return;
+  const sets=getTestingSets();
+  el.innerHTML=sets.map(s=>{
+    const count=(typeof rows!=='undefined'?rows:[]).filter(r=>r.set===s).length;
+    return `<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px;font-size:13px">
+      <span style="font-weight:600">${esc(s)}</span>
+      <span style="color:#94a3b8;font-size:11px">${count} ${count===1?'entry':'entries'}</span>
+      <button onclick="removeTestingSet('${s.replace(/'/g,"\\'")}')" title="Remove session" style="margin-left:auto;background:#fff1f2;color:#e11d48;border:1px solid #fecdd3;border-radius:6px;font-size:11px;font-weight:600;padding:3px 9px;cursor:pointer;font-family:inherit">Remove</button>
+    </div>`;
+  }).join('');
+}
+// build the All / Testing 1 / Testing 2 / … filter pills from the project's sets
+function renderSetFilters(){
+  const box=document.getElementById('set-filters'); if(!box) return;
+  const sets=getTestingSets();
+  box.innerHTML=`<button class="pf${filterSet==='all'?' on':''}" onclick="setSetF('all',this)">All</button>`+
+    sets.map(s=>`<button class="pf${filterSet===s?' on':''}" onclick="setSetF('${s.replace(/'/g,"\\'")}',this)">${esc(s)}</button>`).join('');
+}
 
 function migrateToProjects(){
   if(localStorage.getItem(PROJ_LIST_KEY)) return;
@@ -2195,18 +2343,52 @@ function closeProjDropdown(){ const dd=document.getElementById('proj-dropdown');
 function renderProjDropdown(){
   const projs=loadProjects(); const pid=getActivePid();
   const dd=document.getElementById('proj-dropdown'); if(!dd) return;
+  const canCreate = role==='admin'||role==='editor';
   dd.innerHTML=projs.map(p=>`
     <div class="proj-dd-item${p.id===pid?' active':''}" onclick="switchProject('${p.id}')">
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">${p.id===pid?'<polyline points="20 6 9 17 4 12"/>':'<circle cx="12" cy="12" r="9"/>'}</svg>
       ${p.name}${p.client?`<span style="color:#94a3b8;font-weight:400;font-size:11px;margin-left:auto">${p.client}</span>`:''}
-    </div>`).join('');
+    </div>`).join('')
+    + (canCreate?`<div class="proj-dd-item proj-dd-new" onclick="openNewProjModal()" style="border-top:1px solid var(--border2);color:var(--primary);font-weight:600">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      New Project
+    </div>`:'');
 }
 
+const ONB_SLIDES=4;
+let _onbSlide=0;
+function renderOnbDots(){
+  const d=document.getElementById('onb-dots'); if(!d) return;
+  d.innerHTML=Array.from({length:ONB_SLIDES},(_,i)=>`<button class="onb-dot${i===_onbSlide?' on':''}" onclick="onbGoto(${i})" aria-label="Slide ${i+1}"></button>`).join('');
+}
+function onbGoto(i){
+  _onbSlide=Math.max(0,Math.min(ONB_SLIDES-1,i));
+  const t=document.getElementById('onb-track'); if(t) t.style.transform='translateX(-'+(_onbSlide*100)+'%)';
+  document.getElementById('onb-back').style.display=_onbSlide===0?'none':'';
+  document.getElementById('onb-next').textContent=_onbSlide===ONB_SLIDES-1?'Create New Project →':'Next →';
+  renderOnbDots();
+}
+function onbNext(){ if(_onbSlide===ONB_SLIDES-1) onbToForm(); else onbGoto(_onbSlide+1); }
+function onbPrev(){ onbGoto(_onbSlide-1); }
+function onbToForm(){
+  document.getElementById('onb-intro').style.display='none';
+  document.getElementById('onb-form').style.display='block';
+  setTimeout(()=>{const n=document.getElementById('np-name'); if(n) n.focus();},50);
+}
+function onbToIntro(){
+  document.getElementById('onb-form').style.display='none';
+  document.getElementById('onb-intro').style.display='block';
+  onbGoto(_onbSlide);
+}
 function openNewProjModal(){
   closeProjDropdown();
   ['np-name','np-client','np-desc'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
-  const st=document.getElementById('np-start'); if(st) st.value='blank';
+  const st=document.getElementById('np-start'); if(st) st.value='sap';
   const cr=document.getElementById('np-copy-row'); if(cr) cr.style.display='none';
+  // always start on the tour
+  document.getElementById('onb-form').style.display='none';
+  document.getElementById('onb-intro').style.display='block';
+  _onbSlide=0; onbGoto(0);
   document.getElementById('new-proj-overlay').classList.add('open');
 }
 function closeNewProjModal(){ document.getElementById('new-proj-overlay').classList.remove('open'); }
@@ -2999,6 +3181,7 @@ function exportTrackerExcel(){
 }
 
 function renderAll(){
+  renderSetFilters();
   renderData();
   renderTracker();
   // Keep nav counts accurate even if those panels aren't active
@@ -3270,6 +3453,7 @@ function switchPanel(id,el){
     if(role==='admin') renderSettingsProj();
     loadJiraCfgIntoSettings();
     renderRegistryList();
+    renderTestingSetsSettings();
     genShareLink();
   }
 }
@@ -3283,6 +3467,9 @@ function toggleRW(){
 }
 function openModal(id){
   editId=id; refreshSessionDl();
+  // populate the Testing Set dropdown from this project's sessions
+  const setSel=document.getElementById('f-set');
+  if(setSel) setSel.innerHTML=getTestingSets().map(s=>`<option>${esc(s)}</option>`).join('');
   document.getElementById('modal-title').textContent=id?'Edit Entry':'Add Entry';
   if(id){
     const r=rows.find(x=>x.id===id);
@@ -3301,7 +3488,7 @@ function openModal(id){
     ['f-name','f-session','f-desc','f-link'].forEach(i=>document.getElementById(i).value='');
     document.getElementById('f-rwhen').value='';
     document.getElementById('f-date').value=new Date().toISOString().slice(0,10);
-    document.getElementById('f-set').value='Testing 1';
+    document.getElementById('f-set').value=getTestingSets()[0]||'Testing 1';
     document.getElementById('f-type').value='Master';
     document.getElementById('f-status').value='-';
     document.getElementById('f-rework').value='-';
