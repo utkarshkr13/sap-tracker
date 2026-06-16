@@ -772,8 +772,8 @@ textarea.mp-ci{resize:vertical}
 .mp-ref-link{font-size:12px;color:var(--primary);text-decoration:none;font-weight:600}
 .mp-sample{font-family:ui-monospace,monospace;font-size:11.5px;color:#0f766e;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* ── Info tooltip (ⓘ) used across the app ── */
-.info-i{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:#e0e7ff;color:#4f46e5;font-size:10px;font-weight:800;font-style:normal;cursor:help;vertical-align:middle;margin-left:5px;position:relative;font-family:Georgia,serif;flex-shrink:0}
-.info-i:hover{background:#4f46e5;color:#fff}
+.info-i{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;border:1px solid #d1d5db;background:transparent;color:#9ca3af;font-size:9px;font-weight:700;font-style:normal;cursor:help;vertical-align:middle;margin-left:6px;position:relative;font-family:ui-sans-serif,system-ui,sans-serif;flex-shrink:0;opacity:.65;transition:all .15s}
+.info-i:hover{border-color:#6366f1;color:#6366f1;opacity:1}
 /* ── UX polish: sticky table heads, focus rings, button press, spinner ── */
 .mp-tbl thead th{position:sticky;top:0;z-index:6;box-shadow:0 1px 0 var(--border)}
 .mst-tbl thead th{position:sticky;top:0;z-index:6}
@@ -5295,14 +5295,13 @@ function renderMpMain(){
   const mandSel=(i,r)=>`<td><select class="mp-sel mp-mand-sel ${r.mandatory==='Mandatory'?'is-mand':''}" onchange="mpSetField(${i},'mandatory',this.value);this.classList.toggle('is-mand',this.value==='Mandatory')">`+
     `<option value="" ${!r.mandatory?'selected':''}>—</option>`+
     MP_MAND.map(o=>`<option ${r.mandatory===o?'selected':''}>${o}</option>`).join('')+`</select></td>`;
-  const sampleCell=(r)=>{ const v=r.sample; const s=(v===undefined||v===null||v==='')?'':String(v); return `<td class="mp-sample" title="${esc(s)}">${s===''?'<span class="mp-sample-empty">— no data —</span>':esc(s.length>60?s.slice(0,60)+'…':s)}</td>`; };
-  const colCount=9+(_mpShowRef?1:0);
+  const sampleCell=(r)=>{ if(!(r.api||'').trim()) return '<td></td>'; const v=r.sample; const s=(v===undefined||v===null||v==='')?'':String(v); return `<td class="mp-sample" title="${esc(s)}">${s===''?'<span class="mp-sample-empty">— empty —</span>':esc(s.length>60?s.slice(0,60)+'…':s)}</td>`; };
+  const colCount=8+(_mpShowRef?1:0);
   const tblRows=n ? rows.map((r,i)=>`
     <tr id="mprow-${i}" data-r="${i}">
-      <td class="mp-drag" draggable="true" title="Drag to reorder row"
+      <td class="mp-drag" draggable="true" title="Drag to reorder (or Ctrl+↑/↓)"
         ondragstart="mpRowDragStart(event,${i})" ondragover="mpRowDragOver(event,${i})" ondragleave="mpRowDragLeave(event,${i})" ondrop="mpRowDrop(event,${i})" ondragend="mpRowDragEnd(event)">⠿</td>
-      <td style="width:24px;color:#94a3b8;font-size:11px;text-align:center">${i+1}</td>
-      <td style="width:24px"><span class="mp-rowmove"><button onclick="mpMoveRow(${i},-1)" title="Move row up (Ctrl+↑)">▲</button><button onclick="mpMoveRow(${i},1)" title="Move row down (Ctrl+↓)">▼</button></span></td>
+      <td style="width:22px;color:#cbd5e1;font-size:11px;text-align:center">${i+1}</td>
       ${cellHtml(i,'salescode',false)}
       ${cellHtml(i,'api',true)}
       ${sampleCell(r)}
@@ -5352,7 +5351,7 @@ function renderMpMain(){
       </div>
       <div class="mp-section">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
-          <div class="mp-section-label" style="margin:0">Field Mapping</div>
+          <div class="mp-section-label" style="margin:0">Field Mapping${iTip("Salescode Field = your company field · API Field = the key from the API · API Response = a real sample value · Type = SQL type (auto-detected, editable) · Mandatory = must always carry data. Drag ⠿ or Ctrl+↑/↓ to reorder.")}</div>
           <a class="mp-ref-link" href="${esc(link)}" target="_blank" rel="noopener" style="${link?'':'display:none'}">↗ Reference sheet</a>
           <input class="mp-link-input" id="mp-link-input" type="url" placeholder="optional reference sheet URL…" value="${esc(link)}" style="max-width:300px;margin-left:auto;padding:6px 10px;font-size:12px"/>
           <button class="mp-link-btn" style="font-size:12px;padding:6px 12px" onclick="saveMpLink()">Save link</button>
@@ -5365,13 +5364,12 @@ function renderMpMain(){
           <table class="mp-tbl" id="mp-tbl">
             <thead><tr>
               <th style="width:24px"></th>
-              <th style="width:24px">#</th>
-              <th style="width:24px"></th>
-              <th>Salescode Field${iTip('Your Salescode/company-side field name that this API field maps to. Type it in.')}</th>
-              <th>API Field${iTip('The field key returned by the client API (auto-filled when you pull fields).')}</th>
-              <th style="width:170px">API Response${(m.recordCount!=null)?` <span style="font-weight:500;color:#94a3b8;text-transform:none">(${m.recordCount} rec)</span>`:''}${iTip('A real sample value for this field from the last pull/test. "— no data —" means the API returned nothing for it.')}</th>
-              <th style="width:130px">Type${iTip("SQL type, auto-detected from the response value. Edit if wrong — your choice is preserved when you re-pull. Test flags values that don't match.")}</th>
-              <th style="width:140px">Mandatory${iTip('Mark fields that must always carry data. On Test, any Mandatory field that comes back empty is reported.')}</th>
+              <th style="width:22px">#</th>
+              <th>Salescode Field</th>
+              <th>API Field</th>
+              <th style="width:170px">API Response${(m.recordCount!=null)?` <span style="font-weight:500;color:#94a3b8;text-transform:none">(${m.recordCount} rec)</span>`:''}</th>
+              <th style="width:130px">Type</th>
+              <th style="width:140px">Mandatory</th>
               ${_mpShowRef?'<th>SAP Mapped Field (ref)</th>':''}
               <th style="width:36px"></th>
             </tr></thead>
