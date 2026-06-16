@@ -824,6 +824,8 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,[contenteditable
 .onb-form-hdr{padding:30px 40px 6px}
 .onb-form-hdr h2{font-size:21px;font-weight:800;color:#0f172a;margin:0 0 4px}
 .onb-form-hdr p{font-size:13px;color:#64748b;margin:0}
+.proj-dd-del{background:none;border:none;color:#cbd5e1;cursor:pointer;padding:3px;border-radius:6px;display:inline-flex;align-items:center;line-height:0}
+.proj-dd-del:hover{background:#fee2e2;color:#dc2626}
 .info-i .info-pop{display:none;position:absolute;bottom:130%;left:50%;transform:translateX(-50%);background:#0f172a;color:#fff;font-size:11.5px;font-weight:400;font-family:inherit;line-height:1.5;padding:8px 11px;border-radius:8px;width:max-content;max-width:280px;white-space:normal;text-align:left;z-index:50;box-shadow:0 8px 24px rgba(0,0,0,.25);pointer-events:none}
 .info-i .info-pop::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:#0f172a}
 .info-i:hover .info-pop{display:block}
@@ -2362,10 +2364,14 @@ function renderProjDropdown(){
   const projs=loadProjects(); const pid=getActivePid();
   const dd=document.getElementById('proj-dropdown'); if(!dd) return;
   const canCreate = role==='admin'||role==='editor';
+  const canDelete = role==='admin' && projs.length>1;
   dd.innerHTML=projs.map(p=>`
     <div class="proj-dd-item${p.id===pid?' active':''}" onclick="switchProject('${p.id}')">
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">${p.id===pid?'<polyline points="20 6 9 17 4 12"/>':'<circle cx="12" cy="12" r="9"/>'}</svg>
-      ${p.name}${p.client?`<span style="color:#94a3b8;font-weight:400;font-size:11px;margin-left:auto">${p.client}</span>`:''}
+      <span>${esc(p.name)}</span>${p.client?`<span style="color:#94a3b8;font-weight:400;font-size:11px;margin-left:8px">${esc(p.client)}</span>`:''}
+      <span style="margin-left:auto;display:flex;align-items:center;gap:2px">
+      ${canDelete?`<button class="proj-dd-del" title="Delete project" onclick="deleteProject('${p.id}',event)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button>`:''}
+      </span>
     </div>`).join('')
     + (canCreate?`<div class="proj-dd-item proj-dd-new" onclick="openNewProjModal()" style="border-top:1px solid var(--border2);color:var(--primary);font-weight:600">
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -2529,14 +2535,23 @@ function addCatalogItem(){
   saveProjCfg(pid,cfg); renderSettingsProj();
 }
 
-function deleteCurrentProject(){
-  const pid=getActivePid(); const projs=loadProjects();
-  if(projs.length<=1){alert('Cannot delete the only project.');return;}
-  if(!confirm('Delete this project and all its data? This cannot be undone.')) return;
-  ['sap_data_','sap_integ_','sap_signoff_','sap_proj_'].forEach(k=>localStorage.removeItem(k+pid));
+// Delete any project (admin only) — clears localStorage AND the Firebase nodes
+function deleteProject(pid, ev){
+  if(ev) ev.stopPropagation();
+  if(role!=='admin'){ toast('⚠️ Only admins can delete projects'); return; }
+  const projs=loadProjects();
+  if(projs.length<=1){ alert('Cannot delete the only project. Create another first.'); return; }
+  const proj=projs.find(p=>p.id===pid);
+  if(!confirm('Delete project "'+(proj?proj.name:pid)+'" and ALL its data (testing, integration, signoff, mappings, config)?\n\nThis cannot be undone.')) return;
+  ['sap_data_','sap_integ_','sap_signoff_','sap_proj_','sap_mapping_'].forEach(k=>localStorage.removeItem(k+pid));
+  ['data/','integration/','signoff/','mappings/','proj_config/'].forEach(p=>fbSet(p+pid,null));
   const np=projs.filter(p=>p.id!==pid); saveProjects(np);
-  switchProject(np[0].id); renderSettingsProj();
+  if(getActivePid()===pid){ setActivePid(np[0].id); switchProject(np[0].id); }
+  else { renderProjDropdown(); }
+  if(role==='admin') renderSettingsProj();
+  toast('🗑 Project deleted');
 }
+function deleteCurrentProject(){ deleteProject(getActivePid()); }
 
 // ─── Logo cloning (avoids duplicating SVG code) ─────────────
 function initLogoClones(){
