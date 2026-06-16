@@ -4392,11 +4392,27 @@ async function createTestingSubtask(parentKey, parentSummary){
       sub=(Array.isArray(its)?its:[]).find(t=>t.subtask);
     }
     if(!sub||!sub.id){ toast('⚠️ No Sub-task issue type found for project '+projectKey); return; }
-    const body={fields:{project:{key:projectKey},parent:{key:parentKey},summary:parentSummary+' Testing',issuetype:{id:sub.id}}};
-    const cr=await fetch(`/api/jira?create=1&baseUrl=${bu}`,{method:'POST',headers:{'x-jira-auth':auth,'content-type':'application/json'},body:JSON.stringify(body)});
+    // build fields, auto-filling any REQUIRED field the project demands (e.g. Complexity)
+    const fields={project:{key:projectKey},parent:{key:parentKey},summary:parentSummary+' Testing',issuetype:{id:sub.id}};
+    const skip=new Set(['project','parent','summary','issuetype','reporter','assignee','description','priority','labels']);
+    try{
+      const fmr=await fetch(`/api/jira?path=${encodeURIComponent('issue/createmeta/'+projectKey+'/issuetypes/'+sub.id)}&baseUrl=${bu}`,{headers:{'x-jira-auth':auth}});
+      const fm=await fmr.json().catch(()=>({}));
+      (fm.fields||fm.values||[]).forEach(f=>{
+        const fid=f.fieldId||f.key; if(!fid||skip.has(fid)||!f.required||f.hasDefaultValue) return;
+        const t=(f.schema&&f.schema.type)||''; const av=f.allowedValues||[];
+        if(/complexity/i.test(f.name||'')) fields[fid]=2;          // Complexity is always 2
+        else if(t==='number') fields[fid]=2;
+        else if(av.length) fields[fid]= t==='array'?[{id:av[0].id}]:{id:av[0].id};
+        else if(t==='string') fields[fid]='TBD';
+        else if(t==='date') fields[fid]=new Date().toISOString().slice(0,10);
+        // other types: best-effort, left out
+      });
+    }catch(e){}
+    const cr=await fetch(`/api/jira?create=1&baseUrl=${bu}`,{method:'POST',headers:{'x-jira-auth':auth,'content-type':'application/json'},body:JSON.stringify({fields})});
     const cd=await cr.json().catch(()=>({}));
     if(cr.ok&&cd.key){ toast('✓ Created '+cd.key); _mastersCache=null; refreshMasters(); }
-    else { toast('⚠️ Create failed — '+((cd.errorMessages&&cd.errorMessages[0])||'check Jira permissions')); console.warn('Jira create failed',cd); }
+    else { const msg=(cd.errors&&Object.values(cd.errors)[0])||(cd.errorMessages&&cd.errorMessages[0])||'check Jira permissions / required fields'; toast('⚠️ Create failed — '+msg); console.warn('Jira create failed',cd); }
   }catch(e){ toast('⚠️ Create failed'); console.warn(e); }
 }
 
