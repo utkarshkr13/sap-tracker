@@ -4867,6 +4867,9 @@ function loadMappings(){
 }
 function saveMappings(d){
   _mappingCache=d;
+  // Firebase keys can't contain . # $ / [ ] — the legacy per-path "samples" map breaks that.
+  // Samples now live on each row (r.sample); strip any legacy samples object before persisting.
+  try{ Object.values(d).forEach(v=>{ if(v&&v.samples) delete v.samples; }); }catch(e){}
   localStorage.setItem(getMappingKey(),JSON.stringify(d));
   fbSet('mappings/'+getActivePid(), d);
 }
@@ -4938,6 +4941,16 @@ function flattenJsonWithTypes(obj, prefix='', out=[], seen={}){
 }
 
 // ── Interface-doc (.docx) parsing ───────────────────
+// Normalise docx/word export artefacts so JSON.parse succeeds:
+// escaped chars, non-breaking/unicode spaces, zero-width chars, smart quotes.
+function _cleanJson(raw){
+  return String(raw)
+    .replace(/\\([_#*\[\]])/g,'$1')
+    .replace(/[   -   　]/g,' ')
+    .replace(/[​‌‍﻿]/g,'')
+    .replace(/[‘’]/g,"'")
+    .replace(/[“”]/g,'"');
+}
 function _extractJsonAfter(text, labels){
   // find the earliest label, then brace-match the first { or [ after it
   let idx=-1;
@@ -4952,7 +4965,7 @@ function _extractJsonAfter(text, labels){
     else if(c==='}'||c===']'){ depth--; if(depth===0){ end=i+1; break; } }
   }
   if(end<0) return null;
-  let raw=sub.slice(start,end);
+  let raw=_cleanJson(sub.slice(start,end));
   // clean export artefacts (escaped underscores/hashes, smart spaces)
   raw=raw.replace(/\\([_#*\[\]])/g,'$1').replace(/[ ​]/g,' ');
   try{ return JSON.parse(raw); }catch(e){
@@ -4992,22 +5005,22 @@ function mpMergeApiFields(sample){
     rows.push({salescode:'', api:f.path, type:f.type, mandatory:'Non-mandatory', sap:''});
     existing.add(f.path); added++;
   });
-  // capture a sample value per field (first non-empty across records) for the response column
-  mappings[_mpSelectedItem].samples=mpCaptureSamples(records, fields.map(f=>f.path));
+  // capture a sample value per ROW (first non-empty across records) for the response column
+  delete mappings[_mpSelectedItem].samples; // remove legacy bad-keyed map
+  mpApplySamples(rows, records);
   mappings[_mpSelectedItem].recordCount=records.length;
   mappings[_mpSelectedItem].apiKeys=fields.map(f=>f.path);
   saveMappings(mappings);
   return {added, total:fields.length, records:records.length};
 }
-// first non-empty value per path across all records (else first value, else '')
-function mpCaptureSamples(records, paths){
-  const out={};
-  paths.forEach(p=>{
+// set r.sample = first non-empty value across all records (stored on the row, not a keyed map)
+function mpApplySamples(rows, records){
+  rows.forEach(r=>{
+    if(!r.api){ r.sample=''; return; }
     let val='';
-    for(const rec of records){ const v=_getPath(rec,p); if(v!==undefined&&v!==null&&String(v).trim()!==''){ val=v; break; } if(val===''&&v!==undefined&&v!==null) val=v; }
-    out[p]=(val!=null&&typeof val==='object')?JSON.stringify(val):String(val);
+    for(const rec of records){ const v=_getPath(rec,r.api); if(v!==undefined&&v!==null&&String(v).trim()!==''){ val=v; break; } if(val===''&&v!==undefined&&v!==null) val=v; }
+    r.sample=(val!=null&&typeof val==='object')?JSON.stringify(val):String(val);
   });
-  return out;
 }
 function mpSaveApiCfg(){
   const cfg={
@@ -5075,7 +5088,8 @@ function mpParseSampleResponse(){
   const ta=document.getElementById('mp-api-sample'); if(!ta) return;
   const t=(ta.value||'').trim();
   if(!t){ _mpStatus('⚠️ Paste an Example Response JSON first','#dc2626'); return; }
-  let obj; try{ obj=JSON.parse(t); }catch(e){ try{ obj=JSON.parse(t.replace(/,\s*([}\]])/g,'$1')); }catch(e2){ _mpStatus('⚠️ Not valid JSON','#dc2626'); return; } }
+  const ct=_cleanJson(t);
+  let obj; try{ obj=JSON.parse(ct); }catch(e){ try{ obj=JSON.parse(ct.replace(/,\s*([}\]])/g,'$1')); }catch(e2){ _mpStatus('⚠️ Not valid JSON','#dc2626'); return; } }
   const res=mpMergeApiFields(obj);
   renderMappingPanel();
   _mpStatus(`✓ Parsed sample — ${res.total} fields, <strong>${res.added}</strong> new added.`,'#15803d');
@@ -5156,7 +5170,8 @@ async function mpTestApi(){
     }
   });
   // refresh the API Response (sample) column from this live test
-  mm.samples=mpCaptureSamples(records, rows.map(r=>r.api));
+  delete mm.samples;
+  mpApplySamples(mm.rows||[], records);
   mm.recordCount=recordCount;
   saveMappings(m);
   renderMappingPanel();
@@ -5250,8 +5265,7 @@ function renderMpMain(){
   const mandSel=(i,r)=>`<td><select class="mp-sel mp-mand-sel ${r.mandatory==='Mandatory'?'is-mand':''}" onchange="mpSetField(${i},'mandatory',this.value);renderMappingPanel()">`+
     `<option value="" ${!r.mandatory?'selected':''}>—</option>`+
     MP_MAND.map(o=>`<option ${r.mandatory===o?'selected':''}>${o}</option>`).join('')+`</select></td>`;
-  const samples=m.samples||{};
-  const sampleCell=(r)=>{ const v=samples[r.api]; const s=(v===undefined||v===null||v==='')?'':String(v); return `<td class="mp-sample" title="${esc(s)}">${s===''?'<span class="mp-sample-empty">— no data —</span>':esc(s.length>60?s.slice(0,60)+'…':s)}</td>`; };
+  const sampleCell=(r)=>{ const v=r.sample; const s=(v===undefined||v===null||v==='')?'':String(v); return `<td class="mp-sample" title="${esc(s)}">${s===''?'<span class="mp-sample-empty">— no data —</span>':esc(s.length>60?s.slice(0,60)+'…':s)}</td>`; };
   const colCount=9+(_mpShowRef?1:0);
   const tblRows=n ? rows.map((r,i)=>`
     <tr id="mprow-${i}" data-r="${i}">
