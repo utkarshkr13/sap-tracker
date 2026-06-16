@@ -770,6 +770,16 @@ textarea.mp-ci{resize:vertical}
 .mp-sel:focus{border-color:var(--primary)}
 .mp-mand-sel.is-mand{border-color:#fca5a5;background:#fef2f2;color:#b91c1c;font-weight:700}
 .mp-ref-link{font-size:12px;color:var(--primary);text-decoration:none;font-weight:600}
+.mp-test-box{margin-top:10px;border-radius:10px;padding:12px 14px;font-size:12.5px;line-height:1.5;border:1px solid}
+.mp-test-box.ok{background:#f0fdf4;border-color:#bbf7d0;color:#166534}
+.mp-test-box.warn{background:#fffbeb;border-color:#fde68a;color:#92400e}
+.mp-test-box.err{background:#fef2f2;border-color:#fecaca;color:#b91c1c}
+.mp-test-hdr{font-weight:800;font-size:13px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:4px}
+.mp-test-count{background:#fff;border:1px solid currentColor;border-radius:20px;padding:1px 10px;font-size:11px}
+.mp-test-sub{font-weight:500;opacity:.8;font-size:11px}
+.mp-test-sec{margin-top:8px}
+.mp-test-sec ul{margin:4px 0 0;padding-left:18px}
+.mp-test-sec code{background:rgba(0,0,0,.06);padding:1px 5px;border-radius:4px;font-size:11.5px}
 @media(max-width:900px){ .mp-console-grid{grid-template-columns:repeat(2,1fr)} }
 /* Column picker modal */
 #mp-col-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:2000;align-items:center;justify-content:center}
@@ -4968,7 +4978,7 @@ function parseInterfaceDoc(text){
 // ── Merge pulled API fields into the mapping (only NEW fields) ──
 function mpMergeApiFields(sample){
   if(sample==null){ return {added:0,total:0}; }
-  const fields=flattenJsonWithTypes(sample);
+  const fields=flattenJsonWithTypes(sample).map(f=>({path:f.path.replace(/^\[\]\./,''), type:f.type}));
   const mappings=loadMappings();
   if(!mappings[_mpSelectedItem]) mappings[_mpSelectedItem]={rows:[],sheetLink:''};
   const rows=mappings[_mpSelectedItem].rows||(mappings[_mpSelectedItem].rows=[]);
@@ -5055,6 +5065,104 @@ function mpParseSampleResponse(){
   renderMappingPanel();
   _mpStatus(`✓ Parsed sample — ${res.total} fields, <strong>${res.added}</strong> new added.`,'#15803d');
 }
+// Resolve a flattened path (a.b, items[].x) against a record object
+function _getPath(obj, path){
+  if(!path) return obj;
+  let cur=obj;
+  for(let seg of path.split('.')){
+    let arr=false;
+    if(seg.endsWith('[]')){ seg=seg.slice(0,-2); arr=true; }
+    if(cur==null) return undefined;
+    if(seg) cur=cur[seg];
+    if(arr && Array.isArray(cur)) cur=cur[0];
+  }
+  return cur;
+}
+// Does a non-empty value conform to the expected SQL type?
+function valueMatchesType(v, type){
+  const s=String(v).trim();
+  if(s==='') return true; // emptiness handled by the mandatory check, not here
+  const base=(type||'').toLowerCase();
+  if(base.startsWith('varchar')||base==='text'||base==='json'||base==='') return true;
+  if(base==='integer'||base==='bigint') return /^-?\d+$/.test(s);
+  if(base==='decimal') return /^-?\d+(\.\d+)?$/.test(s);
+  if(base==='boolean') return /^(0|1|true|false|yes|no|y|n)$/i.test(s);
+  if(base==='date'){
+    if(/^[0\s./-]+$/.test(s)) return false; // all-zero "date" e.g. 00000000 / 00.00.0000
+    return /^\d{2}[./-]\d{2}[./-]\d{4}$/.test(s)||/^\d{4}-\d{2}-\d{2}$/.test(s);
+  }
+  if(base==='datetime'){
+    if(/^[0\s.:/-]+$/.test(s)) return false;
+    return /^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}/.test(s)||/^\d{2}[./-]\d{2}[./-]\d{4}[ T]\d{2}:\d{2}/.test(s);
+  }
+  return true;
+}
+// Explicit save of the mapping + its API config
+function mpSaveMapping(){
+  mpSaveApiCfg(); // persists URL/method/auth/body
+  saveMappings(loadMappings()); // ensure rows persisted to Firebase
+  toast('✓ Mapping saved');
+}
+// TEST: re-hit the saved API, report record count, missing mandatory data, and type mismatches
+async function mpTestApi(){
+  const m=loadMappings(); const mm=m[_mpSelectedItem]||{};
+  const cfg=mm.api||mpSaveApiCfg();
+  if(!cfg.url){ _mpStatus('⚠️ No saved API URL — fill the console and Save Mapping first','#dc2626'); return; }
+  const rows=(mm.rows||[]).filter(r=>(r.api||'').trim());
+  _mpStatus('⏳ Testing API…');
+  const headers={};
+  if(cfg.user||cfg.pass) headers['Authorization']='Basic '+btoa(cfg.user+':'+cfg.pass);
+  let out;
+  try{
+    const resp=await fetch('/api/fetch',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({url:cfg.url,method:cfg.method||'POST',headers,body:cfg.body})});
+    out=await resp.json().catch(()=>({}));
+  }catch(e){ _mpStatus('⚠️ Request failed: '+e.message,'#dc2626'); return; }
+  if(!out||!out.ok){ renderTestReport({error:'API returned status '+((out&&out.status)||0)+((out&&out.error)?' — '+out.error:'')}); return; }
+  const data=out.data;
+  const records=Array.isArray(data)?data:(data&&Array.isArray(data._raw)?data._raw:[data]);
+  const recordCount=records.length;
+  const missingMandatory=[], mismatches=[];
+  let newFields=[];
+  // detect any response fields not yet mapped
+  if(records.length){
+    const present=flattenJsonWithTypes(records[0]).map(f=>f.path.replace(/^\[\]\./,''));
+    const known=new Set(rows.map(r=>r.api));
+    newFields=present.filter(p=>!known.has(p));
+  }
+  rows.forEach(r=>{
+    const vals=records.map(rec=>_getPath(rec,r.api));
+    const nonEmpty=vals.filter(v=>v!==undefined&&v!==null&&String(v).trim()!=='');
+    if(r.mandatory==='Mandatory' && nonEmpty.length===0){
+      missingMandatory.push({field:r.api, salescode:r.salescode});
+    }
+    if(r.type){
+      const bad=nonEmpty.filter(v=>!valueMatchesType(v,r.type));
+      if(bad.length){ mismatches.push({field:r.api, type:r.type, sample:String(bad[0]), badCount:bad.length, total:nonEmpty.length}); }
+    }
+  });
+  renderTestReport({recordCount, missingMandatory, mismatches, newFields, fieldsTested:rows.length});
+}
+function renderTestReport(rep){
+  const el=document.getElementById('mp-test-report'); if(!el) return;
+  if(rep.error){ el.innerHTML=`<div class="mp-test-box err">⚠️ ${esc(rep.error)} — check URL / credentials.</div>`; return; }
+  const ok = rep.missingMandatory.length===0 && rep.mismatches.length===0;
+  let h=`<div class="mp-test-box ${ok?'ok':'warn'}">`;
+  h+=`<div class="mp-test-hdr">${ok?'✅ Test passed':'⚠️ Test found issues'} <span class="mp-test-count">📦 ${rep.recordCount} record${rep.recordCount===1?'':'s'} returned</span> <span class="mp-test-sub">${rep.fieldsTested} mapped fields checked</span></div>`;
+  if(rep.missingMandatory.length){
+    h+=`<div class="mp-test-sec"><strong>🔴 Mandatory fields with NO data (${rep.missingMandatory.length}):</strong><ul>`+
+      rep.missingMandatory.map(x=>`<li><code>${esc(x.field)}</code>${x.salescode?` → ${esc(x.salescode)}`:''}</li>`).join('')+`</ul></div>`;
+  }
+  if(rep.mismatches.length){
+    h+=`<div class="mp-test-sec"><strong>🟠 Type mismatches (${rep.mismatches.length}):</strong><ul>`+
+      rep.mismatches.map(x=>`<li><code>${esc(x.field)}</code> expected <strong>${esc(x.type)}</strong> but got e.g. "<em>${esc(x.sample)}</em>" — ${x.badCount}/${x.total} values off</li>`).join('')+`</ul></div>`;
+  }
+  if(rep.newFields&&rep.newFields.length){
+    h+=`<div class="mp-test-sec"><strong>🔵 Unmapped fields in the response (${rep.newFields.length}):</strong> ${rep.newFields.map(f=>`<code>${esc(f)}</code>`).join(', ')} <span class="mp-test-sub">(hit "Pull fields" to add them)</span></div>`;
+  }
+  if(ok && !(rep.newFields&&rep.newFields.length)) h+=`<div class="mp-test-sec">All mandatory fields have data and every value matches its type.</div>`;
+  h+=`</div>`;
+  el.innerHTML=h;
+}
 function mpToggleRef(){ _mpShowRef=!_mpShowRef; renderMappingPanel(); }
 function mpSetField(idx,field,val){
   const m=loadMappings(); const rows=(m[_mpSelectedItem]||{}).rows;
@@ -5067,6 +5175,8 @@ function mpNormalizeRows(rows){
   rows.forEach(r=>{
     if(r.mandatory===undefined){ r.mandatory=r.mand?'Mandatory':(r.mand===false?'Non-mandatory':''); changed=true; }
     if(r.type===undefined){ r.type=''; changed=true; }
+    // strip leading "[]." that came from flattening a top-level array response
+    if(r.api && /^\[\]\./.test(r.api)){ r.api=r.api.replace(/^\[\]\./,''); changed=true; }
   });
   return changed;
 }
@@ -5141,7 +5251,7 @@ function renderMpMain(){
       <div class="mp-main-title">${_mpSelectedItem}</div>
       ${rows.length?`<span class="mp-stat-chip">${rows.length} fields</span>`:''}
       <button class="mp-link-btn" onclick="mpAddRow()">+ Add Row</button>
-      <button class="mp-link-btn" style="background:#475569" onclick="mpToggleRef()">${_mpShowRef?'Hide':'Show'} reference (SAP) col</button>
+      <button class="mp-link-btn" style="background:#475569" onclick="mpToggleRef()">${_mpShowRef?'Hide':'Show'} reference SAP column</button>
       ${rows.length?`<button class="mp-clear-btn" style="padding:8px 14px;border-radius:8px" onclick="clearMpMapping()">Clear All</button>`:''}
     </div>
     <div class="mp-main-body">
@@ -5165,9 +5275,12 @@ function renderMpMain(){
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:center">
             <button class="mp-link-btn" style="background:#4f46e5" onclick="mpHitApi()">⚡ Hit API &amp; pull fields</button>
             <button class="mp-link-btn" style="background:#0f766e" onclick="mpParseSampleResponse()">Parse pasted response</button>
+            <button class="mp-link-btn" style="background:#16a34a" onclick="mpSaveMapping()">💾 Save Mapping</button>
+            <button class="mp-link-btn" style="background:#b45309" onclick="mpTestApi()">🧪 Test</button>
             <span id="mp-console-status" style="font-size:12px;color:#64748b;flex:1;min-width:180px"></span>
           </div>
-          <div class="mp-note">Only <strong>new</strong> fields are added — anything you've already typed or mapped is preserved when you hit the API again.</div>
+          <div class="mp-note">Pull adds only <strong>new</strong> fields (your edits are preserved). <strong>Test</strong> re-hits the saved API and reports how many records came back, any mandatory fields with no data, and any type mismatches.</div>
+          <div id="mp-test-report"></div>
         </div>
       </div>
       <div class="mp-section">
