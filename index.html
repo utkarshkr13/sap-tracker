@@ -4409,6 +4409,13 @@ async function createTestingSubtask(parentKey, parentSummary){
         // other types: best-effort, left out
       });
     }catch(e){}
+    // description: Business Requirement + QA sanity instruction + link to the parent master
+    const parentUrl=cfg.baseUrl.replace(/\/+$/,'')+'/browse/'+parentKey;
+    fields.description={type:'doc',version:1,content:[
+      {type:'heading',attrs:{level:3},content:[{type:'text',text:'Business Requirement'}]},
+      {type:'paragraph',content:[{type:'text',text:'Please perform QA sanity for the following master.'}]},
+      {type:'paragraph',content:[{type:'text',text:'Parent master: '},{type:'text',text:parentKey,marks:[{type:'link',attrs:{href:parentUrl}}]}]}
+    ]};
     const cr=await fetch(`/api/jira?create=1&baseUrl=${bu}`,{method:'POST',headers:{'x-jira-auth':auth,'content-type':'application/json'},body:JSON.stringify({fields})});
     const cd=await cr.json().catch(()=>({}));
     if(cr.ok&&cd.key){ toast('✓ Created '+cd.key); _mastersCache=null; refreshMasters(); }
