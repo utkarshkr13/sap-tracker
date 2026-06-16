@@ -771,6 +771,13 @@ textarea.mp-ci{resize:vertical}
 .mp-mand-sel.is-mand{border-color:#fca5a5;background:#fef2f2;color:#b91c1c;font-weight:700}
 .mp-ref-link{font-size:12px;color:var(--primary);text-decoration:none;font-weight:600}
 .mp-sample{font-family:ui-monospace,monospace;font-size:11.5px;color:#0f766e;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* ── Info tooltip (ⓘ) used across the app ── */
+.info-i{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:#e0e7ff;color:#4f46e5;font-size:10px;font-weight:800;font-style:normal;cursor:help;vertical-align:middle;margin-left:5px;position:relative;font-family:Georgia,serif;flex-shrink:0}
+.info-i:hover{background:#4f46e5;color:#fff}
+.info-i .info-pop{display:none;position:absolute;bottom:130%;left:50%;transform:translateX(-50%);background:#0f172a;color:#fff;font-size:11.5px;font-weight:400;font-family:inherit;line-height:1.5;padding:8px 11px;border-radius:8px;width:max-content;max-width:280px;white-space:normal;text-align:left;z-index:50;box-shadow:0 8px 24px rgba(0,0,0,.25);pointer-events:none}
+.info-i .info-pop::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:#0f172a}
+.info-i:hover .info-pop{display:block}
+th .info-i{margin-left:4px}
 .mp-sample-empty{color:#cbd5e1;font-style:italic;font-family:inherit}
 .mp-test-box{margin-top:10px;border-radius:10px;padding:12px 14px;font-size:12.5px;line-height:1.5;border:1px solid}
 .mp-test-box.ok{background:#f0fdf4;border-color:#bbf7d0;color:#166534}
@@ -3974,7 +3981,7 @@ async function renderMastersPanel(){
   // show shell + loading
   p.innerHTML=`
     <div class="mst-hdr">
-      <h2>SAP Masters</h2>
+      <h2>SAP Masters${iTip("Live view of the Jira epic's child stories. Each row is a master: its Jira status, assignee and dates, plus auto Dev/Tester signoff. Refetched from Jira every time you open this tab.")}</h2>
       <span class="mst-epic-chip">🎯 Epic ${epic}</span>
       <div class="mst-refresh">
         <span class="mst-updated" id="mst-updated"></span>
@@ -4165,7 +4172,7 @@ async function renderJiraSignoffSection(containerId){
     </tr>`;
   }).join('');
   el.innerHTML=`<div class="mst-hdr" style="margin:4px 0 12px">
-      <h2 style="font-size:16px">🔄 Auto Signoff from Jira</h2>
+      <h2 style="font-size:16px">🔄 Auto Signoff from Jira${iTip('Derived live from Jira: Dev signoff = master story is Done/Closed; Tester signoff = its testing/QA-Sanity subtask is Done/Closed. A master is Complete only when both are done.')}</h2>
       <span class="mst-epic-chip">Epic ${getEpicKey()} · ${complete}/${data.length} complete</span>
       <div class="mst-refresh"><button onclick="refreshJiraSignoff('${containerId}')">↻ Refresh</button></div>
     </div>
@@ -5262,7 +5269,7 @@ function renderMpMain(){
     `<option value="" ${!r.type?'selected':''}>—</option>`+
     MP_TYPES.map(t=>`<option ${r.type===t?'selected':''}>${t}</option>`).join('')+
     `${r.type&&!MP_TYPES.includes(r.type)?`<option selected>${esc(r.type)}</option>`:''}</select></td>`;
-  const mandSel=(i,r)=>`<td><select class="mp-sel mp-mand-sel ${r.mandatory==='Mandatory'?'is-mand':''}" onchange="mpSetField(${i},'mandatory',this.value);renderMappingPanel()">`+
+  const mandSel=(i,r)=>`<td><select class="mp-sel mp-mand-sel ${r.mandatory==='Mandatory'?'is-mand':''}" onchange="mpSetField(${i},'mandatory',this.value);this.classList.toggle('is-mand',this.value==='Mandatory')">`+
     `<option value="" ${!r.mandatory?'selected':''}>—</option>`+
     MP_MAND.map(o=>`<option ${r.mandatory===o?'selected':''}>${o}</option>`).join('')+`</select></td>`;
   const sampleCell=(r)=>{ const v=r.sample; const s=(v===undefined||v===null||v==='')?'':String(v); return `<td class="mp-sample" title="${esc(s)}">${s===''?'<span class="mp-sample-empty">— no data —</span>':esc(s.length>60?s.slice(0,60)+'…':s)}</td>`; };
@@ -5285,7 +5292,7 @@ function renderMpMain(){
 
   return `
     <div class="mp-main-hdr">
-      <div class="mp-main-title">${_mpSelectedItem}</div>
+      <div class="mp-main-title">${esc(_mpSelectedItem)}${iTip("Define how this integration's API maps to Salescode fields. Pull fields from the live API or a doc, set each field's Type and whether it's Mandatory, then Save. No hand-written transformer needed.")}</div>
       ${rows.length?`<span class="mp-stat-chip">${rows.length} fields</span>`:''}
       <button class="mp-link-btn" onclick="mpAddRow()">+ Add Row</button>
       <button class="mp-link-btn" style="background:#475569" onclick="mpToggleRef()">${_mpShowRef?'Hide':'Show'} reference SAP column</button>
@@ -5293,7 +5300,7 @@ function renderMpMain(){
     </div>
     <div class="mp-main-body">
       <div class="mp-section">
-        <div class="mp-section-label">⚡ API Console — pull fields from the live API or an interface doc</div>
+        <div class="mp-section-label">⚡ API Console — pull fields from the live API or an interface doc${iTip('Two ways to load fields: (1) drag-drop the .docx interface document — it reads the URL, Basic auth and sample response automatically; or (2) type the URL + Basic auth + body and Hit API. Pulling only ADDS new fields; your existing edits stay. Save Mapping to persist, Test to re-check live.')}</div>
         <div class="mp-console">
           <label class="mp-dz" id="mp-doc-dz" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="event.preventDefault();this.classList.remove('drag-over');mpHandleDocFile(event.dataTransfer.files[0])">
             <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
@@ -5337,11 +5344,11 @@ function renderMpMain(){
               <th style="width:24px"></th>
               <th style="width:24px">#</th>
               <th style="width:24px"></th>
-              <th>Salescode Field</th>
-              <th>API Field</th>
-              <th style="width:170px">API Response${(m.recordCount!=null)?` <span style="font-weight:500;color:#94a3b8;text-transform:none">(${m.recordCount} rec)</span>`:''}</th>
-              <th style="width:130px">Type</th>
-              <th style="width:140px">Mandatory</th>
+              <th>Salescode Field${iTip('Your Salescode/company-side field name that this API field maps to. Type it in.')}</th>
+              <th>API Field${iTip('The field key returned by the client API (auto-filled when you pull fields).')}</th>
+              <th style="width:170px">API Response${(m.recordCount!=null)?` <span style="font-weight:500;color:#94a3b8;text-transform:none">(${m.recordCount} rec)</span>`:''}${iTip('A real sample value for this field from the last pull/test. "— no data —" means the API returned nothing for it.')}</th>
+              <th style="width:130px">Type${iTip("SQL type, auto-detected from the response value. Edit if wrong — your choice is preserved when you re-pull. Test flags values that don't match.")}</th>
+              <th style="width:140px">Mandatory${iTip('Mark fields that must always carry data. On Test, any Mandatory field that comes back empty is reported.')}</th>
               ${_mpShowRef?'<th>SAP Mapped Field (ref)</th>':''}
               <th style="width:36px"></th>
             </tr></thead>
@@ -5365,6 +5372,8 @@ function renderMpMain(){
 }
 
 function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+// small ⓘ help pointer with a hover bubble
+function iTip(text){ return `<span class="info-i">i<span class="info-pop">${esc(text)}</span></span>`; }
 
 function selectMpItem(name){
   _mpSelectedItem=name;
