@@ -16,6 +16,7 @@
 <script defer src="/_vercel/speed-insights/script.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 <!-- Firebase SDKs (compat — works in plain HTML/JS) -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
@@ -755,6 +756,21 @@ td.muted{color:var(--text3);font-size:12px}
 .mp-claude-btn:hover{filter:brightness(1.08)}
 .mp-mand{background:none;border:none;cursor:pointer;font-size:15px;color:#cbd5e1;line-height:1;padding:2px}
 .mp-mand.on{color:#f59e0b}
+/* API console + new mapping selects */
+.mp-console{background:#f8fafc;border:1px solid var(--border);border-radius:12px;padding:16px}
+.mp-dz{display:flex;flex-direction:column;align-items:center;gap:4px;border:2px dashed #cbd5e1;border-radius:10px;padding:18px;text-align:center;cursor:pointer;background:#fff;color:#64748b;position:relative;transition:all .15s}
+.mp-dz:hover,.mp-dz.drag-over{border-color:#4f46e5;background:#eef2ff;color:#4f46e5}
+.mp-dz input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.mp-console-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}
+.mp-ci{border:1.5px solid var(--border);border-radius:8px;padding:8px 10px;font-size:12.5px;font-family:inherit;color:var(--text);outline:none;background:#fff}
+.mp-ci:focus{border-color:var(--primary)}
+textarea.mp-ci{resize:vertical}
+.mp-note{font-size:11.5px;color:var(--text3);margin-top:8px}
+.mp-sel{border:1.5px solid var(--border);border-radius:7px;padding:5px 7px;font-size:12px;font-family:inherit;color:var(--text);outline:none;background:#fff;width:100%}
+.mp-sel:focus{border-color:var(--primary)}
+.mp-mand-sel.is-mand{border-color:#fca5a5;background:#fef2f2;color:#b91c1c;font-weight:700}
+.mp-ref-link{font-size:12px;color:var(--primary);text-decoration:none;font-weight:600}
+@media(max-width:900px){ .mp-console-grid{grid-template-columns:repeat(2,1fr)} }
 /* Column picker modal */
 #mp-col-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:2000;align-items:center;justify-content:center}
 #mp-col-overlay.open{display:flex}
@@ -4870,6 +4886,191 @@ function flattenJsonKeys(obj, prefix='', out=[]){
   return out;
 }
 
+// ── SQL type system + inference ─────────────────────
+const MP_TYPES=['varchar(255)','text','integer','bigint','decimal','boolean','date','datetime','json'];
+const MP_MAND=['Mandatory','Non-mandatory'];
+let _mpShowRef=false; // show the SAP reference column?
+
+function inferSqlType(v){
+  if(v===null||v===undefined) return 'varchar(255)';
+  if(typeof v==='boolean') return 'boolean';
+  if(typeof v==='number') return Number.isInteger(v)?(Math.abs(v)>2147483647?'bigint':'integer'):'decimal';
+  if(typeof v==='object') return 'json';
+  const s=String(v).trim();
+  if(!s) return 'varchar(255)';
+  // dates
+  if(/^\d{2}[./-]\d{2}[./-]\d{4}$/.test(s)||/^\d{4}-\d{2}-\d{2}$/.test(s)) return 'date';
+  if(/^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}/.test(s)) return 'datetime';
+  // numeric strings: leading-zero or 8-digit zero-dates are CODES → varchar
+  if(/^0\d+$/.test(s)||/^0+$/.test(s)) return 'varchar(255)';
+  if(/^-?\d+$/.test(s)) return (s.length<=9?'integer':'bigint');
+  if(/^-?\d+\.\d+$/.test(s)) return 'decimal';
+  return s.length>255?'text':'varchar(255)';
+}
+// Flatten an object/array sample → [{path,type}] using the FIRST seen value per path
+function flattenJsonWithTypes(obj, prefix='', out=[], seen={}){
+  if(obj===null||typeof obj!=='object') return out;
+  if(Array.isArray(obj)){
+    if(obj.length>0) flattenJsonWithTypes(obj[0], prefix.replace(/\.$/,'')+'[].', out, seen);
+  } else {
+    for(const[k,v] of Object.entries(obj)){
+      const path=prefix+k;
+      if(v!==null && typeof v==='object' && !Array.isArray(v)) flattenJsonWithTypes(v, path+'.', out, seen);
+      else if(Array.isArray(v)){
+        if(v.length&&typeof v[0]==='object') flattenJsonWithTypes(v[0], path+'[].', out, seen);
+        else if(!seen[path]){ seen[path]=1; out.push({path, type:'json'}); }
+      } else if(!seen[path]){ seen[path]=1; out.push({path, type:inferSqlType(v)}); }
+    }
+  }
+  return out;
+}
+
+// ── Interface-doc (.docx) parsing ───────────────────
+function _extractJsonAfter(text, labels){
+  // find the earliest label, then brace-match the first { or [ after it
+  let idx=-1;
+  for(const lab of labels){ const i=text.indexOf(lab); if(i>=0 && (idx<0||i<idx)) idx=i+lab.length; }
+  if(idx<0) return null;
+  const sub=text.slice(idx);
+  const start=sub.search(/[\[{]/); if(start<0) return null;
+  let depth=0, end=-1;
+  for(let i=start;i<sub.length;i++){
+    const c=sub[i];
+    if(c==='{'||c==='[') depth++;
+    else if(c==='}'||c===']'){ depth--; if(depth===0){ end=i+1; break; } }
+  }
+  if(end<0) return null;
+  let raw=sub.slice(start,end);
+  // clean export artefacts (escaped underscores/hashes, smart spaces)
+  raw=raw.replace(/\\([_#*\[\]])/g,'$1').replace(/[ ​]/g,' ');
+  try{ return JSON.parse(raw); }catch(e){
+    try{ return JSON.parse(raw.replace(/,\s*([}\]])/g,'$1')); }catch(e2){ return null; }
+  }
+}
+function parseInterfaceDoc(text){
+  const out={url:'',method:'',user:'',pass:'',body:'',sample:null};
+  const um=text.match(/API URL\s*:?\s*<?\s*(https?:\/\/[^\s<>]+)/i) || text.match(/(https?:\/\/[^\s<>]+\/http\/[^\s<>]+)/i) || text.match(/(https?:\/\/[^\s<>]+)/i);
+  if(um) out.url=um[1].trim();
+  const mm=text.match(/Method\s*:?\s*\n?\s*(GET|POST|PUT|PATCH|DELETE)/i);
+  if(mm) out.method=mm[1].toUpperCase();
+  const usr=text.match(/User\s*:?\s*\n+\s*([^\n]+)/i);
+  if(usr) out.user=usr[1].replace(/\\([!|$])/g,'$1').trim();
+  const pwd=text.match(/Password\s*:?\s*\n+\s*([^\n]+)/i);
+  if(pwd) out.pass=pwd[1].replace(/\\([!|$])/g,'$1').trim();
+  const reqJson=_extractJsonAfter(text,['Example Request:','Example Request']);
+  if(reqJson) out.body=JSON.stringify(reqJson,null,2);
+  // sample response: prefer "Example Response" before any "Error" section
+  const errIdx=(()=>{const i=text.search(/Example Error|## Error|Error Codes/i);return i<0?text.length:i;})();
+  out.sample=_extractJsonAfter(text.slice(0,errIdx),['Example Response:','Example Response']);
+  return out;
+}
+
+// ── Merge pulled API fields into the mapping (only NEW fields) ──
+function mpMergeApiFields(sample){
+  if(sample==null){ return {added:0,total:0}; }
+  const fields=flattenJsonWithTypes(sample);
+  const mappings=loadMappings();
+  if(!mappings[_mpSelectedItem]) mappings[_mpSelectedItem]={rows:[],sheetLink:''};
+  const rows=mappings[_mpSelectedItem].rows||(mappings[_mpSelectedItem].rows=[]);
+  const existing=new Set(rows.map(r=>(r.api||'').trim()).filter(Boolean));
+  let added=0;
+  fields.forEach(f=>{
+    if(existing.has(f.path)) return; // preserve already-mapped/edited fields
+    rows.push({salescode:'', api:f.path, type:f.type, mandatory:'Non-mandatory', sap:''});
+    existing.add(f.path); added++;
+  });
+  // store the captured key list + raw sample for validation/reference
+  mappings[_mpSelectedItem].apiKeys=fields.map(f=>f.path);
+  saveMappings(mappings);
+  return {added, total:fields.length};
+}
+function mpSaveApiCfg(){
+  const cfg={
+    url:(document.getElementById('mp-api-url')||{}).value||'',
+    method:(document.getElementById('mp-api-method')||{}).value||'POST',
+    user:(document.getElementById('mp-api-user')||{}).value||'',
+    pass:(document.getElementById('mp-api-pass')||{}).value||'',
+    body:(document.getElementById('mp-api-body')||{}).value||''
+  };
+  const m=loadMappings();
+  if(!m[_mpSelectedItem]) m[_mpSelectedItem]={rows:[]};
+  m[_mpSelectedItem].api=cfg;
+  saveMappings(m);
+  return cfg;
+}
+function _mpStatus(html,color){ const el=document.getElementById('mp-console-status'); if(el){ el.innerHTML=html; el.style.color=color||'#64748b'; } }
+
+// Drop / choose a .docx interface document
+function mpHandleDocFile(file){
+  if(!file){ return; }
+  if(!/\.docx$/i.test(file.name)){ _mpStatus('⚠️ Please drop a .docx interface document','#dc2626'); return; }
+  if(typeof mammoth==='undefined'){ _mpStatus('⚠️ Doc parser still loading — try again in a moment','#dc2626'); return; }
+  _mpStatus('⏳ Reading '+file.name+'…');
+  const reader=new FileReader();
+  reader.onload=function(e){
+    mammoth.extractRawText({arrayBuffer:e.target.result}).then(function(r){
+      const parsed=parseInterfaceDoc(r.value||'');
+      // fill console fields
+      const set=(id,v)=>{ const el=document.getElementById(id); if(el&&v) el.value=v; };
+      set('mp-api-url',parsed.url); set('mp-api-method',parsed.method||'POST');
+      set('mp-api-user',parsed.user); set('mp-api-pass',parsed.pass);
+      set('mp-api-body',parsed.body);
+      mpSaveApiCfg();
+      if(parsed.sample){
+        const res=mpMergeApiFields(parsed.sample);
+        renderMappingPanel();
+        _mpStatus(`✓ Parsed <strong>${esc(file.name)}</strong> — ${res.total} API fields found, <strong>${res.added}</strong> new added. URL & Basic auth filled below.`,'#15803d');
+      } else {
+        _mpStatus(`✓ Parsed doc — filled URL & auth, but no Example Response found. Hit the API to pull fields.`,'#b45309');
+      }
+    }).catch(function(err){ _mpStatus('⚠️ Could not read the .docx: '+err.message,'#dc2626'); });
+  };
+  reader.readAsArrayBuffer(file);
+}
+// Hit the live API via the proxy
+async function mpHitApi(){
+  const cfg=mpSaveApiCfg();
+  if(!cfg.url){ _mpStatus('⚠️ Enter an API URL first','#dc2626'); return; }
+  const headers={};
+  if(cfg.user||cfg.pass) headers['Authorization']='Basic '+btoa(cfg.user+':'+cfg.pass);
+  let body=cfg.body;
+  _mpStatus('⏳ Hitting API…');
+  try{
+    const resp=await fetch('/api/fetch',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({url:cfg.url,method:cfg.method||'POST',headers,body})});
+    const out=await resp.json().catch(()=>({}));
+    if(!out.ok){ _mpStatus('⚠️ API returned status '+(out.status||0)+(out.error?' — '+out.error:'')+'. Check URL / credentials.','#dc2626'); return; }
+    const sample=out.data;
+    const res=mpMergeApiFields(sample);
+    renderMappingPanel();
+    _mpStatus(`✓ Live response received — ${res.total} fields, <strong>${res.added}</strong> new added (existing fields preserved).`,'#15803d');
+  }catch(e){ _mpStatus('⚠️ Request failed: '+e.message,'#dc2626'); }
+}
+// Parse a pasted Example Response
+function mpParseSampleResponse(){
+  const ta=document.getElementById('mp-api-sample'); if(!ta) return;
+  const t=(ta.value||'').trim();
+  if(!t){ _mpStatus('⚠️ Paste an Example Response JSON first','#dc2626'); return; }
+  let obj; try{ obj=JSON.parse(t); }catch(e){ try{ obj=JSON.parse(t.replace(/,\s*([}\]])/g,'$1')); }catch(e2){ _mpStatus('⚠️ Not valid JSON','#dc2626'); return; } }
+  const res=mpMergeApiFields(obj);
+  renderMappingPanel();
+  _mpStatus(`✓ Parsed sample — ${res.total} fields, <strong>${res.added}</strong> new added.`,'#15803d');
+}
+function mpToggleRef(){ _mpShowRef=!_mpShowRef; renderMappingPanel(); }
+function mpSetField(idx,field,val){
+  const m=loadMappings(); const rows=(m[_mpSelectedItem]||{}).rows;
+  if(!rows||!rows[idx]) return;
+  rows[idx][field]=val; saveMappings(m);
+}
+// normalise legacy rows (mand boolean → mandatory; ensure type)
+function mpNormalizeRows(rows){
+  let changed=false;
+  rows.forEach(r=>{
+    if(r.mandatory===undefined){ r.mandatory=r.mand?'Mandatory':(r.mand===false?'Non-mandatory':''); changed=true; }
+    if(r.type===undefined){ r.type=''; changed=true; }
+  });
+  return changed;
+}
+
 // ── Render ──────────────────────────────────────────
 function renderMappingPanel(){
   const items=getMappingItems();
@@ -4903,13 +5104,23 @@ function renderMpMain(){
   const link=m.sheetLink||'';
   const openBtn=link?`<a class="mp-open-link" href="${link}" target="_blank" rel="noopener">↗ Open</a>`:'';
 
-  // Build editable table rows
+  // normalise legacy rows then build editable table
+  if(mpNormalizeRows(rows)){ const mm2=loadMappings(); if(mm2[_mpSelectedItem]){ mm2[_mpSelectedItem].rows=rows; saveMappings(mm2); } }
   const n=rows.length;
+  const apiCfg=m.api||{};
   const cellHtml=(i,field,mono)=>`<td><div class="mp-celwrap">`+
     `<div class="mp-cell${mono?' mp-cell-mono':''}" id="mpc-${i}-${field}" contenteditable="true" data-r="${i}" data-f="${field}" `+
     `onkeydown="mpCellKey(event,${i},'${field}')" onfocus="mpRowFocus(${i})" onblur="mpCellEdit(${i},'${field}',this.innerText.trim())">${esc(rows[i][field]||'')}</div>`+
     `<div class="mp-nudge"><button onclick="mpNudgeCell(${i},'${field}',-1)" title="Move this field up (Alt+↑)">▲</button>`+
     `<button onclick="mpNudgeCell(${i},'${field}',1)" title="Move this field down (Alt+↓)">▼</button></div></td>`;
+  const typeSel=(i,r)=>`<td><select class="mp-sel" onchange="mpSetField(${i},'type',this.value)">`+
+    `<option value="" ${!r.type?'selected':''}>—</option>`+
+    MP_TYPES.map(t=>`<option ${r.type===t?'selected':''}>${t}</option>`).join('')+
+    `${r.type&&!MP_TYPES.includes(r.type)?`<option selected>${esc(r.type)}</option>`:''}</select></td>`;
+  const mandSel=(i,r)=>`<td><select class="mp-sel mp-mand-sel ${r.mandatory==='Mandatory'?'is-mand':''}" onchange="mpSetField(${i},'mandatory',this.value);renderMappingPanel()">`+
+    `<option value="" ${!r.mandatory?'selected':''}>—</option>`+
+    MP_MAND.map(o=>`<option ${r.mandatory===o?'selected':''}>${o}</option>`).join('')+`</select></td>`;
+  const colCount=8+(_mpShowRef?1:0);
   const tblRows=n ? rows.map((r,i)=>`
     <tr id="mprow-${i}" data-r="${i}">
       <td class="mp-drag" draggable="true" title="Drag to reorder row"
@@ -4917,37 +5128,58 @@ function renderMpMain(){
       <td style="width:24px;color:#94a3b8;font-size:11px;text-align:center">${i+1}</td>
       <td style="width:24px"><span class="mp-rowmove"><button onclick="mpMoveRow(${i},-1)" title="Move row up (Ctrl+↑)">▲</button><button onclick="mpMoveRow(${i},1)" title="Move row down (Ctrl+↓)">▼</button></span></td>
       ${cellHtml(i,'salescode',false)}
-      ${cellHtml(i,'sap',false)}
       ${cellHtml(i,'api',true)}
-      <td style="width:50px;text-align:center"><button class="mp-mand ${rows[i].mand?'on':''}" onclick="mpToggleMand(${i})" title="Toggle mandatory">${rows[i].mand?'★':'☆'}</button></td>
+      ${typeSel(i,r)}
+      ${mandSel(i,r)}
+      ${_mpShowRef?cellHtml(i,'sap',false):''}
       <td style="width:36px;text-align:center"><button class="mp-del-row" onclick="mpDeleteRow(${i})" title="Delete row">✕</button></td>
     </tr>`).join('')
-    : `<tr><td colspan="8" style="padding:28px;text-align:center;color:#94a3b8;font-size:13px">No mapping yet — click <strong>Paste Import</strong> or <strong>+ Add Row</strong></td></tr>`;
+    : `<tr><td colspan="${colCount}" style="padding:28px;text-align:center;color:#94a3b8;font-size:13px">No fields yet — use the <strong>API Console</strong> above to pull fields, or <strong>+ Add Row</strong>.</td></tr>`;
 
   return `
     <div class="mp-main-hdr">
       <div class="mp-main-title">${_mpSelectedItem}</div>
       ${rows.length?`<span class="mp-stat-chip">${rows.length} fields</span>`:''}
-      <button class="mp-link-btn" style="background:#0f766e" onclick="openMpPasteModal()">&#8595; Paste Import</button>
       <button class="mp-link-btn" onclick="mpAddRow()">+ Add Row</button>
+      <button class="mp-link-btn" style="background:#475569" onclick="mpToggleRef()">${_mpShowRef?'Hide':'Show'} reference (SAP) col</button>
       ${rows.length?`<button class="mp-clear-btn" style="padding:8px 14px;border-radius:8px" onclick="clearMpMapping()">Clear All</button>`:''}
     </div>
     <div class="mp-main-body">
       <div class="mp-section">
-        <div class="mp-section-label">Mapping Sheet / Reference Link</div>
-        <div class="mp-link-row">
-          <input class="mp-link-input" id="mp-link-input" type="url" placeholder="https://docs.google.com/spreadsheets/…" value="${esc(link)}"/>
-          ${openBtn}
-          <button class="mp-link-btn" onclick="saveMpLink()">Save</button>
+        <div class="mp-section-label">⚡ API Console — pull fields from the live API or an interface doc</div>
+        <div class="mp-console">
+          <label class="mp-dz" id="mp-doc-dz" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="event.preventDefault();this.classList.remove('drag-over');mpHandleDocFile(event.dataTransfer.files[0])">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
+            <div class="mp-dz-title">Drop the <strong>.docx interface document</strong> here</div>
+            <div class="mp-dz-sub">auto-reads URL, method, Basic auth & sample response → fills fields below</div>
+            <input type="file" accept=".docx" onchange="mpHandleDocFile(this.files[0])"/>
+          </label>
+          <div class="mp-console-grid">
+            <select id="mp-api-method" class="mp-ci">${['POST','GET','PUT','PATCH','DELETE'].map(x=>`<option ${(apiCfg.method||'POST')===x?'selected':''}>${x}</option>`).join('')}</select>
+            <input id="mp-api-url" class="mp-ci" style="grid-column:span 3" placeholder="API URL" value="${esc(apiCfg.url||'')}"/>
+            <input id="mp-api-user" class="mp-ci" style="grid-column:span 2" placeholder="Basic auth username" value="${esc(apiCfg.user||'')}"/>
+            <input id="mp-api-pass" class="mp-ci" style="grid-column:span 2" type="password" placeholder="Basic auth password" value="${esc(apiCfg.pass||'')}"/>
+            <textarea id="mp-api-body" class="mp-ci" style="grid-column:span 2;min-height:54px" placeholder='Request body JSON, e.g. {"date":"21.05.2026"}'>${esc(apiCfg.body||'')}</textarea>
+            <textarea id="mp-api-sample" class="mp-ci" style="grid-column:span 2;min-height:54px" placeholder="…or paste an Example Response JSON here, then Parse"></textarea>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:center">
+            <button class="mp-link-btn" style="background:#4f46e5" onclick="mpHitApi()">⚡ Hit API &amp; pull fields</button>
+            <button class="mp-link-btn" style="background:#0f766e" onclick="mpParseSampleResponse()">Parse pasted response</button>
+            <span id="mp-console-status" style="font-size:12px;color:#64748b;flex:1;min-width:180px"></span>
+          </div>
+          <div class="mp-note">Only <strong>new</strong> fields are added — anything you've already typed or mapped is preserved when you hit the API again.</div>
         </div>
       </div>
       <div class="mp-section">
-        <div class="mp-section-label" style="margin-bottom:6px">Field Mapping</div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+          <div class="mp-section-label" style="margin:0">Field Mapping</div>
+          <a class="mp-ref-link" href="${esc(link)}" target="_blank" rel="noopener" style="${link?'':'display:none'}">↗ Reference sheet</a>
+          <input class="mp-link-input" id="mp-link-input" type="url" placeholder="optional reference sheet URL…" value="${esc(link)}" style="max-width:300px;margin-left:auto;padding:6px 10px;font-size:12px"/>
+          <button class="mp-link-btn" style="font-size:12px;padding:6px 12px" onclick="saveMpLink()">Save link</button>
+        </div>
         ${n?`<div class="mp-khint">
-          <span><kbd>Enter</kbd> next row · <kbd>Shift</kbd>+<kbd>Enter</kbd> up</span>
-          <span><kbd>Tab</kbd> next column · <kbd>Shift</kbd>+<kbd>Tab</kbd> back</span>
-          <span><kbd>Alt</kbd>+<kbd>↑</kbd>/<kbd>↓</kbd> nudge this field</span>
-          <span><kbd>Ctrl</kbd>+<kbd>↑</kbd>/<kbd>↓</kbd> move whole row · or drag <span style="color:#6366f1">⠿</span></span>
+          <span><kbd>Enter</kbd> next row · <kbd>Tab</kbd> next column</span>
+          <span><kbd>Alt</kbd>+<kbd>↑</kbd>/<kbd>↓</kbd> nudge field · <kbd>Ctrl</kbd>+<kbd>↑</kbd>/<kbd>↓</kbd> move row</span>
         </div>`:''}
         <div style="overflow-x:auto">
           <table class="mp-tbl" id="mp-tbl">
@@ -4956,16 +5188,17 @@ function renderMpMain(){
               <th style="width:24px">#</th>
               <th style="width:24px"></th>
               <th>Salescode Field</th>
-              <th>SAP Mapped Field</th>
-              <th>SAP API Key</th>
-              <th style="width:50px;text-align:center">Mand.</th>
+              <th>API Field</th>
+              <th style="width:130px">Type</th>
+              <th style="width:140px">Mandatory</th>
+              ${_mpShowRef?'<th>SAP Mapped Field (ref)</th>':''}
               <th style="width:36px"></th>
             </tr></thead>
             <tbody>${tblRows}</tbody>
           </table>
         </div>
         ${rows.length?`<div style="margin-top:10px;display:flex;gap:8px;justify-content:flex-end">
-          <button class="mp-link-btn" style="background:#0ea5e9;font-size:12px;padding:7px 14px" onclick="validateMapping()" title="Check each SAP API key against the imported JSON">✓ Validate</button>
+          <button class="mp-link-btn" style="background:#0ea5e9;font-size:12px;padding:7px 14px" onclick="validateMapping()" title="Check each API field against the pulled response keys">✓ Validate</button>
           <button class="mp-link-btn" style="background:#16a34a;font-size:12px;padding:7px 14px" onclick="exportMpCsv()">⬇ Export CSV</button>
         </div>`:''}
       </div>
@@ -5009,7 +5242,7 @@ function mpCellEdit(idx,field,val){
 function mpAddRow(){
   const mappings=loadMappings();
   if(!mappings[_mpSelectedItem]) mappings[_mpSelectedItem]={rows:[],sheetLink:''};
-  mappings[_mpSelectedItem].rows.push({salescode:'',sap:'',api:''});
+  mappings[_mpSelectedItem].rows.push({salescode:'',api:'',type:'',mandatory:'',sap:''});
   saveMappings(mappings);
   renderMappingPanel();
 }
@@ -5044,7 +5277,8 @@ function validateMapping(){
   toast(issues?('⚠️ '+issues+' API key(s) missing or not in the imported JSON'):(keys?'✓ All API keys match the imported JSON':'✓ No empty API keys (no JSON imported to cross-check)'));
 }
 // ── Mapping: keyboard grid navigation ──────────────────
-const MP_COLS=['salescode','sap','api'];
+// editable (contenteditable) columns in visual order; type/mandatory are <select>s, not in the grid
+function mpColsArr(){ return _mpShowRef?['salescode','api','sap']:['salescode','api']; }
 function _mpRows(){ const m=loadMappings(); return (m[_mpSelectedItem]||{}).rows||[]; }
 function mpRowFocus(i){
   document.querySelectorAll('#mp-tbl tr.mp-row-focus').forEach(t=>t.classList.remove('mp-row-focus'));
@@ -5068,6 +5302,7 @@ function mpSaveCellFromDom(i,field){
   if(el) mpCellEdit(i,field,el.innerText.trim());
 }
 function mpCellKey(e,i,field){
+  const MP_COLS=mpColsArr();
   const ci=MP_COLS.indexOf(field);
   const rows=_mpRows();
   const n=rows.length;
@@ -5162,7 +5397,7 @@ function exportMpCsv(){
   const mappings=loadMappings();
   const rows=(mappings[_mpSelectedItem]||{}).rows||[];
   if(!rows.length){ toast('⚠️ No rows to export'); return; }
-  const lines=[['Salescode Field','SAP Mapped Field','SAP API Key'],...rows.map(r=>[r.salescode,r.sap,r.api])];
+  const lines=[['Salescode Field','API Field','Type','Mandatory','SAP Reference'],...rows.map(r=>[r.salescode,r.api,r.type,r.mandatory,r.sap])];
   const csv=lines.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
   const a=document.createElement('a');
   a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
@@ -5227,7 +5462,7 @@ async function buildMasterClaudeMd(name){
 
   out+=`## Field Mapping (${mrows.length})\n`;
   if(m.sheetLink) out+=`Reference sheet: ${m.sheetLink}\n\n`;
-  out+=_mdTable(['#','Salescode Field','SAP Mapped Field','SAP API Key','Mandatory'], mrows.map((r,i)=>[i+1,r.salescode,r.sap,r.api,r.mand?'Yes':'']))+'\n';
+  out+=_mdTable(['#','Salescode Field','API Field','Type','Mandatory','SAP Reference'], mrows.map((r,i)=>[i+1,r.salescode,r.api,r.type||'',r.mandatory||(r.mand?'Mandatory':''),r.sap||'']))+'\n';
 
   out+=`## Testing History (${test.length})\n`;
   out+=_mdTable(['Set','Session','Date','Status','Rework','Rework By','By When','Change Description'],
