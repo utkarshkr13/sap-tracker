@@ -1997,6 +1997,19 @@ th .info-i{margin-left:4px}
           <input type="checkbox" id="np-copy" style="width:16px;height:16px;cursor:pointer;accent-color:var(--primary)" checked/>
           <label for="np-copy" style="font-size:13px;color:var(--text2);cursor:pointer">Copy all data from current project as starting point</label>
         </div>
+
+        <div style="border-top:1px solid var(--border2);margin:14px 0 4px;padding-top:14px">
+          <div style="font-size:11px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:#94a3b8;margin-bottom:12px">Configuration <span style="font-weight:500;text-transform:none;letter-spacing:0">— optional, change anytime in Settings</span></div>
+          <div class="mfg" style="margin-bottom:12px">
+            <label>SAP Masters — Jira Epic Key</label>
+            <input id="np-epic" type="text" placeholder="e.g. COCA-626 (leave blank to set later)"/>
+          </div>
+          <div class="mfg" style="margin-bottom:4px">
+            <label>Testing Sessions</label>
+            <input id="np-sessions" type="text" placeholder="Testing 1, Testing 2" value="Testing 1, Testing 2"/>
+            <div style="font-size:11px;color:var(--text3);margin-top:4px">Comma-separated. Add more later under Settings → Testing Sessions.</div>
+          </div>
+        </div>
       </div>
       <div class="mftr">
         <button class="btn-cancel" onclick="onbToIntro()">← Back to tour</button>
@@ -2258,7 +2271,7 @@ function migrateToProjects(){
   const pid='proj_'+Date.now();
   saveProjects([{id:pid,name:'CCBCSA',client:'Coca-Cola South Africa',description:'SAP Van Sales Implementation',createdAt:new Date().toISOString().slice(0,10)}]);
   setActivePid(pid);
-  const od=localStorage.getItem('sap_data_v6'); if(od) localStorage.setItem('sap_data_'+pid,od);
+  const od=localStorage.getItem('sap_data_v6'); localStorage.setItem('sap_data_'+pid, od||JSON.stringify(SEED));
   const oi=localStorage.getItem('sap_integ_v3'); if(oi) localStorage.setItem('sap_integ_'+pid,oi);
   const os=localStorage.getItem('sap_signoff_v1'); if(os) localStorage.setItem('sap_signoff_'+pid,os);
   saveProjCfg(pid,{sessions:JSON.parse(JSON.stringify(DEFAULT_SESSIONS)),catalog:JSON.parse(JSON.stringify(DEFAULT_CATALOG))});
@@ -2289,6 +2302,7 @@ function createProject(name,client,desc,copyFrom,template){
       const v=localStorage.getItem(k+copyFrom); if(v) localStorage.setItem(k+pid,v);
     });
   } else if(template==='sap'){
+    localStorage.setItem('sap_data_'+pid,'[]'); fbSet('data/'+pid,[]);
     const integ=SAP_TEMPLATE_MASTERS.map((m,i)=>({id:i+1,direction:'sap-sc',name:m.name,type:m.type,apiDate:'',apiStatus:'TBD',scDate:'',delivDate:'',status:'-',note:''}));
     const sign=SAP_TEMPLATE_MASTERS.map((m,i)=>({id:i+1,name:m.name,type:m.type,apiReceived:'Pending',reworkReq:'-',devStatus:'-',devDqr:'-',devDqrLink:'',devLeadSignoff:'-',testStatus:'-',testDqr:'-',testerDqrLink:'',qaLeadSignoff:'-',comment:''}));
     const registry=SAP_TEMPLATE_MASTERS.map(m=>({name:m.name,aliases:[],jiraKey:''}));
@@ -2296,7 +2310,11 @@ function createProject(name,client,desc,copyFrom,template){
     localStorage.setItem('sap_signoff_'+pid,JSON.stringify(sign)); fbSet('signoff/'+pid,sign);
     saveProjCfg(pid,{sessions:[],catalog:SAP_TEMPLATE_MASTERS.map(m=>m.name),masters:registry,epicKey:''});
   } else {
-    saveProjCfg(pid,{sessions:[],catalog:[]});
+    // blank project — start completely empty
+    localStorage.setItem('sap_data_'+pid,'[]'); fbSet('data/'+pid,[]);
+    localStorage.setItem('sap_integ_'+pid,'[]'); fbSet('integration/'+pid,[]);
+    localStorage.setItem('sap_signoff_'+pid,'[]'); fbSet('signoff/'+pid,[]);
+    saveProjCfg(pid,{sessions:[],catalog:[],testingSets:['Testing 1','Testing 2']});
   }
   return pid;
 }
@@ -2382,7 +2400,8 @@ function onbToIntro(){
 }
 function openNewProjModal(){
   closeProjDropdown();
-  ['np-name','np-client','np-desc'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  ['np-name','np-client','np-desc','np-epic'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  const ss=document.getElementById('np-sessions'); if(ss) ss.value='Testing 1, Testing 2';
   const st=document.getElementById('np-start'); if(st) st.value='sap';
   const cr=document.getElementById('np-copy-row'); if(cr) cr.style.display='none';
   // always start on the tour
@@ -2402,6 +2421,13 @@ function saveNewProject(){
   const copy=start==='copy';
   const template=start==='sap'?'sap':null;
   const pid=createProject(name,client,desc,copy?getActivePid():null,template);
+  // apply the explicit configuration entered during creation
+  const pc=loadProjCfg(pid)||{};
+  const epic=(document.getElementById('np-epic')?document.getElementById('np-epic').value:'').trim().toUpperCase();
+  if(epic) pc.epicKey=epic;
+  const sessRaw=(document.getElementById('np-sessions')?document.getElementById('np-sessions').value:'').trim();
+  if(sessRaw){ const list=sessRaw.split(',').map(s=>s.trim()).filter(Boolean); if(list.length) pc.testingSets=list; }
+  saveProjCfg(pid,pc);
   switchProject(pid);
   if(role==='admin') renderSettingsProj();
   closeNewProjModal();
@@ -2650,7 +2676,9 @@ const SEED = [
           desc:'Salescode → SAP'},
 ];
 
-function loadData(){ const r=localStorage.getItem(getDKey()); rows=r?JSON.parse(r):JSON.parse(JSON.stringify(SEED)); }
+// Per-project testing rows. Fall back to EMPTY (never the CCBCSA SEED) so new projects start clean.
+// The original project's seed data lives in Firebase and is seeded once in migrateToProjects.
+function loadData(){ const r=localStorage.getItem(getDKey()); rows=r?JSON.parse(r):[]; }
 function saveData(){ localStorage.setItem(getDKey(),JSON.stringify(rows)); fbSet('data/'+getActivePid(),rows); }
 function nextId(){ return rows.length?Math.max(...rows.map(r=>r.id))+1:1; }
 
