@@ -3735,10 +3735,10 @@ async function addEmailRole(){
   // Await Firebase write to confirm it's persisted for other devices
   try {
     await fbWrite('config', cfg);
-    toast('✓ '+email+' added — they can now sign in');
+    toast('✅ User '+email+' has been successfully created as '+role+' — they can now sign in with Google');
   } catch(e){
     console.warn('addEmailRole Firebase write failed:', e);
-    toast('⚠️ Saved locally but Firebase sync failed. Try again.');
+    toast('⚠️ Saved locally but Firebase sync failed — user NOT created. Please try again.');
   }
   emailInput.value='';
   renderRoleList();
