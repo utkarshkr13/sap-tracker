@@ -5645,11 +5645,11 @@ function renderMpMain(){
         </div>`:''}
       </div>
       <div class="mp-section mp-claude-sec">
-        <div class="mp-section-label" style="margin-bottom:8px">🤖 Hand-off to a Developer / Claude</div>
+        <div class="mp-section-label" style="margin-bottom:8px">⚙️ Generate Transformer${iTip("Generates a Java transformer (.java) for this master straight from the mapping: mandatory fields use getMandatory(), optional fields use isPresent(), and the helper methods are included. Add any master-specific business logic, then drop it into the pipeline.")}</div>
         <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
-          <button class="mp-claude-btn" onclick="exportMasterToClaude()">✦ Export to Claude</button>
-          <button class="mp-link-btn" style="background:#475569;font-size:12px;padding:9px 14px" onclick="copyMasterToClaude()">⧉ Copy to clipboard</button>
-          <div style="font-size:12px;color:var(--text3);flex:1;min-width:200px">Downloads a single Markdown context pack for <strong>${esc(_mpSelectedItem)}</strong> — the field mapping plus all testing history, the integration timeline, signoff status, and live Jira (status, assignee, dates, testing subtask). Drop it into Claude to build this integration fast.</div>
+          <button class="mp-claude-btn" onclick="exportTransformer()">⚙️ Create Transformer</button>
+          <button class="mp-link-btn" style="background:#475569;font-size:12px;padding:9px 14px" onclick="exportMasterToClaude()">✦ Export context to Claude</button>
+          <div style="font-size:12px;color:var(--text3);flex:1;min-width:200px">Downloads a Java transformer for <strong>${esc(_mpSelectedItem)}</strong> built from this field mapping — API fields → Salescode fields, with mandatory/optional handling baked in.</div>
         </div>
       </div>
     </div>`;
@@ -5870,6 +5870,89 @@ function _mdTable(headers,rowsArr){
   rowsArr.forEach(r=>{ out+='| '+r.map(esc2).join(' | ')+' |\n'; });
   return out;
 }
+// ── Transformer code generation ─────────────────────
+function _pascal(s){ return String(s||'').replace(/[^a-zA-Z0-9]+/g,' ').trim().split(/\s+/).map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(''); }
+// client token for class/package name, derived from the project (e.g. "CCBCSA SAP" → "CcbcsaSap")
+function _clientToken(){ const proj=(loadProjects().find(p=>p.id===getActivePid())||{}); return _pascal(proj.name||proj.client||'Client')||'Client'; }
+// Build a Java AbstractTransformer from this master's mapping (API fields → Salescode fields)
+function buildTransformerJava(name){
+  const mappings=loadMappings(); const m=mappings[name]||{};
+  const rows=(m.rows||[]).filter(r=>(r.api||'').trim());
+  const mapped=rows.filter(r=>(r.salescode||'').trim());
+  const unmapped=rows.filter(r=>!(r.salescode||'').trim()).map(r=>r.api);
+  const token=_clientToken();
+  const cls=_pascal(name)+'Transformer'+token;
+  const pkg='com.applicate.'+token.toLowerCase()+'.transformer';
+  const puts=mapped.map(r=>{
+    const api=r.api.replace(/"/g,'\\"'); const sc=r.salescode.replace(/"/g,'\\"');
+    const tComment=r.type?'  // '+r.type:'';
+    if((r.mandatory||'')==='Mandatory')
+      return `        response.put("${sc}", getMandatory(inputMap, "${api}"));${tComment}`;
+    return `        if (isPresent(inputMap, "${api}")) response.put("${sc}", inputMap.get("${api}").toString());${tComment}`;
+  }).join('\n');
+  const unmappedComment = unmapped.length
+    ? '\n        // TODO — API fields not yet mapped to a Salescode field:\n'+unmapped.map(u=>'        //   '+u).join('\n')+'\n'
+    : '';
+  return `package ${pkg};
+
+import com.salescode.dim.etl.transformation.AbstractTransformer;
+import com.salescode.dim.etl.transformation.service.DataTransformationService;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Transformer for: ${name}
+ * Auto-generated from the Salescode SAP Integration Tracker field mapping.
+ * Maps the source API response (inputMap) to the Salescode payload (response).
+ * Review and add any master-specific business logic (validation, enums, nested objects, hierarchy, etc.).
+ */
+public class ${cls} extends AbstractTransformer<Map<String, Object>, List<Map<String, Object>>> {
+
+    @Override
+    public List<Map<String, Object>> transform(Map<String, Object> inputMap) {
+        List<Map<String, Object>> responseList = new ArrayList<>();
+        responseList.add(createResponse(inputMap));
+        return responseList;
+    }
+
+    private Map<String, Object> createResponse(Map<String, Object> inputMap) {
+        Map<String, Object> response = new HashMap<>();
+${puts||'        // No fields mapped yet — add Salescode field names in the Mapping tab.'}
+${unmappedComment}        return response;
+    }
+
+    private String getMandatory(Map<String, Object> inputMap, String key) {
+        if (!inputMap.containsKey(key) || inputMap.get(key) == null || inputMap.get(key).toString().trim().isEmpty()) {
+            throw new DataTransformationService.TransformationException("Missing mandatory field: " + key);
+        }
+        return inputMap.get(key).toString().trim();
+    }
+
+    private boolean isPresent(Map<String, Object> inputMap, String key) {
+        return inputMap.containsKey(key)
+                && inputMap.get(key) != null
+                && !inputMap.get(key).toString().isBlank();
+    }
+}
+`;
+}
+function exportTransformer(){
+  const name=_mpSelectedItem;
+  if(!name){ toast('⚠️ Select a master first'); return; }
+  const m=loadMappings()[name]||{};
+  const mapped=(m.rows||[]).filter(r=>(r.api||'').trim()&&(r.salescode||'').trim());
+  if(!mapped.length){ toast('⚠️ Map at least one API field to a Salescode field first'); return; }
+  const code=buildTransformerJava(name);
+  const cls=_pascal(name)+'Transformer'+_clientToken();
+  const a=document.createElement('a');
+  a.href='data:text/x-java;charset=utf-8,'+encodeURIComponent(code);
+  a.download=cls+'.java';
+  a.click();
+  toast('✓ Transformer '+cls+'.java created ('+mapped.length+' fields)');
+}
+
 async function buildMasterClaudeMd(name){
   const proj=(loadProjects().find(p=>p.id===getActivePid())||{}).name||'this project';
   const today=new Date().toISOString().slice(0,10);
