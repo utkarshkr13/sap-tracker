@@ -5645,7 +5645,7 @@ function renderMpMain(){
         </div>`:''}
       </div>
       <div class="mp-section mp-claude-sec">
-        <div class="mp-section-label" style="margin-bottom:8px">⚙️ Generate Transformer${iTip("Generates a Java transformer (.java) for this master straight from the mapping: mandatory fields use getMandatory(), optional fields use isPresent(), and the helper methods are included. Add any master-specific business logic, then drop it into the pipeline.")}</div>
+        <div class="mp-section-label" style="margin-bottom:8px">⚙️ Generate Transformer${iTip("Generates a Java transformer (.java) from the mapping. Name the Salescode target field with a convention to get smart code: loginId / useraccountid, *email* (validated), mobile or phone (numeric guard), activeStatus, userParents, designation (Set), or extendedAttributes.<name> (grouped). Everything else becomes a plain put with mandatory/optional handling. Helper methods are included automatically.")}</div>
         <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
           <button class="mp-claude-btn" onclick="exportTransformer()">⚙️ Create Transformer</button>
           <button class="mp-link-btn" style="background:#475569;font-size:12px;padding:9px 14px" onclick="exportMasterToClaude()">✦ Export context to Claude</button>
@@ -5874,39 +5874,134 @@ function _mdTable(headers,rowsArr){
 function _pascal(s){ return String(s||'').replace(/[^a-zA-Z0-9]+/g,' ').trim().split(/\s+/).map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(''); }
 // client token for class/package name, derived from the project (e.g. "CCBCSA SAP" → "CcbcsaSap")
 function _clientToken(){ const proj=(loadProjects().find(p=>p.id===getActivePid())||{}); return _pascal(proj.name||proj.client||'Client')||'Client'; }
-// Build a Java AbstractTransformer from this master's mapping (API fields → Salescode fields)
+// Build a Java AbstractTransformer from this master's mapping, recognising common Salescode
+// field patterns (email, mobile, activeStatus, userParents, designation, extendedAttributes.*).
 function buildTransformerJava(name){
-  const mappings=loadMappings(); const m=mappings[name]||{};
-  const rows=(m.rows||[]).filter(r=>(r.api||'').trim());
-  const mapped=rows.filter(r=>(r.salescode||'').trim());
-  const unmapped=rows.filter(r=>!(r.salescode||'').trim()).map(r=>r.api);
+  const j=s=>String(s).replace(/\\/g,'\\\\').replace(/"/g,'\\"');
+  const m=loadMappings()[name]||{};
+  const rows=(m.rows||[]).filter(r=>(r.api||'').trim()&&(r.salescode||'').trim());
+  const unmapped=(m.rows||[]).filter(r=>(r.api||'').trim()&&!(r.salescode||'').trim()).map(r=>r.api);
   const token=_clientToken();
   const cls=_pascal(name)+'Transformer'+token;
   const pkg='com.applicate.'+token.toLowerCase()+'.transformer';
-  const puts=mapped.map(r=>{
-    const api=r.api.replace(/"/g,'\\"'); const sc=r.salescode.replace(/"/g,'\\"');
-    const tComment=r.type?'  // '+r.type:'';
-    if((r.mandatory||'')==='Mandatory')
-      return `        response.put("${sc}", getMandatory(inputMap, "${api}"));${tComment}`;
-    return `        if (isPresent(inputMap, "${api}")) response.put("${sc}", inputMap.get("${api}").toString());${tComment}`;
-  }).join('\n');
-  const unmappedComment = unmapped.length
-    ? '\n        // TODO — API fields not yet mapped to a Salescode field:\n'+unmapped.map(u=>'        //   '+u).join('\n')+'\n'
-    : '';
+  const mand=r=>(r.mandatory||'')==='Mandatory';
+  const used={email:false,mobile:false,activeStatus:false,userParents:false,designation:false,ext:false};
+  const loginRow=rows.find(r=>/^login\s*id$/i.test(r.salescode));
+  const acctRow=rows.find(r=>/^user\s*account\s*id$/i.test(r.salescode));
+  const body=[]; const ext=[];
+  if(loginRow){
+    body.push(`        String loginId = getMandatory(inputMap, "${j(loginRow.api)}");`);
+    body.push(`        response.put("loginId", loginId);`);
+    if(acctRow) body.push(`        response.put("useraccountid", loginId);`);
+  } else if(rows.some(r=>/^userparents$/i.test(r.salescode))){
+    body.push(`        String loginId = "";`);
+  }
+  rows.forEach(r=>{
+    if(r===loginRow||r===acctRow) return;
+    const sc=r.salescode.trim(); const lo=sc.toLowerCase(); const api=j(r.api); const scj=j(sc);
+    if(/^extendedattributes\./i.test(sc)){
+      used.ext=true; const key=j(sc.replace(/^extendedattributes\./i,''));
+      ext.push(mand(r)
+        ? `        extendedMap.put("${key}", getMandatory(inputMap, "${api}"));`
+        : `        if (isPresent(inputMap, "${api}")) extendedMap.put("${key}", inputMap.get("${api}").toString());`);
+      return;
+    }
+    if(/email/i.test(lo)){
+      used.email=true;
+      body.push(`        if (isPresent(inputMap, "${api}")) {`);
+      body.push(`            String email = inputMap.get("${api}").toString();`);
+      body.push(`            validateEmail(email);`);
+      body.push(`            response.put("${scj}", email);`);
+      body.push(`        }`);
+      return;
+    }
+    if(/mobile|phone/i.test(lo)){
+      used.mobile=true;
+      body.push(`        if (isPresent(inputMap, "${api}") && !inputMap.get("${api}").toString().matches(".*[A-Za-z].*")) {`);
+      body.push(`            response.put("${scj}", inputMap.get("${api}").toString());`);
+      body.push(`        }`);
+      return;
+    }
+    if(/^activestatus$/i.test(lo)){ used.activeStatus=true; body.push(`        response.put("activeStatus", getActiveStatus(inputMap, "${api}"));`); return; }
+    if(/^userparents$/i.test(lo)){ used.userParents=true; body.push(`        response.put("userParents", getUserParents(inputMap, "${api}", loginId));`); return; }
+    if(/^designation$/i.test(lo)){ used.designation=true; body.push(`        response.put("designation", getDesignation(inputMap, "${api}"));`); return; }
+    body.push(mand(r)
+      ? `        response.put("${scj}", getMandatory(inputMap, "${api}"));`
+      : `        if (isPresent(inputMap, "${api}")) response.put("${scj}", inputMap.get("${api}").toString());`);
+  });
+  if(used.ext){
+    body.push('');
+    body.push('        Map<String, Object> extendedMap = new HashMap<>();');
+    ext.forEach(l=>body.push(l));
+    body.push('        if (!extendedMap.isEmpty()) response.put("extendedAttributes", extendedMap);');
+  }
+  if(unmapped.length){
+    body.push('');
+    body.push('        // TODO — API fields not yet mapped to a Salescode field:');
+    unmapped.forEach(u=>body.push('        //   '+j(u)));
+  }
+  // imports (conditional)
+  const imp=['import com.salescode.dim.etl.transformation.AbstractTransformer;',
+             'import com.salescode.dim.etl.transformation.service.DataTransformationService;'];
+  if(used.activeStatus) imp.push('import com.applicate.services.channelkart.models.enums.ActiveStatus;');
+  imp.push('import java.util.ArrayList;','import java.util.HashMap;','import java.util.List;','import java.util.Map;');
+  if(used.designation) imp.push('import java.util.Set;');
+  // helpers (conditional)
+  const help=[];
+  if(used.email) help.push(`
+    private void validateEmail(String email) {
+        if (!email.matches("^[^@\\\\s]+@[^@\\\\s]+\\\\.[^@\\\\s]+$")) {
+            throw new DataTransformationService.TransformationException("Invalid email: " + email);
+        }
+    }`);
+  if(used.activeStatus) help.push(`
+    private ActiveStatus getActiveStatus(Map<String, Object> inputMap, String key) {
+        String status = inputMap.getOrDefault(key, "").toString();
+        if ("0".equals(status)) {
+            return ActiveStatus.INACTIVE;
+        }
+        return ActiveStatus.ACTIVE;
+    }`);
+  if(used.userParents) help.push(`
+    private List<String> getUserParents(Map<String, Object> inputMap, String key, String loginId) {
+        if (isPresent(inputMap, key) && !inputMap.get(key).toString().equalsIgnoreCase(loginId)) {
+            return List.of(inputMap.get(key).toString());
+        }
+        return List.of("admin@applicate.in");
+    }`);
+  if(used.designation) help.push(`
+    private Set<String> getDesignation(Map<String, Object> inputMap, String key) {
+        return Set.of(getMandatory(inputMap, key));
+    }`);
+  help.push(`
+    private String getMandatory(Map<String, Object> inputMap, String key) {
+        if (!inputMap.containsKey(key) || inputMap.get(key) == null || inputMap.get(key).toString().trim().isEmpty()) {
+            throw new DataTransformationService.TransformationException("Missing mandatory field: " + key);
+        }
+        return inputMap.get(key).toString().trim();
+    }`);
+  help.push(`
+    private boolean isPresent(Map<String, Object> inputMap, String key) {
+        return inputMap.containsKey(key)
+                && inputMap.get(key) != null
+                && !inputMap.get(key).toString().isBlank();
+    }`);
   return `package ${pkg};
 
-import com.salescode.dim.etl.transformation.AbstractTransformer;
-import com.salescode.dim.etl.transformation.service.DataTransformationService;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+${imp.join('\n')}
 
 /**
  * Transformer for: ${name}
  * Auto-generated from the Salescode SAP Integration Tracker field mapping.
- * Maps the source API response (inputMap) to the Salescode payload (response).
- * Review and add any master-specific business logic (validation, enums, nested objects, hierarchy, etc.).
+ * Recognised target-field conventions:
+ *   loginId / useraccountid  → primary login (useraccountid mirrors loginId)
+ *   *email*                  → validated via validateEmail()
+ *   mobile / phone           → numeric-only guard
+ *   activeStatus             → ACTIVE/INACTIVE enum from a status field
+ *   userParents              → supervisor code, falls back to admin@applicate.in
+ *   designation              → wrapped in a Set
+ *   extendedAttributes.<x>   → grouped into the extendedAttributes map
+ * Add any remaining master-specific business logic before shipping.
  */
 public class ${cls} extends AbstractTransformer<Map<String, Object>, List<Map<String, Object>>> {
 
@@ -5919,22 +6014,10 @@ public class ${cls} extends AbstractTransformer<Map<String, Object>, List<Map<St
 
     private Map<String, Object> createResponse(Map<String, Object> inputMap) {
         Map<String, Object> response = new HashMap<>();
-${puts||'        // No fields mapped yet — add Salescode field names in the Mapping tab.'}
-${unmappedComment}        return response;
+${body.join('\n')||'        // No fields mapped yet — add Salescode field names in the Mapping tab.'}
+        return response;
     }
-
-    private String getMandatory(Map<String, Object> inputMap, String key) {
-        if (!inputMap.containsKey(key) || inputMap.get(key) == null || inputMap.get(key).toString().trim().isEmpty()) {
-            throw new DataTransformationService.TransformationException("Missing mandatory field: " + key);
-        }
-        return inputMap.get(key).toString().trim();
-    }
-
-    private boolean isPresent(Map<String, Object> inputMap, String key) {
-        return inputMap.containsKey(key)
-                && inputMap.get(key) != null
-                && !inputMap.get(key).toString().isBlank();
-    }
+${help.join('\n')}
 }
 `;
 }
