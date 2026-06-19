@@ -826,6 +826,66 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,[contenteditable
 .onb-form-hdr p{font-size:13px;color:#64748b;margin:0}
 .proj-dd-del{background:none;border:none;color:#cbd5e1;cursor:pointer;padding:3px;border-radius:6px;display:inline-flex;align-items:center;line-height:0}
 .proj-dd-del:hover{background:#fee2e2;color:#dc2626}
+/* ── New Project modal entrance + animated demo hero ── */
+#new-proj-overlay.open .modal{animation:npModalIn .45s cubic-bezier(.2,.85,.25,1)}
+@keyframes npModalIn{from{opacity:0;transform:translateY(16px) scale(.96)}to{opacity:1;transform:none}}
+.demo-hero{position:relative;overflow:hidden}
+.demo{position:relative;width:300px;height:176px}
+.demo-app{position:absolute;inset:0;background:#fff;border-radius:13px;box-shadow:0 18px 40px rgba(2,6,23,.18);overflow:hidden}
+.demo-bar{height:30px;background:linear-gradient(90deg,#0f172a,#1e1b4b,#1e3a5f);display:flex;align-items:center;justify-content:center}
+.demo-chip{font-size:9px;font-weight:800;color:#c7d2fe;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.18);border-radius:6px;padding:3px 12px}
+.demo-screen{position:relative;height:calc(100% - 30px);background:#eef1f6}
+.demo-dd{position:absolute;top:5px;left:50%;width:148px;background:#fff;border:1px solid #e2e8f0;border-radius:9px;box-shadow:0 10px 24px rgba(2,6,23,.16);padding:5px;opacity:0;transform:translateX(-50%) translateY(-6px) scale(.96);animation:demoDD 9s infinite}
+.demo-dd-item{font-size:8.5px;color:#64748b;padding:5px 7px;border-radius:5px}
+.demo-dd-new{color:#4f46e5;font-weight:800;animation:demoNew 9s infinite}
+.demo-form{position:absolute;inset:14px 16px;background:#fff;border:1px solid #e9e9f5;border-radius:11px;box-shadow:0 12px 26px rgba(2,6,23,.12);padding:12px 13px;opacity:0;transform:scale(.95);animation:demoForm 9s infinite}
+.demo-f-title{font-size:10px;font-weight:800;color:#0f172a;margin-bottom:10px}
+.demo-line{height:9px;border-radius:5px;margin-bottom:8px;width:0;background:linear-gradient(90deg,#c7d2fe,#ddd6fe)}
+.demo-line.l1{animation:demoL1 9s infinite}
+.demo-line.l2{animation:demoL2 9s infinite}
+.demo-line.l3{animation:demoL3 9s infinite}
+.demo-btn{position:absolute;bottom:12px;right:13px;background:linear-gradient(135deg,#6d28d9,#4f46e5);color:#fff;font-size:9px;font-weight:800;padding:6px 13px;border-radius:8px;display:flex;align-items:center;gap:4px;transform-origin:center;animation:demoBtn 9s infinite}
+.demo-check{opacity:0;animation:demoCheck 9s infinite}
+.demo-cursor{position:absolute;top:0;left:0;animation:demoCursor 9s infinite;z-index:6;filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))}
+.demo-cursor svg{display:block}
+.demo-ripple{position:absolute;top:1px;left:1px;width:8px;height:8px;border-radius:50%;background:rgba(99,102,241,.55);transform:scale(0);opacity:0;animation:demoRipple 9s infinite}
+@keyframes demoCursor{
+  0%{transform:translate(238px,150px) scale(1);opacity:0}
+  5%{opacity:1}
+  16%{transform:translate(142px,8px) scale(1)}
+  19%{transform:translate(142px,8px) scale(.78)}
+  22%{transform:translate(142px,8px) scale(1)}
+  34%{transform:translate(120px,52px) scale(1)}
+  37%{transform:translate(120px,52px) scale(.78)}
+  40%{transform:translate(120px,52px) scale(1)}
+  60%{transform:translate(232px,128px) scale(1)}
+  71%{transform:translate(232px,128px) scale(1)}
+  74%{transform:translate(232px,128px) scale(.78)}
+  77%{transform:translate(232px,128px) scale(1)}
+  93%{transform:translate(232px,128px) scale(1);opacity:1}
+  100%{transform:translate(238px,150px) scale(1);opacity:0}
+}
+@keyframes demoDD{0%,12%{opacity:0;transform:translateX(-50%) translateY(-6px) scale(.96)}16%,40%{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}45%,100%{opacity:0;transform:translateX(-50%) translateY(-6px) scale(.96)}}
+@keyframes demoNew{0%,31%{background:transparent}36%,42%{background:#eef2ff}47%,100%{background:transparent}}
+@keyframes demoForm{0%,45%{opacity:0;transform:scale(.95)}50%,93%{opacity:1;transform:scale(1)}98%,100%{opacity:0;transform:scale(.97)}}
+@keyframes demoL1{0%,51%{width:0}56%,93%{width:88%}98%,100%{width:0}}
+@keyframes demoL2{0%,57%{width:0}62%,93%{width:72%}98%,100%{width:0}}
+@keyframes demoL3{0%,63%{width:0}68%,93%{width:82%}98%,100%{width:0}}
+@keyframes demoBtn{0%,71%{transform:scale(1)}74%{transform:scale(.88)}78%,93%{transform:scale(1)}98%,100%{transform:scale(1)}}
+@keyframes demoCheck{0%,80%{opacity:0}84%,93%{opacity:1}98%,100%{opacity:0}}
+@keyframes demoRipple{
+  0%,18%{transform:scale(0);opacity:0}
+  19%{transform:scale(0);opacity:.6}
+  27%{transform:scale(4.5);opacity:0}
+  36%{transform:scale(0);opacity:0}
+  37.5%{transform:scale(0);opacity:.6}
+  45%{transform:scale(4.5);opacity:0}
+  73%{transform:scale(0);opacity:0}
+  74.5%{transform:scale(0);opacity:.6}
+  82%{transform:scale(4.5);opacity:0}
+  100%{transform:scale(0);opacity:0}
+}
+@media(prefers-reduced-motion:reduce){.demo-cursor,.demo-dd,.demo-form,.demo-line,.demo-btn,.demo-check,.demo-ripple{animation:none!important}.demo-form{opacity:1;transform:none}.demo-line.l1{width:88%}.demo-line.l2{width:72%}.demo-line.l3{width:82%}}
 .info-i .info-pop{display:none;position:absolute;bottom:130%;left:50%;transform:translateX(-50%);background:#0f172a;color:#fff;font-size:11.5px;font-weight:400;font-family:inherit;line-height:1.5;padding:8px 11px;border-radius:8px;width:max-content;max-width:280px;white-space:normal;text-align:left;z-index:50;box-shadow:0 8px 24px rgba(0,0,0,.25);pointer-events:none}
 .info-i .info-pop::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:#0f172a}
 .info-i:hover .info-pop{display:block}
@@ -1883,15 +1943,28 @@ th .info-i{margin-left:4px}
         <div class="onb-track" id="onb-track">
 
           <div class="onb-slide">
-            <div class="onb-hero">
-              <div class="mk">
-                <div class="mk-bar"><span class="mk-dot"></span><span class="mk-dot"></span><span class="mk-dot"></span><span style="margin-left:auto;color:#cbd5e1;font-size:8px;font-weight:700">CCBCSA SAP ▾</span></div>
-                <div class="mk-body"><div class="mk-cards">
-                  <div class="mk-card"><div class="mk-bignum">27</div><div class="mk-cap"></div></div>
-                  <div class="mk-card"><div class="mk-bignum" style="color:#16a34a">14</div><div class="mk-cap"></div></div>
-                  <div class="mk-card"><div class="mk-bignum" style="color:#2563eb">6</div><div class="mk-cap"></div></div>
-                  <div class="mk-card"><div class="mk-bignum" style="color:#4f46e5">52%</div><div class="mk-cap"></div></div>
-                </div></div>
+            <div class="onb-hero demo-hero">
+              <div class="demo">
+                <div class="demo-app">
+                  <div class="demo-bar"><span class="demo-chip">CCBCSA SAP ▾</span></div>
+                  <div class="demo-screen">
+                    <div class="demo-dd">
+                      <div class="demo-dd-item">✓ CCBCSA SAP</div>
+                      <div class="demo-dd-item demo-dd-new">＋ New Project</div>
+                    </div>
+                    <div class="demo-form">
+                      <div class="demo-f-title">Create your project</div>
+                      <div class="demo-line l1"></div>
+                      <div class="demo-line l2"></div>
+                      <div class="demo-line l3"></div>
+                      <div class="demo-btn">Create<span class="demo-check">✓</span></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="demo-cursor">
+                  <svg viewBox="0 0 24 24" width="19" height="19"><path d="M5 2l6 16 2.5-6.5L20 9z" fill="#fff" stroke="#1e293b" stroke-width="1.5" stroke-linejoin="round"/></svg>
+                  <span class="demo-ripple"></span>
+                </div>
               </div>
             </div>
             <div class="onb-eyebrow">Salescode · SAP Integration Tracker</div>
