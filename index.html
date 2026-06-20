@@ -165,6 +165,56 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
 .topbar-right{display:flex;align-items:center;gap:14px}
 .proj-switcher{position:relative;display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:5px 11px;cursor:pointer;color:#fff;font-size:12px;font-weight:600;transition:background .15s;user-select:none}
 .proj-switcher:hover{background:rgba(255,255,255,.22)}
+/* topbar ghost buttons (Hub / Help) */
+.tb-ghost{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.18);color:#e2e8f0;font-size:12px;font-weight:600;padding:6px 11px;border-radius:8px;cursor:pointer;font-family:inherit;transition:background .15s}
+.tb-ghost:hover{background:rgba(255,255,255,.22);color:#fff}
+.tb-ghost svg{flex-shrink:0}
+/* ── Projects Hub ── */
+#hub-overlay{display:none;position:fixed;inset:0;z-index:3000;background:#f1f5f9;overflow-y:auto;animation:hubIn .3s ease}
+#hub-overlay.open{display:block}
+@keyframes hubIn{from{opacity:0}to{opacity:1}}
+.hub-head{display:flex;align-items:center;justify-content:space-between;padding:20px 32px;background:#fff;border-bottom:1px solid #e8edf5;position:sticky;top:0;z-index:2}
+.hub-brand{display:flex;align-items:center;gap:12px}
+.hub-logo{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,#6d28d9,#4f46e5);color:#fff;font-weight:800;font-size:17px;display:flex;align-items:center;justify-content:center}
+.hub-title{font-size:17px;font-weight:800;color:#0f172a}
+.hub-sub{font-size:11px;color:#94a3b8;font-weight:500}
+.hub-close{width:34px;height:34px;border-radius:50%;border:1px solid #e2e8f0;background:#fff;color:#475569;font-size:15px;cursor:pointer}
+.hub-close:hover{background:#f8fafc}
+.hub-body{max-width:1180px;margin:0 auto;padding:28px 32px 60px}
+.hub-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:18px}
+.hub-card{background:#fff;border:1.5px solid #e8edf5;border-radius:16px;padding:20px;cursor:pointer;transition:transform .18s,box-shadow .18s,border-color .18s;position:relative;overflow:hidden}
+.hub-card:hover{transform:translateY(-3px);box-shadow:0 16px 36px rgba(2,6,23,.10);border-color:#c7d2fe}
+.hub-card.active-proj{border-color:#6366f1;box-shadow:0 0 0 3px rgba(99,102,241,.12)}
+.hub-card-top{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.hub-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.hub-badge{margin-left:auto;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;padding:3px 9px;border-radius:20px}
+.hub-cname{font-size:11px;color:#94a3b8;font-weight:600}
+.hub-pname{font-size:18px;font-weight:800;color:#0f172a;margin-bottom:3px}
+.hub-pclient{font-size:12.5px;color:#64748b;margin-bottom:16px}
+.hub-stats{display:flex;gap:16px;margin-bottom:14px}
+.hub-stat{display:flex;flex-direction:column}
+.hub-stat .n{font-size:18px;font-weight:800;color:#1e293b;line-height:1}
+.hub-stat .l{font-size:10px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.3px;margin-top:3px}
+.hub-bar{height:6px;border-radius:4px;background:#eef2f7;overflow:hidden}
+.hub-bar > span{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,#6d28d9,#4f46e5);transition:width .6s ease}
+.hub-bar-lbl{display:flex;justify-content:space-between;font-size:10.5px;color:#94a3b8;font-weight:600;margin-bottom:5px}
+.hub-card-new{display:flex;flex-direction:column;align-items:center;justify-content:center;border:2px dashed #cbd5e1;background:#fafbff;color:#6366f1;min-height:210px;gap:8px}
+.hub-card-new:hover{border-color:#6366f1;background:#eef2ff}
+.hub-card-new .pl{width:42px;height:42px;border-radius:50%;background:#eef2ff;display:flex;align-items:center;justify-content:center;font-size:22px}
+.hub-card-new .t{font-size:14px;font-weight:700}
+/* ── Guided tour ── */
+#tour-backdrop{display:none;position:fixed;inset:0;z-index:4000;background:rgba(15,23,42,.55)}
+#tour-backdrop.on{display:block}
+.tour-spot{position:fixed;z-index:4001;border-radius:10px;box-shadow:0 0 0 4px rgba(99,102,241,.9),0 0 0 9999px rgba(15,23,42,.55);transition:all .35s cubic-bezier(.4,0,.2,1);pointer-events:none}
+#tour-pop{display:none;position:fixed;z-index:4002;width:300px;background:#fff;border-radius:14px;box-shadow:0 20px 50px rgba(2,6,23,.3);padding:18px;transition:top .35s,left .35s}
+#tour-pop.on{display:block}
+.tour-step{font-size:11px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:#6366f1;margin-bottom:6px}
+.tour-title{font-size:16px;font-weight:800;color:#0f172a;margin-bottom:6px}
+.tour-text{font-size:13px;color:#64748b;line-height:1.55;margin-bottom:14px}
+.tour-foot{display:flex;align-items:center;justify-content:space-between}
+.tour-skip{background:none;border:none;color:#94a3b8;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit}
+.tour-back{background:#f1f5f9;border:none;color:#475569;font-size:12.5px;font-weight:600;padding:8px 14px;border-radius:9px;cursor:pointer;font-family:inherit}
+.tour-next{background:linear-gradient(135deg,#6d28d9,#4f46e5);border:none;color:#fff;font-size:12.5px;font-weight:700;padding:8px 16px;border-radius:9px;cursor:pointer;font-family:inherit}
 .proj-switcher-name{max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .proj-dropdown{position:absolute;top:calc(100% + 8px);left:0;background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.18);min-width:220px;z-index:300;display:none;padding:6px}
 .proj-dropdown.open{display:block}
@@ -841,7 +891,10 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,[contenteditable
 .demo-form{position:absolute;inset:14px 16px;background:#fff;border:1px solid #e9e9f5;border-radius:11px;box-shadow:0 12px 26px rgba(2,6,23,.12);padding:12px 13px;opacity:0;transform:scale(.95);animation:demoForm 9s infinite}
 .demo-f-title{font-size:10px;font-weight:800;color:#0f172a;margin-bottom:10px}
 .demo-line{height:9px;border-radius:5px;margin-bottom:8px;width:0;background:linear-gradient(90deg,#c7d2fe,#ddd6fe)}
-.demo-line.l1{animation:demoL1 9s infinite}
+.demo-typed{height:13px;margin-bottom:8px;border-bottom:1.5px solid #e2e8f0;overflow:hidden;white-space:nowrap}
+.demo-typed span{display:inline-block;font-size:9px;font-weight:700;color:#1e293b;white-space:nowrap;overflow:hidden;width:0;border-right:1.5px solid #6366f1;animation:demoType 9s steps(20) infinite,demoCaret 9s infinite}
+@keyframes demoType{0%,51%{width:0}60%,92%{width:92px}97%,100%{width:0}}
+@keyframes demoCaret{0%,50%{border-color:transparent}51%,92%{border-color:#6366f1}93%,100%{border-color:transparent}}
 .demo-line.l2{animation:demoL2 9s infinite}
 .demo-line.l3{animation:demoL3 9s infinite}
 .demo-btn{position:absolute;bottom:12px;right:13px;background:linear-gradient(135deg,#6d28d9,#4f46e5);color:#fff;font-size:9px;font-weight:800;padding:6px 13px;border-radius:8px;display:flex;align-items:center;gap:4px;transform-origin:center;animation:demoBtn 9s infinite}
@@ -1039,9 +1092,35 @@ th .info-i{margin-left:4px}
       </div>
     </div>
     <div class="topbar-right">
+      <button class="tb-ghost" onclick="openHub()" title="All projects (Hub)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span>Hub</span></button>
+      <button class="tb-ghost" onclick="startTour()" title="Take a guided tour"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 015 0c0 1.7-2.5 2-2.5 4"/><line x1="12" y1="17" x2="12" y2="17"/></svg><span>Help</span></button>
       <span id="role-badge" class="role-badge"></span>
       <span id="user-info" class="user-info"></span>
       <button class="btn-logout" onclick="logout()">Sign out</button>
+    </div>
+  </div>
+
+  <!-- ══ HUB — all projects overview ══ -->
+  <div id="hub-overlay">
+    <div class="hub-head">
+      <div class="hub-brand"><span class="hub-logo">S</span><div><div class="hub-title">Projects Hub</div><div class="hub-sub">Salescode · SAP Integration</div></div></div>
+      <button class="hub-close" onclick="closeHub()">✕</button>
+    </div>
+    <div class="hub-body"><div class="hub-grid" id="hub-grid"></div></div>
+  </div>
+
+  <!-- ══ Guided tour ══ -->
+  <div id="tour-backdrop"></div>
+  <div id="tour-pop">
+    <div class="tour-step" id="tour-step"></div>
+    <div class="tour-title" id="tour-title"></div>
+    <div class="tour-text" id="tour-text"></div>
+    <div class="tour-foot">
+      <button class="tour-skip" onclick="endTour()">Skip</button>
+      <div style="display:flex;gap:8px">
+        <button class="tour-back" id="tour-back" onclick="tourPrev()">Back</button>
+        <button class="tour-next" id="tour-next" onclick="tourNext()">Next →</button>
+      </div>
     </div>
   </div>
 
@@ -1954,7 +2033,7 @@ th .info-i{margin-left:4px}
                     </div>
                     <div class="demo-form">
                       <div class="demo-f-title">Create your project</div>
-                      <div class="demo-line l1"></div>
+                      <div class="demo-typed"><span>CCBCSA Van Sales</span></div>
                       <div class="demo-line l2"></div>
                       <div class="demo-line l3"></div>
                       <div class="demo-btn">Create<span class="demo-check">✓</span></div>
@@ -2417,6 +2496,95 @@ function toggleProjDropdown(){
   if(dd.classList.contains('open')) renderProjDropdown();
 }
 function closeProjDropdown(){ const dd=document.getElementById('proj-dropdown'); if(dd) dd.classList.remove('open'); }
+
+// ═══════════════════════════════════════════════════
+// PROJECTS HUB
+// ═══════════════════════════════════════════════════
+async function openHub(){ closeProjDropdown(); document.getElementById('hub-overlay').classList.add('open'); await renderHub(); }
+function closeHub(){ document.getElementById('hub-overlay').classList.remove('open'); }
+function hubOpen(pid){ if(pid!==getActivePid()) switchProject(pid); closeHub(); }
+async function projStats(pid){
+  let data=null;
+  const ls=localStorage.getItem('sap_data_'+pid);
+  if(ls){ try{ data=JSON.parse(ls); }catch(e){} }
+  if(!data){ try{ data=fbToArray(await fbGet('data/'+pid))||[]; }catch(e){ data=[]; } }
+  data=data||[];
+  const total=data.length;
+  const done=data.filter(r=>r.status==='Completed').length;
+  const pc=loadProjCfg(pid)||{};
+  return {total,done,pct:total?Math.round(done/total*100):0,epic:pc.epicKey||''};
+}
+function hubCardHtml(p,apid,st){
+  const active=p.id===apid;
+  const pct=st?st.pct:0;
+  const dot=active?'#10b981':(st&&st.total?'#3b82f6':'#94a3b8');
+  return `<div class="hub-card${active?' active-proj':''}" id="hubc-${p.id}" onclick="hubOpen('${p.id}')">
+    <div class="hub-card-top"><span class="hub-dot" style="background:${dot}"></span><span class="hub-cname">${esc(p.client||'—')}</span>${active?'<span class="hub-badge" style="background:#dcfce7;color:#15803d">Active</span>':''}</div>
+    <div class="hub-pname">${esc(p.name)}</div>
+    <div class="hub-pclient">${esc(p.description||'SAP integration project')}</div>
+    <div class="hub-stats">
+      <div class="hub-stat"><span class="n">${st?st.total:'…'}</span><span class="l">Entries</span></div>
+      <div class="hub-stat"><span class="n">${st?st.done:'…'}</span><span class="l">Completed</span></div>
+      <div class="hub-stat"><span class="n" style="font-size:13px">${st&&st.epic?esc(st.epic):'—'}</span><span class="l">Epic</span></div>
+    </div>
+    <div class="hub-bar-lbl"><span>Progress</span><span>${st?pct+'%':''}</span></div>
+    <div class="hub-bar"><span style="width:${pct}%"></span></div>
+  </div>`;
+}
+async function renderHub(){
+  const grid=document.getElementById('hub-grid'); if(!grid) return;
+  const projs=loadProjects(); const apid=getActivePid();
+  const canCreate=role==='admin'||role==='editor';
+  grid.innerHTML=projs.map(p=>hubCardHtml(p,apid,null)).join('')
+    + (canCreate?`<div class="hub-card hub-card-new" onclick="closeHub();openNewProjModal()"><div class="pl">＋</div><div class="t">New Project</div><div style="font-size:11px;color:#94a3b8;text-align:center">Start a new client integration</div></div>`:'');
+  projs.forEach(async p=>{
+    const st=await projStats(p.id);
+    const el=document.getElementById('hubc-'+p.id);
+    if(el) el.outerHTML=hubCardHtml(p,getActivePid(),st);
+  });
+}
+
+// ═══════════════════════════════════════════════════
+// GUIDED TOUR (Help → Take a tour)
+// ═══════════════════════════════════════════════════
+const TOUR_STEPS=[
+  {sel:'.proj-switcher', t:'Your projects', x:'Each client is a project. Switch between them here, or create a new one — the New Project flow has its own guided feature tour.'},
+  {sel:'.topbar-right .tb-ghost', t:'Projects Hub', x:'Open the Hub to see every project as a card with live status and progress — your comprehensive overview across clients.'},
+  {sel:'#nt-masters', t:'SAP Masters', x:'A live view of your Jira epic: status, assignee, dates and automatic Dev/Tester sign-off for every master.'},
+  {sel:'#nt-mapping', t:'Mapping & API Console', x:'Pull fields from a live API or an interface doc, set their type, mark mandatory, map to Salescode — then generate the Java transformer. No hand-coding.'},
+  {sel:'#nt-settings', t:'Settings & access', x:'Manage team access, the per-project Jira epic, testing sessions, and a read-only share link for clients.'}
+];
+let _tourI=0, _tourSpot=null, _tourActive=false;
+function startTour(){
+  _tourI=0; _tourActive=true;
+  document.getElementById('tour-backdrop').classList.add('on');
+  if(!_tourSpot){ _tourSpot=document.createElement('div'); _tourSpot.className='tour-spot'; document.body.appendChild(_tourSpot); }
+  document.getElementById('tour-pop').classList.add('on');
+  showTourStep();
+}
+function showTourStep(){
+  const s=TOUR_STEPS[_tourI];
+  let el=document.querySelector(s.sel);
+  // skip steps whose target isn't visible (e.g. Settings tab for non-admins)
+  if(!el || el.offsetParent===null){ if(_tourI<TOUR_STEPS.length-1){ _tourI++; return showTourStep(); } else { return endTour(); } }
+  document.getElementById('tour-step').textContent='Step '+(_tourI+1)+' of '+TOUR_STEPS.length;
+  document.getElementById('tour-title').textContent=s.t;
+  document.getElementById('tour-text').textContent=s.x;
+  document.getElementById('tour-back').style.visibility=_tourI===0?'hidden':'visible';
+  document.getElementById('tour-next').textContent=_tourI===TOUR_STEPS.length-1?'Done ✓':'Next →';
+  const r=el.getBoundingClientRect(); const pad=6;
+  _tourSpot.style.top=(r.top-pad)+'px'; _tourSpot.style.left=(r.left-pad)+'px';
+  _tourSpot.style.width=(r.width+pad*2)+'px'; _tourSpot.style.height=(r.height+pad*2)+'px';
+  const pop=document.getElementById('tour-pop'); const popW=300;
+  let left=Math.min(Math.max(12,r.left+r.width/2-popW/2), window.innerWidth-popW-12);
+  let top=r.bottom+14;
+  if(top+210>window.innerHeight) top=Math.max(12,r.top-220);
+  pop.style.left=left+'px'; pop.style.top=top+'px';
+}
+function tourNext(){ if(_tourI>=TOUR_STEPS.length-1){ endTour(); return; } _tourI++; showTourStep(); }
+function tourPrev(){ if(_tourI>0){ _tourI--; showTourStep(); } }
+function endTour(){ _tourActive=false; document.getElementById('tour-backdrop').classList.remove('on'); document.getElementById('tour-pop').classList.remove('on'); if(_tourSpot){ _tourSpot.remove(); _tourSpot=null; } }
+window.addEventListener('resize',()=>{ if(_tourActive) showTourStep(); });
 
 function renderProjDropdown(){
   const projs=loadProjects(); const pid=getActivePid();
