@@ -3,7 +3,7 @@
 > A self-serve platform for running SAP integration projects end-to-end: track testing, map client APIs to Salescode fields **without writing transformers**, watch progress live from Jira, and hand off context in one click.
 
 🔗 **Live app**: https://sap-tracker-mocha.vercel.app
-🏢 First deployment: **CCBCSA** (Coca-Cola Saudi Arabia) Van Sales — but the app is **multi-project** and reusable for any client.
+🏢 First deployment: **CCBCSA** (Coca-Cola Saudi Arabia) — but the app is **multi-project** and reusable for any client.
 
 ---
 
