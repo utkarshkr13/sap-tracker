@@ -24,16 +24,14 @@ A single-file static web app for tracking SAP integration testing progress durin
 - **Local path**: `/Users/salescode/Library/Application Support/Claude/local-agent-mode-sessions/.../outputs/sap-tracker/index.html`
 - **vercel.json**: `{"version":2,"builds":[{"src":"index.html","use":"@vercel/static"}]}`
 - **Vercel project**: `ukumardj-8588s-projects/sap-tracker`
-- **Vercel token**: `vcp_8e6o2KQUe4w3c4rSqNUxtwWt1xTSVQhj6WY3aPLu3GJhOk57GD1zx8pu`
-- **Deploy command**: `/opt/homebrew/bin/vercel deploy --prod --token <token> --yes`
-- **Note**: Always use `mcp__Macos__Shell` for Vercel deploys — sandbox has no network
+- **Vercel token**: redacted — secrets must never be committed. Deploy via the logged-in Vercel CLI session (no token needed).
+- **Deploy command**: `vercel deploy --prod --archive=tgz --yes` (machine is logged in as the Vercel user)
+- **Note**: Always deploy via the host shell — the sandbox has no network
 
 ## Tech stack
 - Pure vanilla HTML/CSS/JS (no framework)
 - Chart.js + SheetJS (from cdnjs CDN) for analytics and Excel export
-- **Clerk** (`@clerk/clerk-js` v5) for Google OAuth authentication
-- Clerk publishable key: `pk_test_c21pbGluZy1vY2Vsb3QtNDIuY2xlcmsuYWNjb3VudHMuZGV2JA`
-- Clerk frontend API host: `smiling-ocelot-42.clerk.accounts.dev`
+- **Auth: Firebase Authentication (Google sign-in)** — Clerk was removed. (Historic Clerk key redacted — secrets must not be committed.)
 - **Firebase Realtime Database** (compat SDK v10.12.2) — primary data backend
 - Data also written to `localStorage` as a local cache / offline fallback
 - In-memory caches: `_cfgCache`, `_projectsCache`, `_projCfgCache`, `_integCache`, `_signoffCache`
