@@ -47,6 +47,9 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
 .auth-orb{position:absolute;border-radius:50%;pointer-events:none;z-index:0}
 .auth-orb-1{width:600px;height:600px;top:-200px;left:-150px;background:radial-gradient(circle,rgba(79,70,229,.18) 0%,transparent 65%);animation:orbFloat 8s ease-in-out infinite}
 .auth-orb-2{width:400px;height:400px;bottom:-100px;right:-80px;background:radial-gradient(circle,rgba(124,58,237,.14) 0%,transparent 65%);animation:orbFloat 10s ease-in-out infinite reverse}
+.auth-orb-3{width:300px;height:300px;top:40%;left:50%;background:radial-gradient(circle,rgba(20,198,177,.10) 0%,transparent 65%);animation:orbFloat 13s ease-in-out infinite}
+.auth-feats{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:14px 0 4px}
+.auth-feats span{font-size:11px;font-weight:600;color:#475569;background:#f1f5f9;border:1px solid #e8edf5;border-radius:20px;padding:4px 11px}
 .auth-orb-3{width:250px;height:250px;top:50%;left:50%;transform:translate(-50%,-50%);background:radial-gradient(circle,rgba(37,99,235,.08) 0%,transparent 70%)}
 @keyframes orbFloat{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-30px) scale(1.05)}}
 
@@ -232,6 +235,30 @@ body.ro .mp-link-btn,body.ro .mp-clear-btn,body.ro .btn-add,body.ro .btn-add-sm,
 body.ro .ro-hide{ display:none!important; }
 .ro-note{display:none;background:#fffbeb;border:1px solid #fde68a;color:#92400e;border-radius:8px;padding:8px 12px;font-size:12px;font-weight:600;margin-bottom:12px}
 body.ro .ro-note{display:block}
+/* ── Job Tree (sequence board) ── */
+.jt-wrap{display:flex;flex-direction:column;height:calc(100vh - 150px);min-height:520px}
+.jt-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.jt-btn{background:var(--primary);color:#fff;border:none;border-radius:9px;font-size:12.5px;font-weight:600;padding:8px 14px;cursor:pointer;font-family:inherit}
+.jt-btn:hover{filter:brightness(1.06)}
+.jt-btn.ghost{background:#fff;color:#475569;border:1px solid var(--border)}
+.jt-hint{font-size:11.5px;color:var(--text3);flex:1;min-width:200px}
+.jt-canvas{position:relative;flex:1;background:#fafbff;background-image:radial-gradient(#e3e8f0 1px,transparent 1px);background-size:22px 22px;border:1px solid var(--border);border-radius:14px;overflow:auto}
+.jt-inner{position:relative;width:2400px;height:1400px}
+.jt-edges{position:absolute;inset:0;width:100%;height:100%}
+.jt-edges path.edge{stroke:#94a3b8;stroke-width:2.5;fill:none;pointer-events:stroke;cursor:pointer;transition:stroke .12s}
+.jt-edges path.edge:hover{stroke:#dc2626;stroke-width:3.5}
+.jt-node{position:absolute;width:182px;background:#fff;border:1.5px solid #e2e8f0;border-radius:12px;box-shadow:0 4px 14px rgba(2,6,23,.07);padding:11px 12px;cursor:grab;user-select:none;transition:box-shadow .15s,border-color .15s}
+.jt-node:hover{border-color:#c7d2fe;box-shadow:0 8px 22px rgba(2,6,23,.13)}
+.jt-node.dragging{cursor:grabbing;box-shadow:0 16px 32px rgba(2,6,23,.2);z-index:20}
+.jt-node .t{font-size:9px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:#6366f1;margin-bottom:3px}
+.jt-node .n{font-size:13px;font-weight:700;color:#0f172a;line-height:1.25}
+.jt-del{position:absolute;top:-8px;right:-8px;width:19px;height:19px;border-radius:50%;background:#fee2e2;color:#dc2626;border:1px solid #fecaca;font-size:11px;cursor:pointer;display:none;align-items:center;justify-content:center;line-height:0;font-weight:700}
+.jt-node:hover .jt-del{display:flex}
+.jt-port{position:absolute;left:50%;transform:translateX(-50%);width:15px;height:15px;border-radius:50%;background:#6366f1;border:2.5px solid #fff;cursor:crosshair;box-shadow:0 1px 4px rgba(0,0,0,.25);bottom:-8px}
+.jt-port:hover{background:#4f46e5;transform:translateX(-50%) scale(1.25)}
+.jt-port.in{top:-8px;bottom:auto;background:#cbd5e1;cursor:default}
+.jt-empty{position:absolute;top:38%;left:0;right:0;text-align:center;color:#94a3b8;font-size:14px;padding:0 40px}
+body.ro .jt-port,body.ro .jt-del{display:none!important}
 .rb-admin{background:rgba(233,69,96,.2);color:#f87171;border:1px solid rgba(233,69,96,.3)}
 .rb-editor{background:rgba(37,99,235,.2);color:#93c5fd;border:1px solid rgba(37,99,235,.3)}
 .rb-viewer{background:rgba(22,163,74,.2);color:#86efac;border:1px solid rgba(22,163,74,.3)}
@@ -1027,12 +1054,16 @@ th .info-i{margin-left:4px}
 <div class="auth-screen" id="login-screen">
   <div class="auth-orb auth-orb-1"></div>
   <div class="auth-orb auth-orb-2"></div>
+  <div class="auth-orb auth-orb-3"></div>
   <div class="login-card">
     <div class="brand-mark" style="width:auto;height:auto;margin-bottom:10px" id="login-logo-mark"></div>
-    <div class="brand-sub">SAP Integration Testing Tracker</div>
+    <div class="brand-sub">SAP Integration Platform</div>
     <div class="auth-divider"></div>
-    <h1 class="auth-headline">Welcome back</h1>
-    <p class="auth-sub-text">Sign in to continue to your workspace</p>
+    <h1 class="auth-headline">Run every SAP integration in one place</h1>
+    <p class="auth-sub-text">Live Jira sign-off · no-code API mapping · multi-client</p>
+    <div class="auth-feats">
+      <span>🎯 Live from Jira</span><span>⚙️ No-code transformers</span><span>🗺️ Sequence board</span>
+    </div>
 
     <!-- Loading state -->
     <div id="login-loading" style="text-align:center;padding:20px 0 24px">
@@ -1163,6 +1194,10 @@ th .info-i{margin-left:4px}
     <div class="nav-tab" onclick="switchPanel('mapping',this)" id="nt-mapping">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M17.5 17.5l3 3M17.5 20.5l3-3"/><line x1="17.5" y1="17.5" x2="20.5" y2="17.5" style="display:none"/></svg>
       Mapping
+    </div>
+    <div class="nav-tab" onclick="switchPanel('jobtree',this)" id="nt-jobtree">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="15" y="3" width="6" height="6" rx="1"/><rect x="9" y="15" width="6" height="6" rx="1"/><path d="M6 9v3a2 2 0 002 2h0M18 9v3a2 2 0 01-2 2h0M12 14v1"/></svg>
+      Job Tree
     </div>
     <div class="nav-tab" onclick="switchPanel('settings',this)" id="nt-settings" style="display:none">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
@@ -1710,6 +1745,9 @@ th .info-i{margin-left:4px}
 
     <!-- ══ PANEL: MAPPING ══ -->
     <div class="panel" id="panel-mapping"></div>
+
+    <!-- ══ PANEL: JOB TREE (sequence board) ══ -->
+    <div class="panel" id="panel-jobtree"></div>
 
   </div><!-- /main -->
 </div><!-- /app -->
@@ -2599,6 +2637,132 @@ function tourNext(){ if(_tourI>=TOUR_STEPS.length-1){ endTour(); return; } _tour
 function tourPrev(){ if(_tourI>0){ _tourI--; showTourStep(); } }
 function endTour(){ _tourActive=false; document.getElementById('tour-backdrop').classList.remove('on'); document.getElementById('tour-pop').classList.remove('on'); if(_tourSpot){ _tourSpot.remove(); _tourSpot=null; } }
 window.addEventListener('resize',()=>{ if(_tourActive) showTourStep(); });
+
+// ═══════════════════════════════════════════════════
+// JOB TREE — sequential persistence board (n8n-style DAG)
+// ═══════════════════════════════════════════════════
+const JT_W=182, JT_H=58;
+let _jt={nodes:[],edges:[]}, _jtLink=null, _jtDrag=null;
+function getJobTree(){ const pc=loadProjCfg(getActivePid())||{}; return (pc.jobTree&&Array.isArray(pc.jobTree.nodes))?pc.jobTree:{nodes:[],edges:[]}; }
+function saveJobTreeState(){ const pid=getActivePid(); const pc=loadProjCfg(pid)||{}; pc.jobTree=_jt; saveProjCfg(pid,pc); }
+function jtCanEdit(){ return role==='admin'||role==='editor'; }
+
+function renderJobTree(){
+  const p=document.getElementById('panel-jobtree'); if(!p) return;
+  _jt=getJobTree();
+  const onBoard=new Set(_jt.nodes.map(n=>n.name));
+  const avail=allMasterNames().filter(n=>!onBoard.has(n));
+  p.innerHTML=`
+    <div class="jt-wrap">
+      <div class="ro-note">View only — ask an admin or editor to edit the sequence.</div>
+      <div class="jt-toolbar ro-hide">
+        <select id="jt-add-sel" style="border:1.5px solid var(--border);border-radius:9px;padding:8px 10px;font-size:12.5px;font-family:inherit;max-width:240px;background:#fff">${avail.length?avail.map(n=>`<option>${esc(n)}</option>`).join(''):'<option value="">All masters added</option>'}</select>
+        <button class="jt-btn" onclick="jtAddNode()">＋ Add to board</button>
+        <button class="jt-btn ghost" onclick="jtAutoLayout()">⤧ Auto-layout</button>
+        <button class="jt-btn ghost" onclick="jtClear()">Clear</button>
+        <span class="jt-hint">Drag nodes to arrange · drag the bottom dot onto another node to mean "runs after" · click a line to delete it. Multiple lines out of one node = parallel branches.</span>
+      </div>
+      <div class="jt-canvas" id="jt-canvas"><div class="jt-inner" id="jt-inner">
+        <svg class="jt-edges" id="jt-edges"></svg>
+        ${_jt.nodes.length?'':'<div class="jt-empty">No sequence yet. Add masters from the dropdown, then connect them in the order they must persist — e.g. <strong>Outlet → PJP</strong>, since PJP needs its outlet first.</div>'}
+      </div></div>
+    </div>`;
+  jtRenderNodes(); jtRenderEdges();
+}
+function jtAddNode(){
+  const sel=document.getElementById('jt-add-sel'); const name=sel&&sel.value; if(!name) return;
+  const i=_jt.nodes.length;
+  _jt.nodes.push({id:'jn'+Date.now().toString(36)+i, name, x:90+(i%4)*230, y:70+Math.floor(i/4)*150});
+  saveJobTreeState(); renderJobTree();
+}
+function jtDeleteNode(id){
+  _jt.nodes=_jt.nodes.filter(n=>n.id!==id);
+  _jt.edges=_jt.edges.filter(e=>e.from!==id&&e.to!==id);
+  saveJobTreeState(); renderJobTree();
+}
+function jtClear(){ if(!_jt.nodes.length||!confirm('Clear the whole sequence board?')) return; _jt={nodes:[],edges:[]}; saveJobTreeState(); renderJobTree(); }
+function jtConnect(a,b){
+  if(a===b) return;
+  if(_jt.edges.some(e=>e.from===a&&e.to===b)){ toast('Already connected'); return; }
+  if(_jt.edges.some(e=>e.from===b&&e.to===a)){ toast('⚠️ That would create a loop'); return; }
+  _jt.edges.push({from:a,to:b}); saveJobTreeState(); jtRenderEdges();
+}
+function jtDeleteEdge(idx){ _jt.edges.splice(idx,1); saveJobTreeState(); jtRenderEdges(); }
+function jtNodeById(id){ return _jt.nodes.find(n=>n.id===id); }
+
+function jtRenderNodes(){
+  const inner=document.getElementById('jt-inner'); if(!inner) return;
+  inner.querySelectorAll('.jt-node').forEach(n=>n.remove());
+  const ce=jtCanEdit();
+  _jt.nodes.forEach(n=>{
+    const d=document.createElement('div');
+    d.className='jt-node'; d.id='node-'+n.id; d.style.left=n.x+'px'; d.style.top=n.y+'px';
+    d.innerHTML=`<div class="t">Job</div><div class="n">${esc(n.name)}</div>`
+      +`<span class="jt-port in"></span><span class="jt-port out"></span>`
+      +`<button class="jt-del" title="Remove">✕</button>`;
+    inner.appendChild(d);
+    if(ce){
+      d.querySelector('.jt-del').onmousedown=ev=>ev.stopPropagation();
+      d.querySelector('.jt-del').onclick=ev=>{ ev.stopPropagation(); jtDeleteNode(n.id); };
+      d.querySelector('.jt-port.out').addEventListener('mousedown',ev=>{ ev.stopPropagation(); jtStartLink(n.id,ev); });
+      d.addEventListener('mousedown',ev=>jtStartDrag(n.id,ev));
+    }
+  });
+}
+function jtEdgePath(a,b){
+  const sx=a.x+JT_W/2, sy=a.y+JT_H, tx=b.x+JT_W/2, ty=b.y;
+  const dy=Math.max(40,Math.abs(ty-sy)/2);
+  return `M ${sx} ${sy} C ${sx} ${sy+dy}, ${tx} ${ty-dy}, ${tx} ${ty}`;
+}
+function jtRenderEdges(){
+  const svg=document.getElementById('jt-edges'); if(!svg) return;
+  const ce=jtCanEdit();
+  let h=`<defs><marker id="jt-arrow" markerWidth="12" markerHeight="12" refX="9" refY="3" orient="auto"><path d="M0,0 L9,3 L0,6 Z" fill="#94a3b8"/></marker></defs>`;
+  h+=`<path id="jt-temp" style="display:none" stroke="#6366f1" stroke-width="2.5" stroke-dasharray="5 4" fill="none"/>`;
+  _jt.edges.forEach((e,i)=>{
+    const a=jtNodeById(e.from), b=jtNodeById(e.to); if(!a||!b) return;
+    h+=`<path class="edge" d="${jtEdgePath(a,b)}" marker-end="url(#jt-arrow)" ${ce?`onclick="if(confirm('Delete this connection?'))jtDeleteEdge(${i})"`:''}/>`;
+  });
+  svg.innerHTML=h;
+}
+// drag a node
+function jtStartDrag(id,ev){
+  if(!jtCanEdit()) return;
+  const n=jtNodeById(id); const inner=document.getElementById('jt-inner'); const r=inner.getBoundingClientRect();
+  const dx=ev.clientX-r.left-n.x, dy=ev.clientY-r.top-n.y;
+  const el=document.getElementById('node-'+id); el.classList.add('dragging'); _jtDrag=id;
+  function mv(e){ n.x=Math.max(0,e.clientX-r.left-dx); n.y=Math.max(0,e.clientY-r.top-dy); el.style.left=n.x+'px'; el.style.top=n.y+'px'; jtRenderEdges(); }
+  function up(){ document.removeEventListener('mousemove',mv); document.removeEventListener('mouseup',up); el.classList.remove('dragging'); _jtDrag=null; saveJobTreeState(); }
+  document.addEventListener('mousemove',mv); document.addEventListener('mouseup',up);
+}
+// drag from out-port to another node to connect
+function jtStartLink(id,ev){
+  if(!jtCanEdit()) return;
+  const inner=document.getElementById('jt-inner'); const r=inner.getBoundingClientRect();
+  const a=jtNodeById(id); const sx=a.x+JT_W/2, sy=a.y+JT_H;
+  const temp=document.getElementById('jt-temp'); temp.style.display='';
+  _jtLink=id;
+  function mv(e){ const tx=e.clientX-r.left, ty=e.clientY-r.top; const dy=Math.max(30,Math.abs(ty-sy)/2); temp.setAttribute('d',`M ${sx} ${sy} C ${sx} ${sy+dy}, ${tx} ${ty-dy}, ${tx} ${ty}`); }
+  function up(e){
+    document.removeEventListener('mousemove',mv); document.removeEventListener('mouseup',up);
+    temp.style.display='none'; temp.removeAttribute('d');
+    const t=document.elementFromPoint(e.clientX,e.clientY); const tn=t&&t.closest&&t.closest('.jt-node');
+    if(tn){ const tid=tn.id.replace('node-',''); jtConnect(id,tid); }
+    _jtLink=null;
+  }
+  document.addEventListener('mousemove',mv); document.addEventListener('mouseup',up);
+}
+// simple layered auto-layout (topological depth → columns)
+function jtAutoLayout(){
+  if(!_jt.nodes.length) return;
+  const depth={}; const incoming={}; _jt.nodes.forEach(n=>{depth[n.id]=0;incoming[n.id]=0;});
+  _jt.edges.forEach(e=>incoming[e.to]=(incoming[e.to]||0)+1);
+  // longest-path depth via repeated relaxation (DAG)
+  for(let k=0;k<_jt.nodes.length;k++){ _jt.edges.forEach(e=>{ if(depth[e.to]<depth[e.from]+1) depth[e.to]=depth[e.from]+1; }); }
+  const cols={}; _jt.nodes.forEach(n=>{ (cols[depth[n.id]]=cols[depth[n.id]]||[]).push(n); });
+  Object.keys(cols).forEach(c=>{ cols[c].forEach((n,i)=>{ n.x=90+(+c)*250; n.y=70+i*140; }); });
+  saveJobTreeState(); renderJobTree();
+}
 
 function renderProjDropdown(){
   const projs=loadProjects(); const pid=getActivePid();
@@ -3729,6 +3893,7 @@ function switchPanel(id,el){
   if(id==='integration') renderIntegration();
   if(id==='signoff') renderSignoff();
   if(id==='masters') renderMastersPanel();
+  if(id==='jobtree') renderJobTree();
   if(id==='mapping') renderMappingPanel();
   if(id==='settings'){
     const pk=getClerkKey();
