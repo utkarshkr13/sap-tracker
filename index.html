@@ -224,6 +224,14 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
 .proj-dd-sep{border-top:1px solid var(--border);margin:4px 0}
 .proj-dd-add .proj-dd-item{color:var(--primary)}
 .role-badge{padding:4px 12px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.4px}
+/* ── Viewer read-only safety net (body.ro) ── */
+body.ro [contenteditable]{ -webkit-user-modify:read-only!important; user-modify:read-only!important; pointer-events:none!important; }
+body.ro .mp-sel,body.ro .mp-mand,body.ro .mp-mand-sel{ pointer-events:none!important; opacity:.7; background:#f8fafc!important; }
+body.ro .mp-del-row,body.ro .mp-nudge,body.ro .mp-rowmove,body.ro .mp-drag,body.ro .mp-console,body.ro .mp-claude-sec,body.ro .mp-mand{ display:none!important; }
+body.ro .mp-link-btn,body.ro .mp-clear-btn,body.ro .btn-add,body.ro .btn-add-sm,body.ro .act-btns,body.ro .act-edit,body.ro .act-del,body.ro #btn-bulk-toggle{ display:none!important; }
+body.ro .ro-hide{ display:none!important; }
+.ro-note{display:none;background:#fffbeb;border:1px solid #fde68a;color:#92400e;border-radius:8px;padding:8px 12px;font-size:12px;font-weight:600;margin-bottom:12px}
+body.ro .ro-note{display:block}
 .rb-admin{background:rgba(233,69,96,.2);color:#f87171;border:1px solid rgba(233,69,96,.3)}
 .rb-editor{background:rgba(37,99,235,.2);color:#93c5fd;border:1px solid rgba(37,99,235,.3)}
 .rb-viewer{background:rgba(22,163,74,.2);color:#86efac;border:1px solid rgba(22,163,74,.3)}
@@ -3148,6 +3156,8 @@ async function initApp(r, email='', displayName=''){
   document.getElementById('app').style.display='block';
   updateTopbarProject();
 
+  // read-only flag for viewers (CSS + render guards key off this)
+  document.body.classList.toggle('ro', !(r==='admin'||r==='editor'));
   // role badge
   const rb = document.getElementById('role-badge');
   rb.className = 'role-badge rb-'+r;
@@ -5793,8 +5803,9 @@ function renderMpMain(){
   if(mpNormalizeRows(rows)){ const mm2=loadMappings(); if(mm2[_mpSelectedItem]){ mm2[_mpSelectedItem].rows=rows; saveMappings(mm2); } }
   const n=rows.length;
   const apiCfg=m.api||{};
+  const _ce=(role==='admin'||role==='editor')?'true':'false';
   const cellHtml=(i,field,mono)=>`<td><div class="mp-celwrap">`+
-    `<div class="mp-cell${mono?' mp-cell-mono':''}" id="mpc-${i}-${field}" contenteditable="true" data-r="${i}" data-f="${field}" `+
+    `<div class="mp-cell${mono?' mp-cell-mono':''}" id="mpc-${i}-${field}" contenteditable="${_ce}" data-r="${i}" data-f="${field}" `+
     `onkeydown="mpCellKey(event,${i},'${field}')" onfocus="mpRowFocus(${i})" onblur="mpCellEdit(${i},'${field}',this.innerText.trim())">${esc(rows[i][field]||'')}</div>`+
     `<div class="mp-nudge"><button onclick="mpNudgeCell(${i},'${field}',-1)" title="Move this field up (Alt+↑)">▲</button>`+
     `<button onclick="mpNudgeCell(${i},'${field}',1)" title="Move this field down (Alt+↓)">▼</button></div></td>`;
