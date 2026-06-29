@@ -282,7 +282,39 @@ body.ro .ro-note{display:block}
 .jt-canvas.linking .jt-node{outline:2px dashed transparent}
 .jt-canvas.linking .jt-node:hover{outline-color:#6366f1;outline-offset:3px}
 .jt-empty{position:absolute;top:38%;left:0;right:0;text-align:center;color:#94a3b8;font-size:14px;padding:0 40px;pointer-events:none}
-body.ro .jt-port,body.ro .jt-del{display:none!important}
+body.ro .jt-port,body.ro .jt-del,body.ro .jt-gear{display:none!important}
+.jt-trig{font-size:8px;font-weight:800;letter-spacing:.4px;padding:1px 5px;border-radius:5px;background:#e0e7ff;color:#4338ca}
+.jt-trig.any{background:#fef3c7;color:#92400e}
+.jt-meta{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:7px;padding-top:7px;border-top:1px solid #f1f5f9;font-size:10px}
+.jt-tbl{color:#0f766e;font-weight:700;font-family:ui-monospace,monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:118px}
+.jt-tbl.muted{color:#cbd5e1;font-weight:600}
+.jt-est{color:#64748b;font-weight:700;flex-shrink:0}
+.jt-gear{position:absolute;top:-9px;right:16px;width:20px;height:20px;border-radius:50%;background:#eef2ff;color:#4f46e5;border:1px solid #c7d2fe;font-size:10px;cursor:pointer;display:none;align-items:center;justify-content:center;line-height:0;z-index:2}
+.jt-node:hover .jt-gear{display:flex}
+/* Job Tree modals */
+.jt-modal-bk{display:none;position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:3500;align-items:center;justify-content:center;padding:20px}
+.jt-modal-bk.on{display:flex}
+.jt-modal{background:#fff;border-radius:16px;width:100%;max-width:440px;box-shadow:0 24px 70px rgba(2,6,23,.3);overflow:hidden;animation:npModalIn .3s ease}
+.jt-modal-h{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);font-size:15px;font-weight:800;color:#0f172a}
+.jt-modal-x{background:none;border:none;font-size:16px;color:#94a3b8;cursor:pointer}
+.jt-modal-b{padding:18px 20px;max-height:62vh;overflow:auto}
+.jt-modal-b label{display:block;font-size:12px;font-weight:700;color:var(--text2);margin:12px 0 5px}
+.jt-modal-b label:first-child{margin-top:0}
+.jt-modal-b input,.jt-modal-b select{width:100%;border:1.5px solid var(--border);border-radius:9px;padding:9px 11px;font-size:13px;font-family:inherit;outline:none;background:#fff}
+.jt-modal-b input:focus,.jt-modal-b select:focus{border-color:var(--primary)}
+.jt-cfg-est{margin-top:14px;background:#f8fafc;border:1px solid var(--border);border-radius:9px;padding:10px 12px;font-size:12px;color:#475569}
+.jt-modal-f{display:flex;justify-content:flex-end;gap:10px;padding:14px 20px;border-top:1px solid var(--border)}
+.jt-rep-top{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:6px}
+.jt-rep-kpi{background:#f8fafc;border:1px solid var(--border);border-radius:10px;padding:10px;text-align:center}
+.jt-rep-kpi .big{font-size:17px;font-weight:800;color:#0f172a;line-height:1}
+.jt-rep-kpi .lbl{font-size:9.5px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:.3px;margin-top:4px}
+.jt-rep-sec{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:#94a3b8;margin:18px 0 8px}
+.jt-rep-tbl{width:100%;border-collapse:collapse;font-size:12px}
+.jt-rep-tbl th{text-align:left;color:#94a3b8;font-size:10px;text-transform:uppercase;letter-spacing:.4px;padding:6px 8px;border-bottom:1px solid var(--border)}
+.jt-rep-tbl td{padding:7px 8px;border-bottom:1px solid var(--border2);color:#334155}
+.jt-rep-tbl code{background:#f1f5f9;padding:1px 6px;border-radius:4px;font-size:11px;color:#0f766e}
+.jt-rep-ol{margin:0;padding-left:20px;font-size:12.5px;color:#1e293b;line-height:1.7}
+.jt-rep-ol code{background:#f1f5f9;padding:0 5px;border-radius:4px;color:#0f766e}
 .rb-admin{background:rgba(233,69,96,.2);color:#f87171;border:1px solid rgba(233,69,96,.3)}
 .rb-editor{background:rgba(37,99,235,.2);color:#93c5fd;border:1px solid rgba(37,99,235,.3)}
 .rb-viewer{background:rgba(22,163,74,.2);color:#86efac;border:1px solid rgba(22,163,74,.3)}
@@ -2087,6 +2119,35 @@ th .info-i{margin-left:4px}
 
 <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
+<!-- ══ JOB TREE — node config modal ══ -->
+<div id="jt-cfg-overlay" class="jt-modal-bk"><div class="jt-modal" role="dialog" aria-modal="true">
+  <div class="jt-modal-h"><span id="jt-cfg-title">Configure job</span><button class="jt-modal-x" onclick="document.getElementById('jt-cfg-overlay').classList.remove('on')" aria-label="Close">✕</button></div>
+  <div class="jt-modal-b">
+    <label>Target table</label>
+    <input id="jt-cfg-table" placeholder="e.g. sc_customer"/>
+    <div style="display:flex;gap:12px">
+      <div style="flex:1"><label>Expected rows</label><input id="jt-cfg-rows" type="number" min="0" placeholder="50000" oninput="jtCfgPreview()"/></div>
+      <div style="flex:1"><label>Columns</label><input id="jt-cfg-cols" type="number" min="0" placeholder="40" oninput="jtCfgPreview()"/></div>
+    </div>
+    <label>Manual duration in seconds <span class="muted">(used only if rows/columns are empty)</span></label>
+    <input id="jt-cfg-dur" type="number" min="0" placeholder="e.g. 8" oninput="jtCfgPreview()"/>
+    <label>Trigger condition</label>
+    <select id="jt-cfg-trig">
+      <option value="all">Run after ALL upstream jobs finish (default)</option>
+      <option value="any">Run after ANY upstream job finishes (partial)</option>
+    </select>
+    <div id="jt-cfg-est" class="jt-cfg-est"></div>
+  </div>
+  <div class="jt-modal-f"><button class="jt-btn ghost" onclick="document.getElementById('jt-cfg-overlay').classList.remove('on')">Cancel</button><button class="jt-btn" onclick="jtSaveNodeCfg()">Save job</button></div>
+</div></div>
+
+<!-- ══ JOB TREE — simulation report ══ -->
+<div id="jt-rep-overlay" class="jt-modal-bk"><div class="jt-modal" style="max-width:580px" role="dialog" aria-modal="true">
+  <div class="jt-modal-h"><span>▶ Simulation report</span><button class="jt-modal-x" onclick="document.getElementById('jt-rep-overlay').classList.remove('on')" aria-label="Close">✕</button></div>
+  <div class="jt-modal-b" id="jt-rep-body"></div>
+  <div class="jt-modal-f"><button class="jt-btn" onclick="document.getElementById('jt-rep-overlay').classList.remove('on')">Close</button></div>
+</div></div>
+
 <!-- ══ NEW PROJECT — onboarding carousel + form ══ -->
 <div class="overlay" id="new-proj-overlay">
   <div class="modal onb-modal">
@@ -2665,10 +2726,17 @@ window.addEventListener('resize',()=>{ if(_tourActive) showTourStep(); });
 // ═══════════════════════════════════════════════════
 // JOB TREE — DAG editor with pan/zoom + run simulation
 // ═══════════════════════════════════════════════════
-const JT_W=190, JT_H=64;
+const JT_W=200, JT_H=92;
+const JT_RATE=1500; // cells/sec assumed throughput for the time estimate (rows × cols ÷ rate)
 let _jt={nodes:[],edges:[]};
 let _jtView={x:60,y:50,s:1};
-let _jtLink=null, _jtSpeed=1, _jtSimTimers=[], _jtSimRunning=false;
+let _jtLink=null, _jtSpeed=1, _jtSimTimers=[], _jtSimRunning=false, _jtReport=null, _jtEditId=null;
+// estimated REAL run time of a node in seconds (from rows×cols, or a manual duration)
+function jtEstSec(n){ const r=+n.rows||0,c=+n.cols||0; if(r&&c) return Math.max(1,Math.round(r*c/JT_RATE)); return +n.dur||0; }
+function jtFmtDur(s){ s=Math.round(s); if(s<=0) return '—'; if(s<60) return s+'s'; const m=Math.floor(s/60),x=s%60; if(m<60) return x?`${m}m ${x}s`:`${m}m`; const h=Math.floor(m/60); return `${h}h ${m%60}m`; }
+// compressed animation duration (ms) so an 8-min job plays in <1s; respects speed control
+function jtSimMs(n){ const s=jtEstSec(n)||3; return Math.max(350,Math.min(2600, s*1.6))/_jtSpeed; }
+function jtParents(id){ return _jt.edges.filter(e=>e.to===id).map(e=>e.from); }
 function getJobTree(){ const pc=loadProjCfg(getActivePid())||{}; return (pc.jobTree&&Array.isArray(pc.jobTree.nodes))?pc.jobTree:{nodes:[],edges:[]}; }
 function saveJobTreeState(){ const pid=getActivePid(); const pc=loadProjCfg(pid)||{}; pc.jobTree=_jt; saveProjCfg(pid,pc); }
 function jtCanEdit(){ return role==='admin'||role==='editor'; }
@@ -2714,7 +2782,7 @@ function renderJobTree(){
 function jtAddNode(){
   const sel=document.getElementById('jt-add-sel'); const name=sel&&sel.value; if(!name) return;
   const i=_jt.nodes.length;
-  _jt.nodes.push({id:'jn'+Date.now().toString(36)+i, name, x:60+(i%4)*240, y:60+Math.floor(i/4)*150});
+  _jt.nodes.push({id:'jn'+Date.now().toString(36)+i, name, x:60+(i%4)*240, y:60+Math.floor(i/4)*160, table:'', rows:0, cols:0, dur:0, trigger:'all'});
   saveJobTreeState(); renderJobTree();
 }
 function jtDeleteNode(id){ _jt.nodes=_jt.nodes.filter(n=>n.id!==id); _jt.edges=_jt.edges.filter(e=>e.from!==id&&e.to!==id); saveJobTreeState(); renderJobTree(); }
@@ -2740,14 +2808,20 @@ function jtRenderNodes(){
   _jt.nodes.forEach(n=>{
     const d=document.createElement('div');
     d.className='jt-node'; d.id='node-'+n.id; d.style.left=n.x+'px'; d.style.top=n.y+'px';
-    d.innerHTML=`<div class="jt-row"><span class="jt-ico">▢</span><span class="t">Job</span><span class="jt-state" title="status"></span></div><div class="n">${esc(n.name)}</div>`
+    const est=jtEstSec(n); const hasP=jtParents(n.id).length>0;
+    d.innerHTML=`<div class="jt-row"><span class="jt-ico">▢</span><span class="t">Job</span>`
+      +`${hasP?`<span class="jt-trig ${n.trigger==='any'?'any':'all'}" title="${n.trigger==='any'?'Runs when ANY parent finishes':'Runs when ALL parents finish'}">${n.trigger==='any'?'ANY':'ALL'}</span>`:''}`
+      +`<span class="jt-state"></span></div>`
+      +`<div class="n">${esc(n.name)}</div>`
+      +`<div class="jt-meta"><span class="jt-tbl${n.table?'':' muted'}">▤ ${n.table?esc(n.table):'set table'}</span><span class="jt-est">${est?'⏱ '+jtFmtDur(est):'⏱ —'}</span></div>`
       +`<span class="jt-port in"></span><span class="jt-port out"></span>`
-      +(ce?`<button class="jt-del" title="Remove">✕</button>`:'');
+      +(ce?`<button class="jt-del" title="Remove">✕</button><button class="jt-gear" title="Configure job">⚙</button>`:'');
     world.appendChild(d);
     if(ce){
       const del=d.querySelector('.jt-del'); del.onmousedown=ev=>ev.stopPropagation(); del.onclick=ev=>{ev.stopPropagation();jtDeleteNode(n.id);};
+      const gear=d.querySelector('.jt-gear'); gear.onmousedown=ev=>ev.stopPropagation(); gear.onclick=ev=>{ev.stopPropagation();jtEditNode(n.id);};
       d.querySelector('.jt-port.out').addEventListener('mousedown',ev=>{ev.stopPropagation();jtStartLink(n.id,ev);});
-      d.addEventListener('mousedown',ev=>{ if(ev.target.closest('.jt-port')||ev.target.closest('.jt-del'))return; jtStartDrag(n.id,ev); });
+      d.addEventListener('mousedown',ev=>{ if(ev.target.closest('.jt-port')||ev.target.closest('.jt-del')||ev.target.closest('.jt-gear'))return; jtStartDrag(n.id,ev); });
     }
   });
 }
@@ -2834,24 +2908,78 @@ function jtFlowToken(edgeIdx,dur){
   const t0=performance.now();
   (function step(now){ const p=Math.min(1,(now-t0)/dur); const pt=path.getPointAtLength(len*p); c.setAttribute('cx',pt.x); c.setAttribute('cy',pt.y); if(p<1&&_jtSimRunning) requestAnimationFrame(step); else c.remove(); })(performance.now());
 }
+// ── Node configuration (table / rows / cols / duration / trigger) ──
+function jtEditNode(id){
+  const n=jtNodeById(id); if(!n) return; _jtEditId=id;
+  document.getElementById('jt-cfg-title').textContent='Configure · '+n.name;
+  document.getElementById('jt-cfg-table').value=n.table||'';
+  document.getElementById('jt-cfg-rows').value=n.rows||'';
+  document.getElementById('jt-cfg-cols').value=n.cols||'';
+  document.getElementById('jt-cfg-dur').value=n.dur||'';
+  document.getElementById('jt-cfg-trig').value=n.trigger||'all';
+  document.getElementById('jt-cfg-overlay').classList.add('on');
+  jtCfgPreview();
+}
+function jtCfgPreview(){
+  const r=+document.getElementById('jt-cfg-rows').value||0, c=+document.getElementById('jt-cfg-cols').value||0, d=+document.getElementById('jt-cfg-dur').value||0;
+  const sec = (r&&c)? Math.max(1,Math.round(r*c/JT_RATE)) : d;
+  const el=document.getElementById('jt-cfg-est');
+  el.innerHTML = sec? `Estimated real run: <strong>${jtFmtDur(sec)}</strong> &nbsp;·&nbsp; plays in ~${Math.round(Math.max(350,Math.min(2600,sec*1.6)))} ms${(r&&c)?` &nbsp;·&nbsp; ${ (r*c).toLocaleString() } cells @ ${JT_RATE}/s`:''}` : 'Set rows × columns (or a manual duration) to estimate the run time.';
+}
+function jtSaveNodeCfg(){
+  const n=jtNodeById(_jtEditId); if(!n) return;
+  n.table=(document.getElementById('jt-cfg-table').value||'').trim();
+  n.rows=+document.getElementById('jt-cfg-rows').value||0;
+  n.cols=+document.getElementById('jt-cfg-cols').value||0;
+  n.dur=+document.getElementById('jt-cfg-dur').value||0;
+  n.trigger=document.getElementById('jt-cfg-trig').value||'all';
+  saveJobTreeState(); document.getElementById('jt-cfg-overlay').classList.remove('on'); renderJobTree();
+}
+// ── Event-driven run simulation honouring trigger modes + capacity estimate ──
 function jtPlay(){
   if(!_jt.nodes.length){ toast('Add some jobs first'); return; }
   jtResetSim();
   _jtSimRunning=true; const pb=document.getElementById('jt-play'); if(pb){pb.textContent='● Running…';pb.disabled=true;}
-  // levels: a job runs once all its parents are done
-  const depth={}; _jt.nodes.forEach(n=>depth[n.id]=0);
-  for(let k=0;k<_jt.nodes.length;k++) _jt.edges.forEach(e=>{ if(depth[e.to]<depth[e.from]+1) depth[e.to]=depth[e.from]+1; });
-  const maxL=Math.max(0,...Object.values(depth));
-  const byL={}; _jt.nodes.forEach(n=>{(byL[depth[n.id]]=byL[depth[n.id]]||[]).push(n);});
-  const run=900/_jtSpeed, gap=420/_jtSpeed; let t=300;
-  for(let L=0;L<=maxL;L++){
-    const nodes=byL[L]||[];
-    _jtSimTimers.push(setTimeout(()=>nodes.forEach(n=>jtSetNodeState(n.id,'running')),t));
-    _jtSimTimers.push(setTimeout(()=>nodes.forEach(n=>{ jtSetNodeState(n.id,'done');
-      _jt.edges.forEach((e,i)=>{ if(e.from===n.id) jtFlowToken(i,gap+run*.6); }); }),t+run));
-    t+=run+gap;
+  const done={}, started={};
+  // precompute REAL finish times (parallel schedule, honouring ALL/ANY triggers) for the report
+  const realFin={};
+  for(let guard=0; guard<_jt.nodes.length+2; guard++){
+    _jt.nodes.forEach(n=>{ if(n.id in realFin) return; const ps=jtParents(n.id);
+      const pf=ps.map(p=>realFin[p]).filter(v=>v!==undefined);
+      if(ps.length && pf.length < (n.trigger==='any'?1:ps.length)) return;
+      const start = ps.length ? (n.trigger==='any'? Math.min(...pf) : Math.max(...pf)) : 0;
+      realFin[n.id]=start+jtEstSec(n);
+    });
   }
-  _jtSimTimers.push(setTimeout(()=>{ _jtSimRunning=false; const b=document.getElementById('jt-play'); if(b){b.textContent='▶ Play again';b.disabled=false;} toast('✓ All jobs persisted in order'); },t+200));
+  _jtReport={ tables:{}, jobs:[], totalSec: Math.max(0,...Object.values(realFin)) };
+  function eligible(id){ const ps=jtParents(id); if(!ps.length) return true; const n=jtNodeById(id); return n.trigger==='any'? ps.some(p=>done[p]) : ps.every(p=>done[p]); }
+  function tryStart(){ _jt.nodes.forEach(n=>{ if(!started[n.id] && eligible(n.id)) startNode(n); }); }
+  function startNode(n){ started[n.id]=1; jtSetNodeState(n.id,'running'); _jtSimTimers.push(setTimeout(()=>finish(n), jtSimMs(n))); }
+  function finish(n){
+    done[n.id]=1; jtSetNodeState(n.id,'done');
+    if(n.table){ const t=(_jtReport.tables[n.table]=_jtReport.tables[n.table]||{rows:0,jobs:[]}); t.rows+=(+n.rows||0); t.jobs.push(n.name); }
+    _jtReport.jobs.push({name:n.name, sec:jtEstSec(n), table:n.table||'', rows:+n.rows||0});
+    _jt.edges.forEach((e,i)=>{ if(e.from===n.id) jtFlowToken(i, jtSimMs(n)*.7); });
+    tryStart();
+    if(_jt.nodes.every(x=>done[x.id])){ _jtSimRunning=false; const b=document.getElementById('jt-play'); if(b){b.textContent='▶ Play again';b.disabled=false;} jtShowReport(); }
+  }
+  setTimeout(tryStart,250);
+}
+function jtShowReport(){
+  const r=_jtReport; if(!r) return; const body=document.getElementById('jt-rep-body'); if(!body) return;
+  const tn=Object.keys(r.tables); const totalRows=tn.reduce((s,t)=>s+(r.tables[t].rows||0),0);
+  let h=`<div class="jt-rep-top">
+    <div class="jt-rep-kpi"><div class="big">${jtFmtDur(r.totalSec)}</div><div class="lbl">Est. real run (critical path)</div></div>
+    <div class="jt-rep-kpi"><div class="big">${r.jobs.length}</div><div class="lbl">Jobs executed</div></div>
+    <div class="jt-rep-kpi"><div class="big">${tn.length}</div><div class="lbl">Tables populated</div></div>
+    <div class="jt-rep-kpi"><div class="big">${totalRows.toLocaleString()}</div><div class="lbl">Rows added</div></div></div>`;
+  h+=`<div class="jt-rep-sec">Tables &amp; data added</div>`;
+  h+= tn.length ? `<table class="jt-rep-tbl"><thead><tr><th>Table</th><th>Rows</th><th>Populated by</th></tr></thead><tbody>`+
+      tn.map(t=>`<tr><td><code>${esc(t)}</code></td><td>${(r.tables[t].rows||0).toLocaleString()}</td><td>${r.tables[t].jobs.map(esc).join(', ')}</td></tr>`).join('')+`</tbody></table>`
+    : `<div class="muted" style="font-size:12px;padding:4px 0">No tables set on the jobs yet — open a job's ⚙ to set its target table and expected rows, then Play again.</div>`;
+  h+=`<div class="jt-rep-sec">Execution order</div><ol class="jt-rep-ol">`+
+    r.jobs.map(j=>`<li><strong>${esc(j.name)}</strong> <span class="muted">— ${jtFmtDur(j.sec)}${j.table?` → <code>${esc(j.table)}</code> (${(j.rows||0).toLocaleString()} rows)`:''}</span></li>`).join('')+`</ol>`;
+  body.innerHTML=h; document.getElementById('jt-rep-overlay').classList.add('on');
 }
 
 function renderProjDropdown(){
