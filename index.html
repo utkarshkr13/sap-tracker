@@ -248,6 +248,14 @@ body.ro .ro-note{display:block}
 .jt-sel{border:1.5px solid var(--border);border-radius:9px;padding:8px 10px;font-size:12.5px;font-family:inherit;background:#fff;max-width:230px}
 .jt-zoomlbl{font-size:11px;color:var(--text3);font-weight:600;min-width:38px;text-align:center}
 .jt-hint{font-size:11.5px;color:var(--text3);flex:1;min-width:160px;text-align:right}
+.jt-pages{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:10px;border-bottom:1px solid var(--border);padding-bottom:10px}
+.jt-page{background:#fff;border:1px solid var(--border);color:#475569;font-size:12.5px;font-weight:600;padding:6px 13px;border-radius:9px 9px 0 0;cursor:pointer;font-family:inherit;border-bottom:2px solid transparent;transition:all .12s}
+.jt-page:hover{background:#f8fafc}
+.jt-page.on{color:var(--primary);border-color:#c7d2fe;border-bottom-color:var(--primary);background:#eef2ff}
+.jt-page-n{display:inline-block;min-width:16px;text-align:center;font-size:10px;font-weight:800;background:#e2e8f0;color:#475569;border-radius:9px;padding:0 5px;margin-left:4px}
+.jt-page.on .jt-page-n{background:#c7d2fe;color:#3730a3}
+.jt-page.add{border-style:dashed;color:var(--primary);font-weight:700}
+.jt-page.del{border-color:#fecaca;color:#dc2626;border-radius:9px}
 .jt-canvas{position:relative;flex:1;background:#f8fafc;background-image:radial-gradient(#e2e8f0 1.2px,transparent 1.2px);background-size:24px 24px;border:1px solid var(--border);border-radius:14px;overflow:hidden;cursor:grab}
 .jt-canvas.panning{cursor:grabbing}
 .jt-world{position:absolute;left:0;top:0;transform-origin:0 0;will-change:transform}
@@ -2737,8 +2745,22 @@ function jtFmtDur(s){ s=Math.round(s); if(s<=0) return '—'; if(s<60) return s+
 // compressed animation duration (ms) so an 8-min job plays in <1s; respects speed control
 function jtSimMs(n){ const s=jtEstSec(n)||3; return Math.max(350,Math.min(2600, s*1.6))/_jtSpeed; }
 function jtParents(id){ return _jt.edges.filter(e=>e.to===id).map(e=>e.from); }
-function getJobTree(){ const pc=loadProjCfg(getActivePid())||{}; return (pc.jobTree&&Array.isArray(pc.jobTree.nodes))?pc.jobTree:{nodes:[],edges:[]}; }
-function saveJobTreeState(){ const pid=getActivePid(); const pc=loadProjCfg(pid)||{}; pc.jobTree=_jt; saveProjCfg(pid,pc); }
+// ── Scenarios (multiple Job-Tree pages per project) ──
+function jtScenarios(){
+  const pc=loadProjCfg(getActivePid())||{};
+  let s=pc.jobTrees;
+  if(!Array.isArray(s)||!s.length){ const old=pc.jobTree; s=[{id:'sc1',name:'Main flow',nodes:(old&&old.nodes)||[],edges:(old&&old.edges)||[]}]; }
+  s.forEach(x=>{ x.nodes=x.nodes||[]; x.edges=x.edges||[]; });
+  return s;
+}
+function jtActiveId(){ const pc=loadProjCfg(getActivePid())||{}; const s=jtScenarios(); return (s.some(x=>x.id===pc.jobTreeActive)?pc.jobTreeActive:s[0].id); }
+function jtSaveScenarios(list, activeId){ const pid=getActivePid(); const pc=loadProjCfg(pid)||{}; pc.jobTrees=list; if(activeId) pc.jobTreeActive=activeId; delete pc.jobTree; saveProjCfg(pid,pc); }
+function getJobTree(){ const s=jtScenarios(), sc=s.find(x=>x.id===jtActiveId())||s[0]; return {nodes:sc.nodes||[],edges:sc.edges||[]}; }
+function saveJobTreeState(){ const s=jtScenarios(), a=jtActiveId(), sc=s.find(x=>x.id===a)||s[0]; sc.nodes=_jt.nodes; sc.edges=_jt.edges; jtSaveScenarios(s,a); }
+function jtNewScenario(){ const name=(prompt('Name this scenario (e.g. "Full load", "Daily delta")','Scenario '+(jtScenarios().length+1))||'').trim(); if(!name) return; const s=jtScenarios(); const id='sc'+Date.now().toString(36); s.push({id,name,nodes:[],edges:[]}); jtSaveScenarios(s,id); _jtView={x:60,y:50,s:1}; renderJobTree(); }
+function jtSwitchScenario(id){ const pc=loadProjCfg(getActivePid())||{}; pc.jobTreeActive=id; saveProjCfg(getActivePid(),pc); _jtView={x:60,y:50,s:1}; renderJobTree(); }
+function jtRenameScenario(id){ const s=jtScenarios(), sc=s.find(x=>x.id===id); if(!sc) return; const name=(prompt('Rename scenario',sc.name)||'').trim(); if(!name) return; sc.name=name; jtSaveScenarios(s); renderJobTree(); }
+function jtDeleteScenario(id){ const s=jtScenarios(); if(s.length<=1){ toast('At least one scenario is required'); return; } const sc=s.find(x=>x.id===id); if(!confirm('Delete scenario "'+(sc?sc.name:'')+'" and its flow?')) return; const ns=s.filter(x=>x.id!==id); jtSaveScenarios(ns,ns[0].id); _jtView={x:60,y:50,s:1}; renderJobTree(); }
 function jtCanEdit(){ return role==='admin'||role==='editor'; }
 function jtNodeById(id){ return _jt.nodes.find(n=>n.id===id); }
 function jtApplyView(){ const w=document.getElementById('jt-world'); if(w) w.style.transform=`translate(${_jtView.x}px,${_jtView.y}px) scale(${_jtView.s})`; const z=document.getElementById('jt-zoomlbl'); if(z) z.textContent=Math.round(_jtView.s*100)+'%'; }
@@ -2749,9 +2771,15 @@ function renderJobTree(){
   jtResetSim();
   _jt=getJobTree();
   const avail=allMasterNames().filter(n=>!new Set(_jt.nodes.map(x=>x.name)).has(n));
+  const scns=jtScenarios(), aid=jtActiveId();
   p.innerHTML=`
     <div class="jt-wrap">
       <div class="ro-note">View only — ask an admin or editor to edit the sequence (you can still press Play to watch it run).</div>
+      <div class="jt-pages">
+        ${scns.map(s=>`<button class="jt-page${s.id===aid?' on':''}" onclick="jtSwitchScenario('${s.id}')" ondblclick="jtRenameScenario('${s.id}')" title="Double-click to rename">${esc(s.name)} <span class="jt-page-n">${(s.nodes||[]).length}</span></button>`).join('')}
+        <button class="jt-page add ro-hide" onclick="jtNewScenario()" title="New scenario">＋ Scenario</button>
+        ${scns.length>1?`<button class="jt-page del ro-hide" onclick="jtDeleteScenario('${aid}')" title="Delete this scenario">🗑</button>`:''}
+      </div>
       <div class="jt-toolbar">
         <span class="ro-hide" style="display:flex;gap:8px;align-items:center">
           <select id="jt-add-sel" class="jt-sel">${avail.length?avail.map(n=>`<option>${esc(n)}</option>`).join(''):'<option value="">All masters added</option>'}</select>
@@ -2889,13 +2917,26 @@ function jtFit(){
   const s=Math.max(.35,Math.min(1.2,Math.min((c.width-80)/(maxX-minX),(c.height-80)/(maxY-minY))));
   _jtView.s=s; _jtView.x=(c.width-(maxX-minX)*s)/2-minX*s; _jtView.y=(c.height-(maxY-minY)*s)/2-minY*s; jtApplyView();
 }
+// Top-down layered layout with barycenter crossing-reduction (matches the vertical ports).
 function jtAutoLayout(){
   if(!_jt.nodes.length) return;
-  const depth={}; _jt.nodes.forEach(n=>depth[n.id]=0);
-  for(let k=0;k<_jt.nodes.length;k++) _jt.edges.forEach(e=>{ if(depth[e.to]<depth[e.from]+1) depth[e.to]=depth[e.from]+1; });
-  const cols={}; _jt.nodes.forEach(n=>{(cols[depth[n.id]]=cols[depth[n.id]]||[]).push(n);});
-  Object.keys(cols).forEach(c=>cols[c].forEach((n,i)=>{ n.x=60+(+c)*260; n.y=60+i*150; }));
-  saveJobTreeState(); renderJobTree(); setTimeout(jtFit,30);
+  // layer = longest path from roots
+  const layer={}; _jt.nodes.forEach(n=>layer[n.id]=0);
+  for(let k=0;k<_jt.nodes.length;k++) _jt.edges.forEach(e=>{ if(layer[e.to]<layer[e.from]+1) layer[e.to]=layer[e.from]+1; });
+  const maxL=Math.max(0,...Object.values(layer));
+  const layers=[]; for(let L=0;L<=maxL;L++) layers[L]=_jt.nodes.filter(n=>layer[n.id]===L);
+  const parents={}, children={}; _jt.nodes.forEach(n=>{parents[n.id]=[];children[n.id]=[];});
+  _jt.edges.forEach(e=>{ children[e.from].push(e.to); parents[e.to].push(e.from); });
+  layers.forEach(arr=>arr.sort((a,b)=>(a.x||0)-(b.x||0)));
+  const pos={}; layers.forEach(arr=>arr.forEach((n,i)=>pos[n.id]=i));
+  const bc=(n,rel)=>{ const a=rel[n.id]; return a.length? a.reduce((s,id)=>s+(pos[id]||0),0)/a.length : pos[n.id]; };
+  for(let s=0;s<5;s++){
+    for(let L=1;L<=maxL;L++){ layers[L].sort((a,b)=>bc(a,parents)-bc(b,parents)); layers[L].forEach((n,i)=>pos[n.id]=i); }
+    for(let L=maxL-1;L>=0;L--){ layers[L].sort((a,b)=>bc(a,children)-bc(b,children)); layers[L].forEach((n,i)=>pos[n.id]=i); }
+  }
+  const colGap=240, rowGap=180, maxCount=Math.max(1,...layers.map(a=>a.length));
+  layers.forEach((arr,L)=>{ const offset=(maxCount-arr.length)*colGap/2; arr.forEach((n,i)=>{ n.x=Math.round(60+offset+i*colGap); n.y=60+L*rowGap; }); });
+  saveJobTreeState(); renderJobTree(); setTimeout(jtFit,40);
 }
 // ── Run simulation ──
 function jtSetNodeState(id,st){ const el=document.getElementById('node-'+id); if(!el)return; el.classList.remove('running','done'); if(st&&st!=='idle') el.classList.add(st); }
