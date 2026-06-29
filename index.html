@@ -252,18 +252,23 @@ body.ro .ro-note{display:block}
 .jt-canvas.panning{cursor:grabbing}
 .jt-world{position:absolute;left:0;top:0;transform-origin:0 0;will-change:transform}
 .jt-edges{position:absolute;left:0;top:0;width:1px;height:1px;overflow:visible}
-.jt-edges path.edge{stroke:#b3bccb;stroke-width:2.5;fill:none;pointer-events:stroke;cursor:pointer;transition:stroke .12s,stroke-width .12s}
-.jt-edges path.edge:hover{stroke:#dc2626;stroke-width:3.5}
+.jt-edges path.edge{stroke:#c2cad8;stroke-width:2.5;fill:none;pointer-events:stroke;cursor:pointer;stroke-linecap:round;stroke-linejoin:round;transition:stroke .12s,stroke-width .12s}
+.jt-edges path.edge:hover{stroke:#6366f1;stroke-width:3.5}
 .jt-edges path.flow{stroke:#6366f1;stroke-dasharray:7 7;animation:jtDash .55s linear infinite}
 @keyframes jtDash{to{stroke-dashoffset:-28}}
 .jt-token{fill:#4f46e5;filter:drop-shadow(0 0 5px rgba(79,70,229,.7))}
 .jt-node{position:absolute;width:190px;background:#fff;border:1.5px solid #e2e8f0;border-radius:13px;box-shadow:0 4px 14px rgba(2,6,23,.07);padding:11px 13px 12px;cursor:grab;user-select:none;transition:box-shadow .15s,border-color .15s,transform .12s}
 .jt-node:hover{border-color:#c7d2fe;box-shadow:0 10px 24px rgba(2,6,23,.14)}
 .jt-node.dragging{cursor:grabbing;box-shadow:0 18px 36px rgba(2,6,23,.22);z-index:30}
+.jt-node{padding-left:14px}
+.jt-node::before{content:'';position:absolute;left:0;top:10px;bottom:10px;width:3px;border-radius:3px;background:linear-gradient(#6d28d9,#4f46e5);opacity:.85}
+.jt-node.running::before{background:linear-gradient(#f59e0b,#d97706)}
+.jt-node.done::before{background:linear-gradient(#16a34a,#15803d)}
 .jt-node .jt-row{display:flex;align-items:center;gap:7px}
-.jt-state{width:9px;height:9px;border-radius:50%;background:#cbd5e1;flex-shrink:0;transition:background .2s}
-.jt-node .t{font-size:9px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:#6366f1}
-.jt-node .n{font-size:13px;font-weight:700;color:#0f172a;line-height:1.25;margin-top:4px}
+.jt-ico{width:18px;height:18px;border-radius:6px;background:linear-gradient(135deg,#eef2ff,#ede9fe);color:#6366f1;font-size:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.jt-state{width:9px;height:9px;border-radius:50%;background:#cbd5e1;flex-shrink:0;transition:background .2s;margin-left:auto}
+.jt-node .t{font-size:9px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:#94a3b8}
+.jt-node .n{font-size:13.5px;font-weight:700;color:#0f172a;line-height:1.25;margin-top:5px}
 .jt-node.running{border-color:#f59e0b;animation:jtPulse 1.1s ease-in-out infinite}
 .jt-node.running .jt-state{background:#f59e0b}
 .jt-node.done{border-color:#16a34a;box-shadow:0 0 0 3px rgba(22,163,74,.16)}
@@ -2735,7 +2740,7 @@ function jtRenderNodes(){
   _jt.nodes.forEach(n=>{
     const d=document.createElement('div');
     d.className='jt-node'; d.id='node-'+n.id; d.style.left=n.x+'px'; d.style.top=n.y+'px';
-    d.innerHTML=`<div class="jt-row"><span class="jt-state"></span><span class="t">Job</span></div><div class="n">${esc(n.name)}</div>`
+    d.innerHTML=`<div class="jt-row"><span class="jt-ico">▢</span><span class="t">Job</span><span class="jt-state" title="status"></span></div><div class="n">${esc(n.name)}</div>`
       +`<span class="jt-port in"></span><span class="jt-port out"></span>`
       +(ce?`<button class="jt-del" title="Remove">✕</button>`:'');
     world.appendChild(d);
@@ -2746,15 +2751,24 @@ function jtRenderNodes(){
     }
   });
 }
+// Clean rounded "smooth-step" connector (vertical elbows), like React-Flow/n8n.
 function jtEdgePath(a,b){
   const sx=a.x+JT_W/2, sy=a.y+JT_H, tx=b.x+JT_W/2, ty=b.y;
-  const dy=Math.max(45,Math.abs(ty-sy)/2+20);
-  return `M ${sx} ${sy} C ${sx} ${sy+dy}, ${tx} ${ty-dy}, ${tx} ${ty}`;
+  const r=16;
+  // target above or level → gentle S-bezier (avoids ugly elbows going backwards)
+  if(ty < sy+2*r){
+    const dy=Math.max(46,Math.abs(ty-sy)/2+34);
+    return `M${sx},${sy} C${sx},${sy+dy} ${tx},${ty-dy} ${tx},${ty}`;
+  }
+  // near-vertical → straight drop
+  if(Math.abs(tx-sx) < 2*r) return `M${sx},${sy} L${tx},${ty}`;
+  const my=(sy+ty)/2, dir=tx>sx?1:-1;
+  return `M${sx},${sy} L${sx},${my-r} Q${sx},${my} ${sx+dir*r},${my} L${tx-dir*r},${my} Q${tx},${my} ${tx},${my+r} L${tx},${ty}`;
 }
 function jtRenderEdges(){
   const svg=document.getElementById('jt-edges'); if(!svg) return;
   const ce=jtCanEdit();
-  let h=`<defs><marker id="jt-arrow" markerWidth="11" markerHeight="11" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#b3bccb"/></marker></defs>`
+  let h=`<defs><marker id="jt-arrow" markerWidth="12" markerHeight="12" refX="8.5" refY="3" orient="auto"><path d="M0,0 L9,3 L0,6 Z" fill="#c2cad8"/></marker></defs>`
     +`<path id="jt-temp" style="display:none" stroke="#6366f1" stroke-width="2.5" stroke-dasharray="6 5" fill="none"/>`;
   _jt.edges.forEach((e,i)=>{ const a=jtNodeById(e.from), b=jtNodeById(e.to); if(!a||!b) return;
     h+=`<path id="edge-${i}" class="edge" d="${jtEdgePath(a,b)}" marker-end="url(#jt-arrow)" ${ce?`onclick="if(confirm('Delete this connection?'))jtDeleteEdge(${i})"`:''}/>`; });
