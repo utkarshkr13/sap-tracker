@@ -3414,8 +3414,21 @@ async function signInWithGoogle(){
 }
 
 async function logout(){
-  if(auth) try{ await auth.signOut(); }catch(e){}
-  location.reload();
+  try{ sessionStorage.setItem('sap_signout','1'); }catch(e){}
+  try{ if(auth) await auth.signOut(); }catch(e){}
+  // Do NOT location.reload() — Firebase's persistence write can lose the race with the reload,
+  // restoring the session and looping you back into the app. Show the login screen directly.
+  try{
+    document.getElementById('app').style.display='none';
+    document.getElementById('access-denied-screen').style.display='none';
+    const ls=document.getElementById('login-screen'); if(ls) ls.style.display='flex';
+    const gb=document.getElementById('google-btn-wrap'); if(gb) gb.style.display='block';
+    const ll=document.getElementById('login-loading'); if(ll) ll.style.display='none';
+    const err=document.getElementById('login-err'); if(err) err.style.display='none';
+    document.body.classList.remove('ro','share-view');
+  }catch(e){}
+  role=null;
+  toast('Signed out');
 }
 
 async function startClerk(){
@@ -3486,8 +3499,13 @@ async function startClerk(){
     return;
   }
 
+  // If the user just signed out, force-clear any persisted/redirect session and skip
+  // redirect-replay so we don't loop straight back into the app.
+  let _justSignedOut=false;
+  try{ if(sessionStorage.getItem('sap_signout')){ sessionStorage.removeItem('sap_signout'); _justSignedOut=true; await auth.signOut().catch(()=>{}); } }catch(e){}
+
   // Handle redirect result first (for browsers that blocked the popup)
-  try {
+  if(!_justSignedOut) try {
     const result=await auth.getRedirectResult();
     if(result&&result.user){
       await checkUserAuth(result.user);
