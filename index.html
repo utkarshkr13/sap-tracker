@@ -235,70 +235,88 @@ body.ro .mp-link-btn,body.ro .mp-clear-btn,body.ro .btn-add,body.ro .btn-add-sm,
 body.ro .ro-hide{ display:none!important; }
 .ro-note{display:none;background:#fffbeb;border:1px solid #fde68a;color:#92400e;border-radius:8px;padding:8px 12px;font-size:12px;font-weight:600;margin-bottom:12px}
 body.ro .ro-note{display:block}
-/* ── Job Tree (sequence board / DAG editor) ── */
+/* ── Job Tree (DAG editor) — polished ── */
 .jt-wrap{display:flex;flex-direction:column;height:calc(100vh - 150px);min-height:560px}
-.jt-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px}
-.jt-btn{display:inline-flex;align-items:center;gap:6px;background:var(--primary);color:#fff;border:none;border-radius:9px;font-size:12.5px;font-weight:600;padding:8px 13px;cursor:pointer;font-family:inherit;transition:filter .12s}
-.jt-btn:hover{filter:brightness(1.07)}
-.jt-btn.ghost{background:#fff;color:#475569;border:1px solid var(--border)}
-.jt-btn.ghost:hover{background:#f8fafc}
-.jt-btn.play{background:linear-gradient(135deg,#16a34a,#15803d)}
-.jt-btn:disabled{opacity:.5;cursor:not-allowed}
-.jt-sep{width:1px;height:24px;background:var(--border);margin:0 2px}
-.jt-sel{border:1.5px solid var(--border);border-radius:9px;padding:8px 10px;font-size:12.5px;font-family:inherit;background:#fff;max-width:230px}
-.jt-zoomlbl{font-size:11px;color:var(--text3);font-weight:600;min-width:38px;text-align:center}
-.jt-hint{font-size:11.5px;color:var(--text3);flex:1;min-width:160px;text-align:right}
-.jt-pages{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:10px;border-bottom:1px solid var(--border);padding-bottom:10px}
-.jt-page{background:#fff;border:1px solid var(--border);color:#475569;font-size:12.5px;font-weight:600;padding:6px 13px;border-radius:9px 9px 0 0;cursor:pointer;font-family:inherit;border-bottom:2px solid transparent;transition:all .12s}
-.jt-page:hover{background:#f8fafc}
-.jt-page.on{color:var(--primary);border-color:#c7d2fe;border-bottom-color:var(--primary);background:#eef2ff}
-.jt-page-n{display:inline-block;min-width:16px;text-align:center;font-size:10px;font-weight:800;background:#e2e8f0;color:#475569;border-radius:9px;padding:0 5px;margin-left:4px}
+/* scenario tabs = segmented control */
+.jt-pages{display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-bottom:12px}
+.jt-page{background:transparent;border:1px solid transparent;color:#64748b;font-size:12.5px;font-weight:600;padding:6px 13px;border-radius:9px;cursor:pointer;font-family:inherit;transition:all .12s}
+.jt-page:hover{background:#f1f5f9;color:#334155}
+.jt-page.on{color:#4f46e5;background:#eef2ff;border-color:#dfe3fb;box-shadow:0 1px 2px rgba(2,6,23,.04)}
+.jt-page-n{display:inline-block;min-width:16px;text-align:center;font-size:10px;font-weight:800;background:#e2e8f0;color:#475569;border-radius:9px;padding:0 5px;margin-left:5px}
 .jt-page.on .jt-page-n{background:#c7d2fe;color:#3730a3}
-.jt-page.add{border-style:dashed;color:var(--primary);font-weight:700}
-.jt-page.del{border-color:#fecaca;color:#dc2626;border-radius:9px}
-.jt-canvas{position:relative;flex:1;background:#f8fafc;background-image:radial-gradient(#e2e8f0 1.2px,transparent 1.2px);background-size:24px 24px;border:1px solid var(--border);border-radius:14px;overflow:hidden;cursor:grab}
+.jt-page.add{color:#4f46e5;border:1px dashed #c7d2fe}
+.jt-page.del{color:#dc2626}.jt-page.del:hover{background:#fee2e2}
+/* glassy toolbar */
+.jt-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;background:rgba(255,255,255,.85);backdrop-filter:blur(8px);border:1px solid var(--border);border-radius:13px;padding:8px 10px;box-shadow:0 2px 10px rgba(2,6,23,.05)}
+.jt-tgrp{display:flex;align-items:center;gap:7px}
+.jt-btn{display:inline-flex;align-items:center;gap:6px;background:var(--primary);color:#fff;border:none;border-radius:9px;font-size:12.5px;font-weight:650;padding:8px 13px;cursor:pointer;font-family:inherit;transition:filter .12s,transform .06s,box-shadow .12s;box-shadow:0 1px 2px rgba(79,70,229,.25)}
+.jt-btn:hover{filter:brightness(1.07)}.jt-btn:active{transform:translateY(1px)}
+.jt-btn.ghost{background:#fff;color:#475569;border:1px solid var(--border);box-shadow:none}
+.jt-btn.ghost:hover{background:#f8fafc;border-color:#cbd5e1}
+.jt-btn.play{background:linear-gradient(135deg,#22c55e,#16a34a);box-shadow:0 2px 8px rgba(22,163,74,.3)}
+.jt-btn:disabled{opacity:.55;cursor:not-allowed}
+.jt-sep{width:1px;height:22px;background:var(--border)}
+.jt-sel{border:1.5px solid var(--border);border-radius:9px;padding:8px 10px;font-size:12.5px;font-family:inherit;background:#fff;max-width:220px;color:#334155}
+.jt-sel.sp{max-width:72px}
+.jt-legend{display:flex;align-items:center;gap:12px;font-size:11px;color:#94a3b8;font-weight:600;margin-left:4px}
+.jt-legend span{display:flex;align-items:center;gap:5px}
+.jt-legend i{width:8px;height:8px;border-radius:50%}
+.jt-legend i.idle{background:#cbd5e1}.jt-legend i.run{background:#f59e0b}.jt-legend i.done{background:#16a34a}
+/* canvas */
+.jt-canvas{position:relative;flex:1;border:1px solid var(--border);border-radius:16px;overflow:hidden;cursor:grab;background:radial-gradient(circle at 30% 18%,#fbfcff 0%,#f4f6fb 55%,#edf0f7 100%);background-image:radial-gradient(#dbe1ec 1.1px,transparent 1.1px);background-size:22px 22px;box-shadow:inset 0 40px 90px -60px rgba(79,70,229,.14)}
 .jt-canvas.panning{cursor:grabbing}
 .jt-world{position:absolute;left:0;top:0;transform-origin:0 0;will-change:transform}
 .jt-edges{position:absolute;left:0;top:0;width:1px;height:1px;overflow:visible}
-.jt-edges path.edge{stroke:#c2cad8;stroke-width:2.5;fill:none;pointer-events:stroke;cursor:pointer;stroke-linecap:round;stroke-linejoin:round;transition:stroke .12s,stroke-width .12s}
+.jt-edges path.edge{stroke:#aab4c6;stroke-width:2.5;fill:none;pointer-events:stroke;cursor:pointer;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 1px 1px rgba(2,6,23,.06));transition:stroke .12s,stroke-width .12s}
 .jt-edges path.edge:hover{stroke:#6366f1;stroke-width:3.5}
 .jt-edges path.flow{stroke:#6366f1;stroke-dasharray:7 7;animation:jtDash .55s linear infinite}
 @keyframes jtDash{to{stroke-dashoffset:-28}}
-.jt-token{fill:#4f46e5;filter:drop-shadow(0 0 5px rgba(79,70,229,.7))}
-.jt-node{position:absolute;width:190px;background:#fff;border:1.5px solid #e2e8f0;border-radius:13px;box-shadow:0 4px 14px rgba(2,6,23,.07);padding:11px 13px 12px;cursor:grab;user-select:none;transition:box-shadow .15s,border-color .15s,transform .12s}
-.jt-node:hover{border-color:#c7d2fe;box-shadow:0 10px 24px rgba(2,6,23,.14)}
-.jt-node.dragging{cursor:grabbing;box-shadow:0 18px 36px rgba(2,6,23,.22);z-index:30}
-.jt-node{padding-left:14px}
-.jt-node::before{content:'';position:absolute;left:0;top:10px;bottom:10px;width:3px;border-radius:3px;background:linear-gradient(#6d28d9,#4f46e5);opacity:.85}
+.jt-token{fill:#4f46e5;filter:drop-shadow(0 0 6px rgba(79,70,229,.8))}
+/* node */
+.jt-node{position:absolute;width:208px;background:#fff;border:1px solid #e7ebf3;border-radius:16px;box-shadow:0 1px 2px rgba(2,6,23,.06),0 10px 26px -12px rgba(2,6,23,.18);padding:12px 14px;cursor:grab;user-select:none;transition:box-shadow .15s,border-color .15s,transform .12s}
+.jt-node:hover{border-color:#c7d2fe;box-shadow:0 1px 2px rgba(2,6,23,.06),0 16px 34px -14px rgba(79,70,229,.32);transform:translateY(-1px)}
+.jt-node.dragging{cursor:grabbing;box-shadow:0 24px 44px -16px rgba(2,6,23,.4);z-index:30;transform:none}
+.jt-node::before{content:'';position:absolute;left:0;top:14px;bottom:14px;width:3px;border-radius:0 3px 3px 0;background:linear-gradient(#7c3aed,#4f46e5)}
 .jt-node.running::before{background:linear-gradient(#f59e0b,#d97706)}
-.jt-node.done::before{background:linear-gradient(#16a34a,#15803d)}
-.jt-node .jt-row{display:flex;align-items:center;gap:7px}
-.jt-ico{width:18px;height:18px;border-radius:6px;background:linear-gradient(135deg,#eef2ff,#ede9fe);color:#6366f1;font-size:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.jt-state{width:9px;height:9px;border-radius:50%;background:#cbd5e1;flex-shrink:0;transition:background .2s;margin-left:auto}
-.jt-node .t{font-size:9px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:#94a3b8}
-.jt-node .n{font-size:13.5px;font-weight:700;color:#0f172a;line-height:1.25;margin-top:5px}
-.jt-node.running{border-color:#f59e0b;animation:jtPulse 1.1s ease-in-out infinite}
-.jt-node.running .jt-state{background:#f59e0b}
-.jt-node.done{border-color:#16a34a;box-shadow:0 0 0 3px rgba(22,163,74,.16)}
-.jt-node.done .jt-state{background:#16a34a}
-@keyframes jtPulse{0%,100%{box-shadow:0 0 0 3px rgba(245,158,11,.28)}50%{box-shadow:0 0 0 8px rgba(245,158,11,.06)}}
-.jt-del{position:absolute;top:-9px;right:-9px;width:20px;height:20px;border-radius:50%;background:#fee2e2;color:#dc2626;border:1px solid #fecaca;font-size:11px;cursor:pointer;display:none;align-items:center;justify-content:center;line-height:0;font-weight:700;z-index:2}
-.jt-node:hover .jt-del{display:flex}
-.jt-port{position:absolute;left:50%;transform:translateX(-50%);width:16px;height:16px;border-radius:50%;background:#6366f1;border:2.5px solid #fff;cursor:crosshair;box-shadow:0 1px 4px rgba(0,0,0,.28);bottom:-9px;transition:transform .12s,background .12s}
-.jt-port:hover{background:#4f46e5;transform:translateX(-50%) scale(1.3)}
-.jt-port.in{top:-9px;bottom:auto;background:#cbd5e1;cursor:default}
-.jt-canvas.linking .jt-node{outline:2px dashed transparent}
-.jt-canvas.linking .jt-node:hover{outline-color:#6366f1;outline-offset:3px}
-.jt-empty{position:absolute;top:38%;left:0;right:0;text-align:center;color:#94a3b8;font-size:14px;padding:0 40px;pointer-events:none}
+.jt-node.done::before{background:linear-gradient(#22c55e,#16a34a)}
+.jt-head{display:flex;align-items:center;gap:7px}
+.jt-ico{width:22px;height:22px;border-radius:7px;background:linear-gradient(135deg,#eef2ff,#f5f3ff);color:#6366f1;font-size:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0;border:1px solid #eceafe}
+.jt-kind{font-size:9px;font-weight:800;letter-spacing:.7px;text-transform:uppercase;color:#aab2c0}
+.jt-name{font-size:14px;font-weight:750;color:#0f172a;line-height:1.25;margin-top:8px;letter-spacing:-.2px}
+.jt-state{width:9px;height:9px;border-radius:50%;background:#d1d8e3;flex-shrink:0;margin-left:auto;transition:background .2s,box-shadow .2s}
+.jt-node.running{border-color:#fcd9a3;animation:jtPulse 1.2s ease-in-out infinite}
+.jt-node.running .jt-state{background:#f59e0b;box-shadow:0 0 0 3px rgba(245,158,11,.22)}
+.jt-node.done{border-color:#bbf7d0}
+.jt-node.done .jt-state{background:#16a34a;box-shadow:0 0 0 3px rgba(22,163,74,.18)}
+@keyframes jtPulse{0%,100%{box-shadow:0 0 0 1px #fcd9a3,0 12px 26px -12px rgba(245,158,11,.45)}50%{box-shadow:0 0 0 4px rgba(245,158,11,.14),0 12px 26px -12px rgba(245,158,11,.28)}}
+.jt-meta{display:flex;align-items:center;gap:6px;margin-top:11px}
+.jt-chip{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.jt-chip.tbl{background:#ecfdf5;color:#0f766e;font-family:ui-monospace,monospace;max-width:116px}
+.jt-chip.tbl.muted{background:#f1f5f9;color:#94a3b8;font-family:inherit;font-weight:600}
+.jt-chip.time{background:#eff6ff;color:#1d4ed8;margin-left:auto;flex-shrink:0}
+.jt-chip.time.muted{background:#f1f5f9;color:#94a3b8;font-weight:600}
+.jt-trig{font-size:8.5px;font-weight:800;letter-spacing:.4px;padding:2px 6px;border-radius:6px;background:#eef2ff;color:#4338ca}
+.jt-trig.any{background:#fff7ed;color:#c2410c}
+/* ports */
+.jt-port{position:absolute;left:50%;transform:translateX(-50%);width:13px;height:13px;border-radius:50%;background:#fff;border:2.5px solid #6366f1;cursor:crosshair;bottom:-7px;transition:transform .12s,box-shadow .12s,background .12s;z-index:2}
+.jt-port:hover{background:#6366f1;box-shadow:0 0 0 4px rgba(99,102,241,.18);transform:translateX(-50%) scale(1.25)}
+.jt-port.in{top:-7px;bottom:auto;border-color:#cbd5e1;cursor:default}
+.jt-canvas.linking .jt-node:hover{outline:2px dashed #6366f1;outline-offset:3px}
+/* node controls */
+.jt-del,.jt-gear{position:absolute;top:-10px;width:22px;height:22px;border-radius:50%;font-size:11px;cursor:pointer;display:none;align-items:center;justify-content:center;line-height:0;z-index:3;box-shadow:0 2px 6px rgba(2,6,23,.18)}
+.jt-del{right:-10px;background:#fff;color:#dc2626;border:1px solid #fecaca}
+.jt-del:hover{background:#fee2e2}
+.jt-gear{right:18px;background:#fff;color:#4f46e5;border:1px solid #c7d2fe}
+.jt-gear:hover{background:#eef2ff}
+.jt-node:hover .jt-del,.jt-node:hover .jt-gear{display:flex}
+/* floating zoom control + hint */
+.jt-zoomctl{position:absolute;right:16px;bottom:16px;display:flex;flex-direction:column;align-items:center;gap:2px;background:rgba(255,255,255,.92);backdrop-filter:blur(8px);border:1px solid var(--border);border-radius:11px;padding:5px;box-shadow:0 6px 20px rgba(2,6,23,.12);z-index:5}
+.jt-zoomctl button{width:30px;height:30px;border:none;background:none;color:#475569;font-size:15px;cursor:pointer;border-radius:8px;display:flex;align-items:center;justify-content:center}
+.jt-zoomctl button:hover{background:#f1f5f9;color:#4f46e5}
+.jt-zoomctl #jt-zoomlbl{font-size:10px;color:#94a3b8;font-weight:700}
+.jt-cuehint{position:absolute;left:16px;bottom:16px;font-size:11px;color:#94a3b8;font-weight:500;background:rgba(255,255,255,.8);backdrop-filter:blur(6px);padding:5px 11px;border-radius:8px;border:1px solid var(--border);max-width:58%;z-index:5}
+.jt-empty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:#94a3b8;font-size:14px;padding:0 40px;pointer-events:none;line-height:1.6}
 body.ro .jt-port,body.ro .jt-del,body.ro .jt-gear{display:none!important}
-.jt-trig{font-size:8px;font-weight:800;letter-spacing:.4px;padding:1px 5px;border-radius:5px;background:#e0e7ff;color:#4338ca}
-.jt-trig.any{background:#fef3c7;color:#92400e}
-.jt-meta{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:7px;padding-top:7px;border-top:1px solid #f1f5f9;font-size:10px}
-.jt-tbl{color:#0f766e;font-weight:700;font-family:ui-monospace,monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:118px}
-.jt-tbl.muted{color:#cbd5e1;font-weight:600}
-.jt-est{color:#64748b;font-weight:700;flex-shrink:0}
-.jt-gear{position:absolute;top:-9px;right:16px;width:20px;height:20px;border-radius:50%;background:#eef2ff;color:#4f46e5;border:1px solid #c7d2fe;font-size:10px;cursor:pointer;display:none;align-items:center;justify-content:center;line-height:0;z-index:2}
-.jt-node:hover .jt-gear{display:flex}
 /* Job Tree modals */
 .jt-modal-bk{display:none;position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:3500;align-items:center;justify-content:center;padding:20px}
 .jt-modal-bk.on{display:flex}
@@ -2781,28 +2799,27 @@ function renderJobTree(){
         ${scns.length>1?`<button class="jt-page del ro-hide" onclick="jtDeleteScenario('${aid}')" title="Delete this scenario">🗑</button>`:''}
       </div>
       <div class="jt-toolbar">
-        <span class="ro-hide" style="display:flex;gap:8px;align-items:center">
+        <span class="ro-hide jt-tgrp">
           <select id="jt-add-sel" class="jt-sel">${avail.length?avail.map(n=>`<option>${esc(n)}</option>`).join(''):'<option value="">All masters added</option>'}</select>
-          <button class="jt-btn" onclick="jtAddNode()">＋ Add</button>
-          <button class="jt-btn ghost" onclick="jtAutoLayout()" title="Tidy into dependency columns">⤧ Auto-layout</button>
-          <span class="jt-sep"></span>
+          <button class="jt-btn" onclick="jtAddNode()">＋ Add job</button>
+          <button class="jt-btn ghost" onclick="jtAutoLayout()" title="Tidy into a clean dependency tree">⤧ Tidy</button>
         </span>
-        <button class="jt-btn play" id="jt-play" onclick="jtPlay()">▶ Play</button>
-        <button class="jt-btn ghost" id="jt-reset" onclick="jtResetSim(true)">⟲ Reset</button>
-        <select class="jt-sel" style="max-width:90px" onchange="_jtSpeed=+this.value" title="Speed">
-          <option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="3">3×</option>
-        </select>
-        <span class="jt-sep"></span>
-        <button class="jt-btn ghost" onclick="jtZoom(0.8)">－</button>
-        <span class="jt-zoomlbl" id="jt-zoomlbl">100%</span>
-        <button class="jt-btn ghost" onclick="jtZoom(1.25)">＋</button>
-        <button class="jt-btn ghost" onclick="jtFit()">Fit</button>
-        <button class="jt-btn ghost ro-hide" onclick="jtClear()">Clear</button>
-        <span class="jt-hint">Drag a node's bottom dot onto another to set "runs after" · scroll to zoom · drag canvas to pan</span>
+        <span class="jt-sep ro-hide"></span>
+        <span class="jt-tgrp">
+          <button class="jt-btn play" id="jt-play" onclick="jtPlay()">▶ Play</button>
+          <button class="jt-btn ghost" id="jt-reset" onclick="jtResetSim(true)" title="Reset">⟲</button>
+          <select class="jt-sel sp" onchange="_jtSpeed=+this.value" title="Playback speed">
+            <option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="3">3×</option>
+          </select>
+        </span>
+        <span class="jt-legend"><span><i class="idle"></i>Idle</span><span><i class="run"></i>Running</span><span><i class="done"></i>Done</span></span>
+        <button class="jt-btn ghost ro-hide" onclick="jtClear()" style="margin-left:auto">Clear</button>
       </div>
       <div class="jt-canvas" id="jt-canvas">
         <div class="jt-world" id="jt-world"><svg class="jt-edges" id="jt-edges"></svg></div>
-        ${_jt.nodes.length?'':'<div class="jt-empty">No sequence yet. Add masters, then connect them in the order they must persist — e.g. <strong>Outlet → PJP</strong>, since PJP needs its outlet first. Press <strong>▶ Play</strong> to watch the run.</div>'}
+        ${_jt.nodes.length?'':'<div class="jt-empty"><div style="font-size:34px;margin-bottom:10px">🗺️</div><div style="font-size:16px;font-weight:700;color:#475569;margin-bottom:6px">Design your persistence sequence</div>Add masters, then drag a node\'s bottom dot onto another to set <strong>“runs after”</strong> — e.g. <strong>Outlet → PJP</strong>. Press <strong>▶ Play</strong> to simulate the run.</div>'}
+        <div class="jt-zoomctl"><button onclick="jtZoom(1.25)" title="Zoom in">＋</button><span id="jt-zoomlbl">100%</span><button onclick="jtZoom(0.8)" title="Zoom out">－</button><button onclick="jtFit()" title="Fit to view">⤢</button></div>
+        <div class="jt-cuehint">Drag the bottom dot onto another job to connect · scroll to zoom · drag canvas to pan</div>
       </div>
     </div>`;
   jtRenderNodes(); jtRenderEdges(); jtApplyView(); jtBindCanvas();
@@ -2837,11 +2854,11 @@ function jtRenderNodes(){
     const d=document.createElement('div');
     d.className='jt-node'; d.id='node-'+n.id; d.style.left=n.x+'px'; d.style.top=n.y+'px';
     const est=jtEstSec(n); const hasP=jtParents(n.id).length>0;
-    d.innerHTML=`<div class="jt-row"><span class="jt-ico">▢</span><span class="t">Job</span>`
+    d.innerHTML=`<div class="jt-head"><span class="jt-ico">⚙</span><span class="jt-kind">Job</span>`
       +`${hasP?`<span class="jt-trig ${n.trigger==='any'?'any':'all'}" title="${n.trigger==='any'?'Runs when ANY parent finishes':'Runs when ALL parents finish'}">${n.trigger==='any'?'ANY':'ALL'}</span>`:''}`
       +`<span class="jt-state"></span></div>`
-      +`<div class="n">${esc(n.name)}</div>`
-      +`<div class="jt-meta"><span class="jt-tbl${n.table?'':' muted'}">▤ ${n.table?esc(n.table):'set table'}</span><span class="jt-est">${est?'⏱ '+jtFmtDur(est):'⏱ —'}</span></div>`
+      +`<div class="jt-name">${esc(n.name)}</div>`
+      +`<div class="jt-meta"><span class="jt-chip tbl${n.table?'':' muted'}">▤ ${n.table?esc(n.table):'no table'}</span><span class="jt-chip time${est?'':' muted'}">⏱ ${est?jtFmtDur(est):'set time'}</span></div>`
       +`<span class="jt-port in"></span><span class="jt-port out"></span>`
       +(ce?`<button class="jt-del" title="Remove">✕</button><button class="jt-gear" title="Configure job">⚙</button>`:'');
     world.appendChild(d);
@@ -2870,7 +2887,7 @@ function jtEdgePath(a,b){
 function jtRenderEdges(){
   const svg=document.getElementById('jt-edges'); if(!svg) return;
   const ce=jtCanEdit();
-  let h=`<defs><marker id="jt-arrow" markerWidth="12" markerHeight="12" refX="8.5" refY="3" orient="auto"><path d="M0,0 L9,3 L0,6 Z" fill="#c2cad8"/></marker></defs>`
+  let h=`<defs><marker id="jt-arrow" markerWidth="11" markerHeight="11" refX="7.5" refY="3" orient="auto"><path d="M0,0.4 L8,3 L0,5.6 Z" fill="#aab4c6"/></marker></defs>`
     +`<path id="jt-temp" style="display:none" stroke="#6366f1" stroke-width="2.5" stroke-dasharray="6 5" fill="none"/>`;
   _jt.edges.forEach((e,i)=>{ const a=jtNodeById(e.from), b=jtNodeById(e.to); if(!a||!b) return;
     h+=`<path id="edge-${i}" class="edge" d="${jtEdgePath(a,b)}" marker-end="url(#jt-arrow)" ${ce?`onclick="if(confirm('Delete this connection?'))jtDeleteEdge(${i})"`:''}/>`; });
