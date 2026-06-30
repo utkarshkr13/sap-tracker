@@ -249,6 +249,13 @@ body.ro .ro-note{display:block}
 /* glassy toolbar */
 .jt-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;background:rgba(255,255,255,.85);backdrop-filter:blur(8px);border:1px solid var(--border);border-radius:13px;padding:8px 10px;box-shadow:0 2px 10px rgba(2,6,23,.05)}
 .jt-tgrp{display:flex;align-items:center;gap:7px}
+.jt-menu-wrap{position:relative;display:inline-flex}
+.jt-menu{position:absolute;top:calc(100% + 6px);left:0;min-width:220px;background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:0 16px 40px -8px rgba(2,6,23,.25);padding:6px;z-index:20;opacity:0;transform:translateY(-6px) scale(.97);pointer-events:none;transition:opacity .18s ease,transform .22s cubic-bezier(.22,1,.36,1)}
+.jt-menu.on{opacity:1;transform:none;pointer-events:auto}
+.jt-menu button{display:flex;flex-direction:column;align-items:flex-start;gap:1px;width:100%;text-align:left;background:none;border:none;padding:9px 11px;border-radius:8px;cursor:pointer;font-family:inherit}
+.jt-menu button:hover{background:#f1f5f9}
+.jt-menu button b{font-size:12.5px;color:#0f172a;font-weight:650}
+.jt-menu button span{font-size:11px;color:#94a3b8}
 .jt-btn{display:inline-flex;align-items:center;gap:6px;background:var(--primary);color:#fff;border:none;border-radius:9px;font-size:12.5px;font-weight:650;padding:8px 13px;cursor:pointer;font-family:inherit;transition:filter .12s,transform .06s,box-shadow .12s;box-shadow:0 1px 2px rgba(79,70,229,.25)}
 .jt-btn:hover{filter:brightness(1.07)}.jt-btn:active{transform:translateY(1px)}
 .jt-btn.ghost{background:#fff;color:#475569;border:1px solid var(--border);box-shadow:none}
@@ -269,12 +276,18 @@ body.ro .ro-note{display:block}
 .jt-edges{position:absolute;left:0;top:0;width:1px;height:1px;overflow:visible}
 .jt-edges path.edge{stroke:#aab4c6;stroke-width:2.5;fill:none;pointer-events:stroke;cursor:pointer;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 1px 1px rgba(2,6,23,.06));transition:stroke .12s,stroke-width .12s}
 .jt-edges path.edge:hover{stroke:#6366f1;stroke-width:3.5}
-.jt-edges path.flow{stroke:#6366f1;stroke-dasharray:7 7;animation:jtDash .55s linear infinite}
+.jt-edges path.flow{stroke:#6366f1;stroke-width:3.2;stroke-dasharray:2 12;animation:jtDash .7s cubic-bezier(.4,0,.2,1) infinite;filter:drop-shadow(0 0 4px rgba(99,102,241,.5))}
 @keyframes jtDash{to{stroke-dashoffset:-28}}
-.jt-token{fill:#4f46e5;filter:drop-shadow(0 0 6px rgba(79,70,229,.8))}
+.jt-token{fill:#6366f1;filter:drop-shadow(0 0 7px rgba(99,102,241,.95)) drop-shadow(0 0 14px rgba(99,102,241,.55))}
+.jt-token.tail{fill:#818cf8}
 /* node */
-.jt-node{position:absolute;width:208px;background:#fff;border:1px solid #e7ebf3;border-radius:16px;box-shadow:0 1px 2px rgba(2,6,23,.06),0 10px 26px -12px rgba(2,6,23,.18);padding:12px 14px;cursor:grab;user-select:none;transition:box-shadow .15s,border-color .15s,transform .12s}
+.jt-node{position:absolute;width:208px;background:#fff;border:1px solid #e7ebf3;border-radius:16px;box-shadow:0 1px 2px rgba(2,6,23,.06),0 10px 26px -12px rgba(2,6,23,.18);padding:12px 14px;cursor:grab;user-select:none;transition:box-shadow .25s cubic-bezier(.22,1,.36,1),border-color .25s ease,transform .4s cubic-bezier(.34,1.56,.64,1)}
 .jt-node:hover{border-color:#c7d2fe;box-shadow:0 1px 2px rgba(2,6,23,.06),0 16px 34px -14px rgba(79,70,229,.32);transform:translateY(-1px)}
+.jt-node.pop{animation:jtPop .55s cubic-bezier(.34,1.56,.64,1)}
+@keyframes jtPop{0%{transform:scale(1)}35%{transform:scale(1.055)}100%{transform:scale(1)}}
+.jt-node.done .jt-state::after{content:'';position:absolute;inset:0;border-radius:50%;background:#16a34a;animation:jtCheck .4s ease both}
+@keyframes jtCheck{from{transform:scale(.2);opacity:0}to{transform:scale(1);opacity:1}}
+.jt-state{position:relative}
 .jt-node.dragging{cursor:grabbing;box-shadow:0 24px 44px -16px rgba(2,6,23,.4);z-index:30;transform:none}
 .jt-node::before{content:'';position:absolute;left:0;top:14px;bottom:14px;width:3px;border-radius:0 3px 3px 0;background:linear-gradient(#7c3aed,#4f46e5)}
 .jt-node.running::before{background:linear-gradient(#f59e0b,#d97706)}
@@ -2752,7 +2765,7 @@ window.addEventListener('resize',()=>{ if(_tourActive) showTourStep(); });
 // ═══════════════════════════════════════════════════
 // JOB TREE — DAG editor with pan/zoom + run simulation
 // ═══════════════════════════════════════════════════
-const JT_W=200, JT_H=92;
+const JT_W=208, JT_H=104;
 const JT_RATE=1500; // cells/sec assumed throughput for the time estimate (rows × cols ÷ rate)
 let _jt={nodes:[],edges:[]};
 let _jtView={x:60,y:50,s:1};
@@ -2761,7 +2774,7 @@ let _jtLink=null, _jtSpeed=1, _jtSimTimers=[], _jtSimRunning=false, _jtReport=nu
 function jtEstSec(n){ const r=+n.rows||0,c=+n.cols||0; if(r&&c) return Math.max(1,Math.round(r*c/JT_RATE)); return +n.dur||0; }
 function jtFmtDur(s){ s=Math.round(s); if(s<=0) return '—'; if(s<60) return s+'s'; const m=Math.floor(s/60),x=s%60; if(m<60) return x?`${m}m ${x}s`:`${m}m`; const h=Math.floor(m/60); return `${h}h ${m%60}m`; }
 // compressed animation duration (ms) so an 8-min job plays in <1s; respects speed control
-function jtSimMs(n){ const s=jtEstSec(n)||3; return Math.max(350,Math.min(2600, s*1.6))/_jtSpeed; }
+function jtSimMs(n){ const s=jtEstSec(n)||3; return Math.max(650,Math.min(3200, s*1.8))/_jtSpeed; }
 function jtParents(id){ return _jt.edges.filter(e=>e.to===id).map(e=>e.from); }
 // ── Scenarios (multiple Job-Tree pages per project) ──
 function jtScenarios(){
@@ -2802,7 +2815,15 @@ function renderJobTree(){
         <span class="ro-hide jt-tgrp">
           <select id="jt-add-sel" class="jt-sel">${avail.length?avail.map(n=>`<option>${esc(n)}</option>`).join(''):'<option value="">All masters added</option>'}</select>
           <button class="jt-btn" onclick="jtAddNode()">＋ Add job</button>
-          <button class="jt-btn ghost" onclick="jtAutoLayout()" title="Tidy into a clean dependency tree">⤧ Tidy</button>
+          <span class="jt-menu-wrap">
+            <button class="jt-btn ghost" onclick="jtToggleLayoutMenu(event)" title="Auto-arrange the graph">⤧ Tidy ▾</button>
+            <div class="jt-menu" id="jt-layout-menu">
+              <button onclick="jtAutoLayout('tb')"><b>↧ Vertical tree</b><span>Top-down by dependency depth</span></button>
+              <button onclick="jtAutoLayout('lr')"><b>↦ Horizontal tree</b><span>Left-to-right by depth</span></button>
+              <button onclick="jtAutoLayout('compact')"><b>⊞ Compact</b><span>Tight grid, minimal width</span></button>
+              <button onclick="jtAutoLayout('topo')"><b>≣ Topological order</b><span>Single run-order column</span></button>
+            </div>
+          </span>
         </span>
         <span class="jt-sep ro-hide"></span>
         <span class="jt-tgrp">
@@ -2870,9 +2891,12 @@ function jtRenderNodes(){
     }
   });
 }
+// Actual rendered node size (varies with title length) so ports/edges line up exactly.
+function jtNodeDim(n){ const el=document.getElementById('node-'+n.id); return { w: el?el.offsetWidth:JT_W, h: el?el.offsetHeight:JT_H }; }
 // Clean rounded "smooth-step" connector (vertical elbows), like React-Flow/n8n.
 function jtEdgePath(a,b){
-  const sx=a.x+JT_W/2, sy=a.y+JT_H, tx=b.x+JT_W/2, ty=b.y;
+  const da=jtNodeDim(a), db=jtNodeDim(b);
+  const sx=a.x+da.w/2, sy=a.y+da.h, tx=b.x+db.w/2, ty=b.y;
   const r=16;
   // target above or level → gentle S-bezier (avoids ugly elbows going backwards)
   if(ty < sy+2*r){
@@ -2903,7 +2927,7 @@ function jtStartDrag(id,ev){
 }
 function jtStartLink(id,ev){
   if(!jtCanEdit()) return; ev.preventDefault();
-  const a=jtNodeById(id); const sx=a.x+JT_W/2, sy=a.y+JT_H;
+  const a=jtNodeById(id); const da=jtNodeDim(a); const sx=a.x+da.w/2, sy=a.y+da.h;
   const temp=document.getElementById('jt-temp'); temp.style.display='';
   document.getElementById('jt-canvas').classList.add('linking');
   function mv(e){ const p=jtToWorld(e.clientX,e.clientY); const dy=Math.max(30,Math.abs(p.y-sy)/2+15); temp.setAttribute('d',`M ${sx} ${sy} C ${sx} ${sy+dy}, ${p.x} ${p.y-dy}, ${p.x} ${p.y}`); }
@@ -2934,37 +2958,63 @@ function jtFit(){
   const s=Math.max(.35,Math.min(1.2,Math.min((c.width-80)/(maxX-minX),(c.height-80)/(maxY-minY))));
   _jtView.s=s; _jtView.x=(c.width-(maxX-minX)*s)/2-minX*s; _jtView.y=(c.height-(maxY-minY)*s)/2-minY*s; jtApplyView();
 }
-// Top-down layered layout with barycenter crossing-reduction (matches the vertical ports).
-function jtAutoLayout(){
-  if(!_jt.nodes.length) return;
-  // layer = longest path from roots
+function jtToggleLayoutMenu(ev){ ev&&ev.stopPropagation(); const m=document.getElementById('jt-layout-menu'); if(!m)return; const open=m.classList.toggle('on');
+  if(open){ const close=e=>{ if(!e.target.closest('.jt-menu-wrap')){ m.classList.remove('on'); document.removeEventListener('mousedown',close); } }; setTimeout(()=>document.addEventListener('mousedown',close),0); } }
+// Auto-arrange the graph. mode: 'tb' (vertical), 'lr' (horizontal), 'compact', 'topo'.
+function jtAutoLayout(mode){
+  document.getElementById('jt-layout-menu')&&document.getElementById('jt-layout-menu').classList.remove('on');
+  if(!_jt.nodes.length) return; mode=mode||'tb';
+  // longest-path layering
   const layer={}; _jt.nodes.forEach(n=>layer[n.id]=0);
   for(let k=0;k<_jt.nodes.length;k++) _jt.edges.forEach(e=>{ if(layer[e.to]<layer[e.from]+1) layer[e.to]=layer[e.from]+1; });
   const maxL=Math.max(0,...Object.values(layer));
-  const layers=[]; for(let L=0;L<=maxL;L++) layers[L]=_jt.nodes.filter(n=>layer[n.id]===L);
   const parents={}, children={}; _jt.nodes.forEach(n=>{parents[n.id]=[];children[n.id]=[];});
   _jt.edges.forEach(e=>{ children[e.from].push(e.to); parents[e.to].push(e.from); });
-  layers.forEach(arr=>arr.sort((a,b)=>(a.x||0)-(b.x||0)));
+
+  if(mode==='topo'){ // Kahn topological sort → single vertical column in run order
+    const indeg={}; _jt.nodes.forEach(n=>indeg[n.id]=parents[n.id].length);
+    const q=_jt.nodes.filter(n=>!indeg[n.id]).map(n=>n.id); const order=[];
+    while(q.length){ const id=q.shift(); order.push(id); children[id].forEach(c=>{ if(--indeg[c]===0) q.push(c); }); }
+    _jt.nodes.forEach(n=>{ if(!order.includes(n.id)) order.push(n.id); }); // safety for cycles
+    order.forEach((id,i)=>{ const n=jtNodeById(id); n.x=80; n.y=60+i*150; });
+    saveJobTreeState(); renderJobTree(); setTimeout(jtFit,40); toast('Arranged · topological order'); return;
+  }
+
+  const layers=[]; for(let L=0;L<=maxL;L++) layers[L]=_jt.nodes.filter(n=>layer[n.id]===L);
+  layers.forEach(arr=>arr.sort((a,b)=>((mode==='lr'?a.y:a.x)||0)-((mode==='lr'?b.y:b.x)||0)));
   const pos={}; layers.forEach(arr=>arr.forEach((n,i)=>pos[n.id]=i));
   const bc=(n,rel)=>{ const a=rel[n.id]; return a.length? a.reduce((s,id)=>s+(pos[id]||0),0)/a.length : pos[n.id]; };
-  for(let s=0;s<5;s++){
+  for(let s=0;s<6;s++){ // barycenter crossing reduction
     for(let L=1;L<=maxL;L++){ layers[L].sort((a,b)=>bc(a,parents)-bc(b,parents)); layers[L].forEach((n,i)=>pos[n.id]=i); }
     for(let L=maxL-1;L>=0;L--){ layers[L].sort((a,b)=>bc(a,children)-bc(b,children)); layers[L].forEach((n,i)=>pos[n.id]=i); }
   }
-  const colGap=240, rowGap=180, maxCount=Math.max(1,...layers.map(a=>a.length));
-  layers.forEach((arr,L)=>{ const offset=(maxCount-arr.length)*colGap/2; arr.forEach((n,i)=>{ n.x=Math.round(60+offset+i*colGap); n.y=60+L*rowGap; }); });
+  const maxCount=Math.max(1,...layers.map(a=>a.length));
+  if(mode==='lr'){ // depth → x, order → y
+    const colGap=300, rowGap=150;
+    layers.forEach((arr,L)=>{ const off=(maxCount-arr.length)*rowGap/2; arr.forEach((n,i)=>{ n.x=80+L*colGap; n.y=Math.round(60+off+i*rowGap); }); });
+    toast('Arranged · horizontal tree');
+  } else { // tb (default) or compact
+    const colGap=mode==='compact'?224:248, rowGap=mode==='compact'?156:184;
+    layers.forEach((arr,L)=>{ const off=(maxCount-arr.length)*colGap/2; arr.forEach((n,i)=>{ n.x=Math.round(60+off+i*colGap); n.y=60+L*rowGap; }); });
+    toast(mode==='compact'?'Arranged · compact':'Arranged · vertical tree');
+  }
   saveJobTreeState(); renderJobTree(); setTimeout(jtFit,40);
 }
 // ── Run simulation ──
-function jtSetNodeState(id,st){ const el=document.getElementById('node-'+id); if(!el)return; el.classList.remove('running','done'); if(st&&st!=='idle') el.classList.add(st); }
+function jtSetNodeState(id,st){ const el=document.getElementById('node-'+id); if(!el)return; el.classList.remove('running','done'); if(st&&st!=='idle'){ el.classList.add(st); if(st==='done'){ el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); } } }
 function jtResetSim(toastIt){ _jtSimTimers.forEach(clearTimeout); _jtSimTimers=[]; _jtSimRunning=false; document.querySelectorAll('#jt-world .jt-node').forEach(el=>el.classList.remove('running','done')); document.querySelectorAll('.jt-token').forEach(t=>t.remove()); document.querySelectorAll('.jt-edges path.flow').forEach(p=>p.classList.remove('flow')); const b=document.getElementById('jt-play'); if(b){b.textContent='▶ Play';b.disabled=false;} if(toastIt) toast('↺ Reset'); }
 function jtFlowToken(edgeIdx,dur){
   const svg=document.getElementById('jt-edges'); const path=document.getElementById('edge-'+edgeIdx); if(!svg||!path)return;
-  path.classList.add('flow'); setTimeout(()=>path.classList.remove('flow'),dur);
+  path.classList.add('flow'); setTimeout(()=>{ if(path)path.classList.remove('flow'); },dur+120);
   const len=path.getTotalLength();
-  const c=document.createElementNS('http://www.w3.org/2000/svg','circle'); c.setAttribute('r','5'); c.setAttribute('class','jt-token'); svg.appendChild(c);
+  const NS='http://www.w3.org/2000/svg';
+  const ease=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;   // easeInOutCubic — Apple-like glide
+  const N=5, dots=[];
+  for(let k=0;k<N;k++){ const c=document.createElementNS(NS,'circle'); c.setAttribute('class','jt-token'+(k?' tail':'')); c.setAttribute('r', (k?Math.max(1.6,4.6-k*0.8):5.4).toFixed(1)); c.style.opacity=k?(0.4-k*0.07):1; svg.appendChild(c); dots.push(c); }
   const t0=performance.now();
-  (function step(now){ const p=Math.min(1,(now-t0)/dur); const pt=path.getPointAtLength(len*p); c.setAttribute('cx',pt.x); c.setAttribute('cy',pt.y); if(p<1&&_jtSimRunning) requestAnimationFrame(step); else c.remove(); })(performance.now());
+  (function step(now){ const raw=Math.min(1,(now-t0)/dur); const p=ease(raw);
+    for(let k=0;k<N;k++){ const pk=Math.max(0,p-k*0.045); const pt=path.getPointAtLength(len*pk); dots[k].setAttribute('cx',pt.x); dots[k].setAttribute('cy',pt.y); }
+    if(raw<1&&_jtSimRunning) requestAnimationFrame(step); else dots.forEach(c=>c.remove()); })(performance.now());
 }
 // ── Node configuration (table / rows / cols / duration / trigger) ──
 function jtEditNode(id){
