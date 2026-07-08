@@ -261,6 +261,7 @@ body.ro .ro-note{display:block}
 .jt-btn.ghost{background:#fff;color:#475569;border:1px solid var(--border);box-shadow:none}
 .jt-btn.ghost:hover{background:#f8fafc;border-color:#cbd5e1}
 .jt-btn.play{background:linear-gradient(135deg,#22c55e,#16a34a);box-shadow:0 2px 8px rgba(22,163,74,.3)}
+.jt-btn.live{background:linear-gradient(135deg,#f59e0b,#ea580c);box-shadow:0 2px 8px rgba(234,88,12,.3)}
 .jt-btn:disabled{opacity:.55;cursor:not-allowed}
 .jt-sep{width:1px;height:22px;background:var(--border)}
 .jt-sel{border:1.5px solid var(--border);border-radius:9px;padding:8px 10px;font-size:12.5px;font-family:inherit;background:#fff;max-width:220px;color:#334155}
@@ -268,7 +269,7 @@ body.ro .ro-note{display:block}
 .jt-legend{display:flex;align-items:center;gap:12px;font-size:11px;color:#94a3b8;font-weight:600;margin-left:4px}
 .jt-legend span{display:flex;align-items:center;gap:5px}
 .jt-legend i{width:8px;height:8px;border-radius:50%}
-.jt-legend i.idle{background:#cbd5e1}.jt-legend i.run{background:#f59e0b}.jt-legend i.done{background:#16a34a}
+.jt-legend i.idle{background:#cbd5e1}.jt-legend i.run{background:#f59e0b}.jt-legend i.done{background:#16a34a}.jt-legend i.err{background:#dc2626}
 /* canvas */
 .jt-canvas{position:relative;flex:1;border:1px solid var(--border);border-radius:16px;overflow:hidden;cursor:grab;background:radial-gradient(circle at 30% 18%,#fbfcff 0%,#f4f6fb 55%,#edf0f7 100%);background-image:radial-gradient(#dbe1ec 1.1px,transparent 1.1px);background-size:22px 22px;box-shadow:inset 0 40px 90px -60px rgba(79,70,229,.14)}
 .jt-canvas.panning{cursor:grabbing}
@@ -301,6 +302,11 @@ body.ro .ro-note{display:block}
 .jt-node.running .jt-state{background:#f59e0b;box-shadow:0 0 0 3px rgba(245,158,11,.22)}
 .jt-node.done{border-color:#bbf7d0}
 .jt-node.done .jt-state{background:#16a34a;box-shadow:0 0 0 3px rgba(22,163,74,.18)}
+.jt-node.error{border-color:#fecaca;animation:jtShake .4s ease}
+.jt-node.error::before{background:linear-gradient(#ef4444,#b91c1c)}
+.jt-node.error .jt-state{background:#dc2626;box-shadow:0 0 0 3px rgba(220,38,38,.2)}
+@keyframes jtShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-4px)}40%{transform:translateX(4px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}
+.jt-chip.live{background:#fff7ed;color:#c2410c}
 @keyframes jtPulse{0%,100%{box-shadow:0 0 0 1px #fcd9a3,0 12px 26px -12px rgba(245,158,11,.45)}50%{box-shadow:0 0 0 4px rgba(245,158,11,.14),0 12px 26px -12px rgba(245,158,11,.28)}}
 .jt-meta{display:flex;align-items:center;gap:6px;margin-top:11px}
 .jt-chip{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -354,6 +360,9 @@ body.ro .jt-port,body.ro .jt-del,body.ro .jt-gear{display:none!important}
 .jt-rep-tbl code{background:#f1f5f9;padding:1px 6px;border-radius:4px;font-size:11px;color:#0f766e}
 .jt-rep-ol{margin:0;padding-left:20px;font-size:12.5px;color:#1e293b;line-height:1.7}
 .jt-rep-ol code{background:#f1f5f9;padding:0 5px;border-radius:4px;color:#0f766e}
+.jt-live-badge{display:inline-block;font-size:9px;font-weight:800;letter-spacing:.5px;background:#fff7ed;color:#c2410c;border:1px solid #fed7aa;padding:2px 7px;border-radius:6px;vertical-align:middle;margin-left:6px}
+.jt-rep-errs{display:flex;flex-direction:column;gap:6px}
+.jt-rep-err{background:#fef2f2;border:1px solid #fecaca;color:#991b1b;border-radius:8px;padding:8px 10px;font-size:12px}
 .rb-admin{background:rgba(233,69,96,.2);color:#f87171;border:1px solid rgba(233,69,96,.3)}
 .rb-editor{background:rgba(37,99,235,.2);color:#93c5fd;border:1px solid rgba(37,99,235,.3)}
 .rb-viewer{background:rgba(22,163,74,.2);color:#86efac;border:1px solid rgba(22,163,74,.3)}
@@ -973,20 +982,26 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,[contenteditable
 .onb-viewport{overflow:hidden}
 .onb-track{display:flex;transition:transform .45s cubic-bezier(.4,0,.2,1)}
 .onb-slide{min-width:100%;box-sizing:border-box;padding:46px 48px 6px;text-align:center}
-.onb-hero{height:216px;border-radius:20px;background:linear-gradient(140deg,#eef2ff 0%,#faf5ff 55%,#fdf2f8 100%);border:1px solid #ebe9f7;display:flex;align-items:center;justify-content:center;overflow:hidden;margin-bottom:26px}
-.onb-eyebrow{font-size:11px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#6366f1;margin-bottom:9px}
-.onb-title{font-size:23px;font-weight:800;color:#0f172a;letter-spacing:-.5px;margin-bottom:11px;line-height:1.22}
-.onb-desc{font-size:14px;color:#64748b;line-height:1.6;max-width:440px;margin:0 auto;min-height:44px}
-.onb-footer{display:flex;align-items:center;justify-content:space-between;padding:20px 48px 30px;gap:12px}
+.onb-progress{height:3px;background:#f1f5f9;position:relative;overflow:hidden}
+.onb-progress-bar{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,#7c3aed,#4f46e5);border-radius:0 3px 3px 0;transition:width .45s cubic-bezier(.4,0,.2,1)}
+.onb-step{font-size:10.5px;font-weight:700;color:#a5adba;letter-spacing:.3px;margin-bottom:14px}
+.onb-hero{height:216px;border-radius:20px;background:radial-gradient(circle at 28% 20%,#f8f7ff 0%,#f1f0fd 55%,#ece9fb 100%);background-image:radial-gradient(#e2defa 1.1px,transparent 1.1px),radial-gradient(circle at 28% 20%,#f8f7ff 0%,#f1f0fd 55%,#ece9fb 100%);background-size:20px 20px,cover;border:1px solid #e6e2f7;display:flex;align-items:center;justify-content:center;overflow:hidden;margin-bottom:26px;box-shadow:inset 0 30px 60px -40px rgba(79,70,229,.18)}
+.onb-eyebrow{font-size:11px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#6366f1;margin-bottom:9px;animation:onbRise .5s cubic-bezier(.22,1,.36,1) both}
+.onb-title{font-size:23px;font-weight:800;color:#0f172a;letter-spacing:-.5px;margin-bottom:11px;line-height:1.22;animation:onbRise .5s .04s cubic-bezier(.22,1,.36,1) both}
+.onb-desc{font-size:14px;color:#64748b;line-height:1.6;max-width:440px;margin:0 auto;min-height:44px;animation:onbRise .5s .08s cubic-bezier(.22,1,.36,1) both}
+@keyframes onbRise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.onb-footer{display:flex;align-items:center;justify-content:space-between;padding:18px 48px 30px;gap:12px}
 .onb-dots{display:flex;gap:7px}
 .onb-dot{width:7px;height:7px;border-radius:50%;background:#d8dade;cursor:pointer;transition:all .25s;border:none;padding:0}
 .onb-dot.on{background:#6366f1;width:22px;border-radius:4px}
 .onb-actions{display:flex;align-items:center;gap:10px}
 .onb-skip{background:none;border:none;color:#94a3b8;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
 .onb-skip:hover{color:#64748b}
-.onb-back{background:#f1f5f9;border:none;color:#475569;font-weight:600;font-size:13px;padding:10px 18px;border-radius:10px;cursor:pointer;font-family:inherit}
-.onb-next{background:linear-gradient(135deg,#6d28d9,#4f46e5);border:none;color:#fff;font-weight:700;font-size:14px;padding:11px 22px;border-radius:11px;cursor:pointer;font-family:inherit;box-shadow:0 4px 14px rgba(79,70,229,.3)}
-.onb-next:hover{filter:brightness(1.07)}
+.onb-back{background:#f1f5f9;border:none;color:#475569;font-weight:600;font-size:13px;padding:10px 18px;border-radius:10px;cursor:pointer;font-family:inherit;transition:background .12s}
+.onb-back:hover{background:#e2e8f0}
+.onb-next{background:linear-gradient(135deg,#6d28d9,#4f46e5);border:none;color:#fff;font-weight:700;font-size:14px;padding:11px 22px;border-radius:11px;cursor:pointer;font-family:inherit;box-shadow:0 4px 14px rgba(79,70,229,.3);transition:filter .12s,transform .06s,box-shadow .18s}
+.onb-next:hover{filter:brightness(1.07);box-shadow:0 6px 18px rgba(79,70,229,.4)}
+.onb-next:active{transform:translateY(1px)}
 /* mini UI mockups inside the hero */
 .mk{width:78%;border-radius:11px;background:#fff;box-shadow:0 14px 34px rgba(2,6,23,.13);overflow:hidden;animation:mkrise .5s ease}
 @keyframes mkrise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
@@ -1001,6 +1016,19 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,[contenteditable
 .mk-row:first-child{border-top:none}
 .mk-chip{font-size:8px;font-weight:800;padding:1px 6px;border-radius:5px}
 .mk-grow{flex:1}
+/* mini Job Tree + Postgres live-run preview */
+.mk-jt-wrap{display:flex;flex-direction:column;align-items:center;gap:10px}
+.mk-jt-nodes{display:flex;align-items:center;justify-content:center;gap:0}
+.mk-jt-node{width:76px;background:#fff;border:1px solid #e2e8f0;border-radius:9px;padding:7px 8px;box-shadow:0 6px 16px rgba(2,6,23,.1);text-align:left}
+.mk-jt-node b{display:block;font-size:8px;font-weight:800;color:#0f172a;margin-top:2px}
+.mk-jt-node span.tbl{display:inline-block;margin-top:4px;font-size:6.5px;font-weight:700;color:#0f766e;background:#ecfdf5;padding:1px 5px;border-radius:5px;font-family:ui-monospace,monospace}
+.mk-jt-tag{font-size:6.5px;font-weight:800;letter-spacing:.3px;color:#a5adba;text-transform:uppercase}
+.mk-jt-node.done{border-color:#bbf7d0}
+.mk-jt-node.run{border-color:#fcd9a3;animation:mkPulse 1.3s ease-in-out infinite}
+@keyframes mkPulse{0%,100%{box-shadow:0 6px 16px rgba(2,6,23,.1)}50%{box-shadow:0 6px 16px rgba(245,158,11,.35)}}
+.mk-jt-arrow{width:24px;height:2px;background:linear-gradient(90deg,#c7d2fe,#6366f1);position:relative;flex-shrink:0}
+.mk-jt-arrow::after{content:'';position:absolute;right:-1px;top:-2.5px;border:3.5px solid transparent;border-left-color:#6366f1}
+.mk-jt-badge{display:inline-flex;align-items:center;gap:5px;background:#fff7ed;color:#c2410c;font-size:9px;font-weight:800;padding:5px 12px;border-radius:20px;border:1px solid #fed7aa}
 .onb-form-hdr{padding:30px 40px 6px}
 .onb-form-hdr h2{font-size:21px;font-weight:800;color:#0f172a;margin:0 0 4px}
 .onb-form-hdr p{font-size:13px;color:#64748b;margin:0}
@@ -1074,6 +1102,8 @@ input:focus-visible,select:focus-visible,textarea:focus-visible,[contenteditable
   #hub-overlay,#new-proj-overlay.open .modal{animation:none!important}
   .tour-spot,#tour-pop,.hub-card,.hub-bar>span{transition:none!important}
   .mk{animation:none!important}
+  .onb-eyebrow,.onb-title,.onb-desc,.mk-jt-node.run{animation:none!important}
+  .onb-progress-bar{transition:none!important}
 }
 .info-i .info-pop{display:none;position:absolute;bottom:130%;left:50%;transform:translateX(-50%);background:#0f172a;color:#fff;font-size:11.5px;font-weight:400;font-family:inherit;line-height:1.5;padding:8px 11px;border-radius:8px;width:max-content;max-width:280px;white-space:normal;text-align:left;z-index:50;box-shadow:0 8px 24px rgba(0,0,0,.25);pointer-events:none}
 .info-i .info-pop::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:#0f172a}
@@ -1786,6 +1816,26 @@ th .info-i{margin-left:4px}
           <div id="jira-test-result" style="margin-top:10px;font-size:12px"></div>
         </div>
 
+        <!-- Postgres Integration -->
+        <div class="settings-card">
+          <h3>🐘 Postgres Integration</h3>
+          <p>Connect this project's target Postgres database so the <strong>Job Tree</strong> can do a real <strong>Live Run</strong> — pulling each master's live API data (from Mapping) and persisting actual rows into your tables, not just a simulation.</p>
+          <div style="display:grid;gap:12px;margin-top:16px">
+            <div class="mfg" style="margin-bottom:0"><label>Connection String</label>
+              <input id="s-pg-conn" type="password" autocomplete="off" placeholder="postgres://user:password@host:5432/dbname?sslmode=require"/>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:14px">
+            <button class="btn-upd" onclick="savePgCfg_ui()">Save Postgres Config</button>
+            <button class="btn-upd" style="background:#f8fafc;color:#475569;border:1.5px solid #e2e8f0" onclick="testPgConnection()">Test Connection</button>
+            <button class="btn-upd" style="background:#fff1f2;color:#e11d48;border:1.5px solid #fecdd3" onclick="clearPgCfg()">Clear</button>
+          </div>
+          <div class="settings-note" style="margin-top:12px">
+            Stored in Firebase, scoped to this project only. Job Tree's <strong>⚡ Live Run</strong> matches each job to a master's saved API mapping, hits it live, then inserts the returned rows into that job's <strong>target table</strong>.
+          </div>
+          <div id="pg-test-result" style="margin-top:10px;font-size:12px"></div>
+        </div>
+
         <!-- Master Registry -->
         <div class="settings-card">
           <h3>🗂 Master Registry (per project)</h3>
@@ -2194,6 +2244,7 @@ th .info-i{margin-left:4px}
 
     <!-- STAGE 1 — feature intro carousel -->
     <div id="onb-intro">
+      <div class="onb-progress"><div class="onb-progress-bar" id="onb-progress-bar" style="width:20%"></div></div>
       <div class="onb-viewport">
         <div class="onb-track" id="onb-track">
 
@@ -2222,9 +2273,9 @@ th .info-i{margin-left:4px}
                 </div>
               </div>
             </div>
-            <div class="onb-eyebrow">Salescode · SAP Integration Tracker</div>
-            <div class="onb-title">Your whole integration, in one place</div>
-            <div class="onb-desc">Track testing, API readiness, sign-off and live Jira status for every master and transaction — across as many projects as you run.</div>
+            <div class="onb-eyebrow">Salescode · SAP Integration Platform</div>
+            <div class="onb-title">Run every SAP integration in one place</div>
+            <div class="onb-desc">One workspace per client: testing, API readiness, live Jira sign-off, no-code mapping and a real execution sequence — as many projects as you run, side by side.</div>
           </div>
 
           <div class="onb-slide">
@@ -2238,9 +2289,9 @@ th .info-i{margin-left:4px}
                 </div>
               </div>
             </div>
-            <div class="onb-eyebrow">No-code mapping</div>
+            <div class="onb-eyebrow">No-code mapping · Step 2</div>
             <div class="onb-title">Map any API without writing a transformer</div>
-            <div class="onb-desc">Drop the interface doc or hit the live API — fields and SQL types are detected automatically. Mark what's mandatory, map to Salescode, done.</div>
+            <div class="onb-desc">Drop the interface doc or hit the live API — fields and SQL types are detected automatically. Mark what's mandatory, map to Salescode, then generate the Java transformer.</div>
           </div>
 
           <div class="onb-slide">
@@ -2254,9 +2305,25 @@ th .info-i{margin-left:4px}
                 </div>
               </div>
             </div>
-            <div class="onb-eyebrow">Automatic sign-off</div>
+            <div class="onb-eyebrow">Automatic sign-off · Step 3</div>
             <div class="onb-title">Live from Jira, signed off automatically</div>
-            <div class="onb-desc">Each master pulls its status, assignee and dates from your Jira epic. Dev and Tester sign-off are derived the moment the tickets close.</div>
+            <div class="onb-desc">Each master pulls its status, assignee and dates straight from your Jira epic. Dev and Tester sign-off are derived the moment the tickets close — no manual clicking.</div>
+          </div>
+
+          <div class="onb-slide">
+            <div class="onb-hero">
+              <div class="mk-jt-wrap">
+                <div class="mk-jt-nodes">
+                  <div class="mk-jt-node done"><span class="mk-jt-tag">Job</span><b>Customer Master</b><span class="tbl">▤ sc_customer</span></div>
+                  <div class="mk-jt-arrow"></div>
+                  <div class="mk-jt-node run"><span class="mk-jt-tag">Job · All</span><b>PJP Master</b><span class="tbl">▤ sc_pjp</span></div>
+                </div>
+                <div class="mk-jt-badge">🐘 Live Run — 1,204 rows inserted</div>
+              </div>
+            </div>
+            <div class="onb-eyebrow">Job Tree · Step 4</div>
+            <div class="onb-title">Sequence the run, then make it real</div>
+            <div class="onb-desc">Drag masters into a dependency tree — n8n-style — set ALL/ANY triggers, and hit <strong>Play</strong> to simulate timing. Connect Postgres and hit <strong>⚡ Live Run</strong> to actually pull each master's API and persist real rows into your tables.</div>
           </div>
 
           <div class="onb-slide">
@@ -2270,9 +2337,9 @@ th .info-i{margin-left:4px}
                 </div>
               </div>
             </div>
-            <div class="onb-eyebrow">Verify &amp; hand off</div>
+            <div class="onb-eyebrow">Verify &amp; hand off · Step 5</div>
             <div class="onb-title">Test, validate, hand off in one click</div>
-            <div class="onb-desc">Re-hit the API to check record counts, missing mandatory data and type mismatches — then export a full context pack for any developer or for Claude.</div>
+            <div class="onb-desc">Re-hit the API to check record counts, missing mandatory data and type mismatches — then export a full context pack for any developer, or for Claude.</div>
           </div>
 
         </div>
@@ -2827,13 +2894,14 @@ function renderJobTree(){
         </span>
         <span class="jt-sep ro-hide"></span>
         <span class="jt-tgrp">
-          <button class="jt-btn play" id="jt-play" onclick="jtPlay()">▶ Play</button>
+          <button class="jt-btn play" id="jt-play" onclick="jtPlay()" title="Visual timing simulation — no real data moves">▶ Simulate</button>
+          <button class="jt-btn live ro-hide" id="jt-play-live" onclick="jtPlayLive()" title="Really pull each master's API and write rows into Postgres">⚡ Live Run</button>
           <button class="jt-btn ghost" id="jt-reset" onclick="jtResetSim(true)" title="Reset">⟲</button>
           <select class="jt-sel sp" onchange="_jtSpeed=+this.value" title="Playback speed">
             <option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="3">3×</option>
           </select>
         </span>
-        <span class="jt-legend"><span><i class="idle"></i>Idle</span><span><i class="run"></i>Running</span><span><i class="done"></i>Done</span></span>
+        <span class="jt-legend"><span><i class="idle"></i>Idle</span><span><i class="run"></i>Running</span><span><i class="done"></i>Done</span><span><i class="err"></i>Failed</span></span>
         <button class="jt-btn ghost ro-hide" onclick="jtClear()" style="margin-left:auto">Clear</button>
       </div>
       <div class="jt-canvas" id="jt-canvas">
@@ -3001,8 +3069,8 @@ function jtAutoLayout(mode){
   saveJobTreeState(); renderJobTree(); setTimeout(jtFit,40);
 }
 // ── Run simulation ──
-function jtSetNodeState(id,st){ const el=document.getElementById('node-'+id); if(!el)return; el.classList.remove('running','done'); if(st&&st!=='idle'){ el.classList.add(st); if(st==='done'){ el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); } } }
-function jtResetSim(toastIt){ _jtSimTimers.forEach(clearTimeout); _jtSimTimers=[]; _jtSimRunning=false; document.querySelectorAll('#jt-world .jt-node').forEach(el=>el.classList.remove('running','done')); document.querySelectorAll('.jt-token').forEach(t=>t.remove()); document.querySelectorAll('.jt-edges path.flow').forEach(p=>p.classList.remove('flow')); const b=document.getElementById('jt-play'); if(b){b.textContent='▶ Play';b.disabled=false;} if(toastIt) toast('↺ Reset'); }
+function jtSetNodeState(id,st){ const el=document.getElementById('node-'+id); if(!el)return; el.classList.remove('running','done','error'); if(st&&st!=='idle'){ el.classList.add(st); if(st==='done'){ el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); } } }
+function jtResetSim(toastIt){ _jtSimTimers.forEach(clearTimeout); _jtSimTimers=[]; _jtSimRunning=false; document.querySelectorAll('#jt-world .jt-node').forEach(el=>el.classList.remove('running','done','error')); document.querySelectorAll('.jt-token').forEach(t=>t.remove()); document.querySelectorAll('.jt-edges path.flow').forEach(p=>p.classList.remove('flow')); const b=document.getElementById('jt-play'); if(b){b.textContent='▶ Simulate';b.disabled=false;} const lb=document.getElementById('jt-play-live'); if(lb){lb.innerHTML='⚡ Live Run';lb.disabled=false;} if(toastIt) toast('↺ Reset'); }
 function jtFlowToken(edgeIdx,dur){
   const svg=document.getElementById('jt-edges'); const path=document.getElementById('edge-'+edgeIdx); if(!svg||!path)return;
   path.classList.add('flow'); setTimeout(()=>{ if(path)path.classList.remove('flow'); },dur+120);
@@ -3076,18 +3144,92 @@ function jtPlay(){
 function jtShowReport(){
   const r=_jtReport; if(!r) return; const body=document.getElementById('jt-rep-body'); if(!body) return;
   const tn=Object.keys(r.tables); const totalRows=tn.reduce((s,t)=>s+(r.tables[t].rows||0),0);
+  const title=document.querySelector('#jt-rep-overlay .jt-modal-h span');
+  if(title) title.innerHTML = r.live ? '⚡ Live Run report <span class="jt-live-badge">REAL DATA</span>' : '▶ Simulation report';
   let h=`<div class="jt-rep-top">
-    <div class="jt-rep-kpi"><div class="big">${jtFmtDur(r.totalSec)}</div><div class="lbl">Est. real run (critical path)</div></div>
+    <div class="jt-rep-kpi"><div class="big">${jtFmtDur(r.totalSec)}</div><div class="lbl">${r.live?'Actual wall time':'Est. real run (critical path)'}</div></div>
     <div class="jt-rep-kpi"><div class="big">${r.jobs.length}</div><div class="lbl">Jobs executed</div></div>
     <div class="jt-rep-kpi"><div class="big">${tn.length}</div><div class="lbl">Tables populated</div></div>
-    <div class="jt-rep-kpi"><div class="big">${totalRows.toLocaleString()}</div><div class="lbl">Rows added</div></div></div>`;
-  h+=`<div class="jt-rep-sec">Tables &amp; data added</div>`;
+    <div class="jt-rep-kpi"><div class="big">${totalRows.toLocaleString()}</div><div class="lbl">Rows ${r.live?'inserted':'added'}</div></div></div>`;
+  if(r.live && r.errors && r.errors.length){
+    h+=`<div class="jt-rep-sec">⚠️ Failed jobs (${r.errors.length})</div><div class="jt-rep-errs">`+
+      r.errors.map(e=>`<div class="jt-rep-err"><strong>${esc(e.name)}</strong> — ${esc(e.error)}</div>`).join('')+`</div>`;
+  }
+  h+=`<div class="jt-rep-sec">Tables &amp; data ${r.live?'inserted':'added'}</div>`;
   h+= tn.length ? `<table class="jt-rep-tbl"><thead><tr><th>Table</th><th>Rows</th><th>Populated by</th></tr></thead><tbody>`+
       tn.map(t=>`<tr><td><code>${esc(t)}</code></td><td>${(r.tables[t].rows||0).toLocaleString()}</td><td>${r.tables[t].jobs.map(esc).join(', ')}</td></tr>`).join('')+`</tbody></table>`
-    : `<div class="muted" style="font-size:12px;padding:4px 0">No tables set on the jobs yet — open a job's ⚙ to set its target table and expected rows, then Play again.</div>`;
+    : `<div class="muted" style="font-size:12px;padding:4px 0">${r.live?'No rows were inserted — check target tables and Mapping API config on each job.':'No tables set on the jobs yet — open a job\'s ⚙ to set its target table and expected rows, then Play again.'}</div>`;
   h+=`<div class="jt-rep-sec">Execution order</div><ol class="jt-rep-ol">`+
-    r.jobs.map(j=>`<li><strong>${esc(j.name)}</strong> <span class="muted">— ${jtFmtDur(j.sec)}${j.table?` → <code>${esc(j.table)}</code> (${(j.rows||0).toLocaleString()} rows)`:''}</span></li>`).join('')+`</ol>`;
+    r.jobs.map(j=>`<li><strong>${esc(j.name)}</strong> <span class="muted">— ${jtFmtDur(j.sec)}${j.table?` → <code>${esc(j.table)}</code> (${(j.rows||0).toLocaleString()}${r.live?' inserted':' rows'}${r.live&&j.recordCount?` of ${j.recordCount} pulled`:''})`:''}${j.error?` <span style="color:#dc2626">— failed: ${esc(j.error)}</span>`:''}${!j.error&&j.note?` <span style="color:#b45309">— ${esc(j.note)}</span>`:''}</span></li>`).join('')+`</ol>`;
   body.innerHTML=h; document.getElementById('jt-rep-overlay').classList.add('on');
+}
+
+// ── LIVE RUN: really hit each master's saved API and persist the rows into Postgres ──
+async function jtPlayLive(){
+  if(!jtCanEdit()){ toast('Editors only'); return; }
+  const pgc=getPgCfg();
+  if(!pgc.connectionString){ toast('⚠️ Add a Postgres connection string in Settings → Postgres Integration first'); return; }
+  if(!_jt.nodes.length){ toast('Add some jobs first'); return; }
+  jtResetSim();
+  _jtSimRunning=true;
+  const lb=document.getElementById('jt-play-live'); if(lb){ lb.innerHTML='● Running…'; lb.disabled=true; }
+  const pb=document.getElementById('jt-play'); if(pb) pb.disabled=true;
+  const mapAll=loadMappings();
+  const done={}, started={};
+  const t0=performance.now();
+  _jtReport={ tables:{}, jobs:[], totalSec:0, live:true, errors:[] };
+
+  function eligible(id){ const ps=jtParents(id); if(!ps.length) return true; const n=jtNodeById(id); return n.trigger==='any'? ps.some(p=>done[p]) : ps.every(p=>done[p]); }
+  function tryStart(){ _jt.nodes.forEach(n=>{ if(!started[n.id] && eligible(n.id)){ started[n.id]=1; runNode(n); } }); }
+
+  async function runNode(n){
+    jtSetNodeState(n.id,'running');
+    const startT=performance.now();
+    const out={ inserted:0, recordCount:0, note:'', error:null };
+    try{
+      if(n.table){
+        const key=Object.keys(mapAll).find(k=>k.toLowerCase()===n.name.toLowerCase());
+        const mm=key?mapAll[key]:null;
+        if(mm && mm.api && mm.api.url && (mm.rows||[]).length){
+          const cfg=mm.api; const headers={}; if(cfg.user||cfg.pass) headers['Authorization']='Basic '+btoa(cfg.user+':'+cfg.pass);
+          const resp=await fetch('/api/fetch',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({url:cfg.url,method:cfg.method||'POST',headers,body:cfg.body})});
+          const apiOut=await resp.json().catch(()=>({}));
+          if(!apiOut.ok) throw new Error('API '+(apiOut.status||0)+(apiOut.error?': '+apiOut.error:''));
+          const data=apiOut.data;
+          const records=Array.isArray(data)?data:(data&&Array.isArray(data._raw)?data._raw:[data]);
+          out.recordCount=records.length;
+          const rowsOut=records.map(rec=>{
+            const o={}; (mm.rows||[]).forEach(r=>{ if(!r.api) return; const col=(r.salescode||r.api).trim(); if(!col) return; o[col]=_getPath(rec,r.api); });
+            return o;
+          }).filter(o=>Object.keys(o).length);
+          if(rowsOut.length){
+            const ins=await fetch('/api/pg',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({connectionString:pgc.connectionString,action:'insert',table:n.table,rows:rowsOut})});
+            const insOut=await ins.json().catch(()=>({}));
+            if(!insOut.ok) throw new Error('DB: '+(insOut.error||'insert failed'));
+            out.inserted=insOut.inserted||0;
+          } else { out.note='API returned no usable fields to insert.'; }
+        } else {
+          out.note='No saved API mapping for "'+n.name+'" — open Mapping and configure its API first.';
+        }
+      } else {
+        out.note='No target table set on this job — nothing to persist.';
+      }
+    }catch(e){ out.error=e.message; }
+    const elapsed=performance.now()-startT;
+    await new Promise(res=>setTimeout(res, Math.max(300,Math.min(1200,elapsed*0.5))/_jtSpeed));
+    done[n.id]=1;
+    if(out.error){ jtSetNodeState(n.id,'error'); _jtReport.errors.push({name:n.name,error:out.error}); }
+    else{ jtSetNodeState(n.id,'done'); if(n.table&&out.inserted){ const t=(_jtReport.tables[n.table]=_jtReport.tables[n.table]||{rows:0,jobs:[]}); t.rows+=out.inserted; t.jobs.push(n.name); } }
+    _jtReport.jobs.push({name:n.name, sec:Math.round((performance.now()-startT)/1000), table:n.table||'', rows:out.inserted, recordCount:out.recordCount, note:out.note, error:out.error, live:true});
+    _jt.edges.forEach((e,i)=>{ if(e.from===n.id) jtFlowToken(i, 550); });
+    tryStart();
+    if(_jt.nodes.every(x=>done[x.id])){
+      _jtSimRunning=false; _jtReport.totalSec=Math.round((performance.now()-t0)/1000);
+      if(lb){ lb.innerHTML='⚡ Live Run again'; lb.disabled=false; } if(pb) pb.disabled=false;
+      jtShowReport();
+    }
+  }
+  setTimeout(tryStart,150);
 }
 
 function renderProjDropdown(){
@@ -3109,7 +3251,7 @@ function renderProjDropdown(){
     </div>`:'');
 }
 
-const ONB_SLIDES=4;
+const ONB_SLIDES=5;
 let _onbSlide=0;
 function renderOnbDots(){
   const d=document.getElementById('onb-dots'); if(!d) return;
@@ -3118,8 +3260,15 @@ function renderOnbDots(){
 function onbGoto(i){
   _onbSlide=Math.max(0,Math.min(ONB_SLIDES-1,i));
   const t=document.getElementById('onb-track'); if(t) t.style.transform='translateX(-'+(_onbSlide*100)+'%)';
-  document.getElementById('onb-back').style.display=_onbSlide===0?'none':'';
-  document.getElementById('onb-next').textContent=_onbSlide===ONB_SLIDES-1?'Create New Project →':'Next →';
+  const back=document.getElementById('onb-back'); if(back) back.style.display=_onbSlide===0?'none':'';
+  const next=document.getElementById('onb-next'); if(next) next.textContent=_onbSlide===ONB_SLIDES-1?'Create New Project →':'Next →';
+  const bar=document.getElementById('onb-progress-bar'); if(bar) bar.style.width=Math.round(((_onbSlide+1)/ONB_SLIDES)*100)+'%';
+  // re-trigger the fade/rise entrance on the active slide's text
+  const slides=document.querySelectorAll('#onb-track .onb-slide');
+  const active=slides[_onbSlide];
+  if(active){
+    active.querySelectorAll('.onb-eyebrow,.onb-title,.onb-desc').forEach(el=>{ el.style.animation='none'; void el.offsetWidth; el.style.animation=''; });
+  }
   renderOnbDots();
 }
 function onbNext(){ if(_onbSlide===ONB_SLIDES-1) onbToForm(); else onbGoto(_onbSlide+1); }
@@ -4246,6 +4395,7 @@ function switchPanel(id,el){
     renderRoleList();
     if(role==='admin') renderSettingsProj();
     loadJiraCfgIntoSettings();
+    loadPgCfgIntoSettings();
     renderRegistryList();
     renderTestingSetsSettings();
     genShareLink();
@@ -4809,6 +4959,39 @@ function loadJiraCfgIntoSettings(){
   if(t) t.value=c.token?'••••••••••••••••':'';
   const ep=document.getElementById('s-jira-epic');
   if(ep) ep.value=getEpicKey();
+}
+
+// ── Postgres config (per-project, stored in proj_config via Firebase) ──
+function getPgCfg(){ return (loadProjCfg(getActivePid())||{}).pgConfig || {}; }
+function savePgCfg_ui(){
+  const prev=getPgCfg();
+  const raw=(document.getElementById('s-pg-conn').value||'').trim();
+  const conn = (raw && !/^•+$/.test(raw)) ? raw : (prev.connectionString||'');
+  if(!conn){ toast('⚠️ Enter a connection string first'); return; }
+  const pc=loadProjCfg(getActivePid())||{}; pc.pgConfig={connectionString:conn}; saveProjCfg(getActivePid(),pc);
+  toast('✓ Postgres config saved'); loadPgCfgIntoSettings();
+}
+function clearPgCfg(){
+  if(!confirm('Clear this project\'s Postgres config?')) return;
+  const pc=loadProjCfg(getActivePid())||{}; delete pc.pgConfig; saveProjCfg(getActivePid(),pc);
+  const el=document.getElementById('s-pg-conn'); if(el) el.value='';
+  document.getElementById('pg-test-result').innerHTML='';
+  toast('Postgres config cleared');
+}
+function loadPgCfgIntoSettings(){
+  const c=getPgCfg(); const el=document.getElementById('s-pg-conn');
+  if(el) el.value=c.connectionString?'••••••••••••••••••••':'';
+}
+async function testPgConnection(){
+  const c=getPgCfg(); const res=document.getElementById('pg-test-result');
+  if(!c.connectionString){ res.innerHTML='<span style="color:#e11d48">⚠️ Save a connection string first.</span>'; return; }
+  res.innerHTML='<span style="color:#64748b">Testing…</span>';
+  try{
+    const resp=await fetch('/api/pg',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({connectionString:c.connectionString,action:'test'})});
+    const out=await resp.json().catch(()=>({}));
+    if(out.ok) res.innerHTML=`<span style="color:#15803d">✓ Connected — ${esc((out.version||'').split(',')[0]||'Postgres')}</span>`;
+    else res.innerHTML=`<span style="color:#e11d48">❌ ${esc(out.error||'Could not connect')}</span>`;
+  }catch(e){ res.innerHTML=`<span style="color:#e11d48">❌ ${esc(e.message)}</span>`; }
 }
 
 // ═══════════════════════════════════════════════════
