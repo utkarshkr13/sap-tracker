@@ -1,6 +1,6 @@
 # Salescode.ai — SAP Integration Tracker
 
-> A self-serve platform for running SAP integration projects end-to-end: track testing, map client APIs to Salescode fields **without writing transformers**, watch progress live from Jira, and hand off context in one click.
+> A self-serve platform for running SAP integration projects end-to-end: track testing, map client APIs to Salescode fields **without writing transformers**, watch progress live from Jira, sequence and **actually run** the load order against Postgres, and hand off context in one click.
 
 🔗 **Live app**: https://sap-tracker-mocha.vercel.app
 🏢 First deployment: **CCBCSA** (Coca-Cola Saudi Arabia) — but the platform is **multi-project, multi-client** and reusable for any SAP integration engagement.
@@ -23,7 +23,7 @@ A full-screen dashboard of project cards is the home view:
 
 ### New project onboarding
 
-1. **Feature-tour carousel** — an animated walkthrough of the platform, including a looping cursor-tap demo that types a project name to show how creation works.
+1. **Feature-tour carousel** — 5 slides with a progress bar and per-slide entrance animation: project creation (animated cursor-tap demo), no-code mapping, live Jira sign-off, **Job Tree + Postgres Live Run**, and test/export.
 2. **Creation form** — name, client, description, Jira epic key, testing sessions, and a **start-from template** (Blank, SAP template, or copy the current project).
 
 ### Guided tour
@@ -42,7 +42,8 @@ A full-screen dashboard of project cards is the home view:
 | **Integration** | SAP↔Salescode API-readiness tracker with status pills and Excel export. |
 | **SAP Masters** | **Live view of a Jira epic.** Each child story shows status, assignee, start/due dates, a child-work flag, and **automatic Dev/Tester sign-off**. One-click **create testing subtask**, **Run Digest**, and **Export project to Claude**. |
 | **Mapping** | **The transformer console.** Pull API fields from a live endpoint or a `.docx` interface doc, auto-detect SQL types, mark Mandatory, map to Salescode fields, validate, **Test** the live contract, and **generate a Java transformer**. |
-| **Settings** | Team access (grant by email + role), per-project config (epic key, testing sessions, master registry), read-only share link, Jira connection, and data reset (admin only). |
+| **Job Tree** | **n8n-style DAG sequence board**, multiple scenarios per project, ALL/ANY trigger modes, an eased **▶ Simulate** playback with a run report, and a real **⚡ Live Run** that pulls each master's live API and persists actual rows into your **Postgres** database. |
+| **Settings** | Team access (grant by email + role), per-project config (epic key, testing sessions, master registry), Postgres connection, Jira connection, read-only share link, and data reset (admin only). |
 
 ---
 
@@ -76,6 +77,20 @@ A self-serve console that replaces hand-written transformers.
 
 ---
 
+## Job Tree — sequence board with real Postgres execution
+
+An n8n-style dependency board for planning and running the order masters must persist in.
+
+- **Drag-and-drop DAG** — add masters as nodes, drag a node's bottom port onto another to set "runs after"; smooth-step connectors, pan/zoom, floating zoom control.
+- **Multiple scenarios per project** — separate pages (e.g. "Morning Integration Job", "Returns Processing") each with their own graph, switchable via tabs.
+- **Auto-layout menu** — Vertical tree, Horizontal tree, Compact, or Topological order (Kahn's algorithm), all via barycenter crossing-reduction.
+- **ALL / ANY triggers** — configure per job whether it waits for every upstream job or just one.
+- **▶ Simulate** — a fast, eased visual playback (comet-trail tokens, node pop/check animations) using each job's estimated time (rows × columns ÷ throughput, or a manual duration) — nothing real happens, it's for planning and demos.
+- **⚡ Live Run** — the real thing. For each job with a target table configured: matches the job to a master's saved **Mapping** API config, hits that API live, then inserts the returned rows into the job's target table in your connected **Postgres** database — honouring the same ALL/ANY dependency order. Failed jobs show a red/shake state; the run report shows actual wall time, rows inserted per table, and any errors.
+- Connect Postgres in **Settings → Postgres Integration** (per-project connection string) before using Live Run.
+
+---
+
 ## Multi-project
 
 - Create projects from the **top-bar switcher** or the **Projects Hub** → feature-tour carousel → creation form (name, client, description, epic key, testing sessions, start-from template).
@@ -102,9 +117,11 @@ Grant access in **Settings → Team Access**: enter a Google email, pick a role,
 - **Frontend**: vanilla HTML/CSS/JS — no build step, single `index.html`.
 - **Auth**: Firebase Authentication (Google sign-in). Access is role-gated by email.
 - **Database**: Firebase Realtime Database — syncs across devices.
+- **Target databases**: any Postgres instance a project connects (Job Tree Live Run writes here — separate from the app's own Firebase storage).
 - **Serverless** (Vercel functions):
   - `api/jira.js` — Jira proxy (issue / JQL / createmeta GET, plus issue creation POST).
   - `api/fetch.js` — generic API proxy for the mapping console.
+  - `api/pg.js` — Postgres proxy for Job Tree Live Run (`node-postgres`; test / parameterized multi-row insert / read-only query).
 - **Libraries (CDN)**: Chart.js, SheetJS, mammoth (docx parsing).
 - **Hosting**: Vercel (static + functions).
 
@@ -122,7 +139,9 @@ Grant access in **Settings → Team Access**: enter a Google email, pick a role,
 index.html        ← entire frontend (HTML + CSS + JS)
 api/jira.js       ← Jira REST proxy (CORS + Basic auth; GET issue/JQL/createmeta, POST create)
 api/fetch.js      ← generic API proxy for the mapping console
+api/pg.js         ← Postgres proxy for Job Tree Live Run (test / insert / query)
 vercel.json       ← static + functions config
+package.json      ← declares the `pg` dependency for api/pg.js
 memory/           ← project memory notes
 ```
 
@@ -130,14 +149,18 @@ memory/           ← project memory notes
 ```
 /config                  → team roles (emailRoles map)
 /projects                → project list
-/proj_config/{pid}       → per-project: epicKey, testingSets, masters (registry), sessions, catalog
+/proj_config/{pid}       → per-project: epicKey, testingSets, masters (registry), sessions, catalog,
+                            pgConfig (Postgres connectionString), jobTrees (Job Tree scenarios), jobTreeActive
 /data/{pid}              → testing rows
 /integration/{pid}       → integration timeline
 /signoff/{pid}           → signoff rows
-/mappings/{pid}          → field mappings (incl. per-integration API config + sample values)
+/mappings/{pid}          → field mappings (incl. per-integration API config + sample values) —
+                            Job Tree Live Run matches a job's name to a key here to find its API config
 /jira_config             → Jira base URL, email, API token (shared across projects)
 /requests                → pending access requests
 ```
+
+> ⚠️ **Security note**: Postgres connection strings and the Jira API token are both stored in Firebase in plaintext, same trust model as the rest of the config. Fine for the current single-team usage; would need tightening (e.g. server-side-only secrets) before handling a client's production database credentials at scale.
 
 ---
 
