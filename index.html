@@ -338,6 +338,21 @@ body.ro .ro-note{display:block}
 .jt-lab-tag.ok{background:#dcfce7;color:#15803d}.jt-lab-tag.bad{background:#fee2e2;color:#b91c1c}
 .jt-rep-blocked{display:flex;flex-wrap:wrap;gap:6px}
 .jt-rep-bchip{font-size:11px;font-weight:600;color:#64748b;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:7px;padding:3px 8px}
+.jt-rep-actions{margin-top:16px;padding-top:14px;border-top:1px solid var(--border)}
+/* run history */
+.jt-hist-row{display:flex;align-items:center;gap:12px;padding:11px 12px;border:1px solid var(--border);border-radius:12px;margin-bottom:8px;cursor:pointer;transition:border-color .15s,box-shadow .15s,transform .1s;background:#fff}
+.jt-hist-row:hover{border-color:#c7d2fe;box-shadow:0 6px 18px -8px rgba(79,70,229,.3);transform:translateY(-1px)}
+.jt-hist-ic{width:34px;height:34px;flex-shrink:0;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:15px}
+.jt-hist-ic.sim{background:#eef2ff}.jt-hist-ic.live{background:#fff7ed}.jt-hist-ic.lab{background:#f5f3ff}
+.jt-hist-main{flex:1;min-width:0}
+.jt-hist-t{font-size:13.5px;font-weight:650;color:#0f172a;display:flex;align-items:center;gap:8px}
+.jt-hist-kind{font-size:9.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:#94a3b8;background:#f1f5f9;border-radius:6px;padding:2px 6px}
+.jt-hist-sub{font-size:11.5px;color:#94a3b8;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.jt-hist-time{font-size:11px;color:#b6bECc;flex-shrink:0;white-space:nowrap}
+.jt-hist-open,.jt-hist-del{flex-shrink:0;width:28px;height:28px;border-radius:8px;border:1px solid var(--border);background:#fff;cursor:pointer;font-size:12px;color:#64748b;transition:.12s}
+.jt-hist-open:hover{background:#eef2ff;color:#4f46e5;border-color:#c7d2fe}
+.jt-hist-del:hover{background:#fee2e2;color:#dc2626;border-color:#fecaca}
+.jt-hist-empty{text-align:center;color:#94a3b8;font-size:13.5px;padding:38px 20px;line-height:1.6}
 /* ports */
 .jt-port{position:absolute;left:50%;transform:translateX(-50%);width:13px;height:13px;border-radius:50%;background:#fff;border:2.5px solid #6366f1;cursor:crosshair;bottom:-7px;transition:transform .12s,box-shadow .12s,background .12s;z-index:2}
 .jt-port:hover{background:#6366f1;box-shadow:0 0 0 4px rgba(99,102,241,.18);transform:translateX(-50%) scale(1.25)}
@@ -2284,6 +2299,13 @@ th .info-i{margin-left:4px}
   <div class="jt-modal-f"><button class="jt-btn ghost" onclick="jtLabStop()">Stop &amp; build report</button></div>
 </div></div>
 
+<!-- ══ JOB TREE — run history ══ -->
+<div id="jt-hist-overlay" class="jt-modal-bk"><div class="jt-modal" style="max-width:560px" role="dialog" aria-modal="true">
+  <div class="jt-modal-h"><span>🕘 Run history</span><button class="jt-modal-x" onclick="document.getElementById('jt-hist-overlay').classList.remove('on')" aria-label="Close">✕</button></div>
+  <div class="jt-modal-b" id="jt-hist-body" style="max-height:64vh"></div>
+  <div class="jt-modal-f" style="justify-content:space-between"><button class="jt-btn ghost" onclick="jtHistClear()">Clear all</button><button class="jt-btn" onclick="document.getElementById('jt-hist-overlay').classList.remove('on')">Close</button></div>
+</div></div>
+
 <!-- ══ NEW PROJECT — onboarding carousel + form ══ -->
 <div class="overlay" id="new-proj-overlay">
   <div class="modal onb-modal">
@@ -2963,6 +2985,7 @@ function renderJobTree(){
             <option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="3">3×</option>
           </select>
         </span>
+        <button class="jt-btn ghost" id="jt-hist-btn" onclick="jtOpenHistory()" title="Past simulation & failure-lab runs">🕘 History</button>
         <button class="jt-btn ghost ro-hide" id="jt-snap-btn" onclick="jtToggleSnap(this)" title="Snap nodes to a grid while dragging">▦ Snap</button>
         <span class="jt-legend"><span><i class="idle"></i>Idle</span><span><i class="run"></i>Running</span><span><i class="done"></i>Done</span><span><i class="err"></i>Failed</span><span><i class="blk"></i>Blocked</span></span>
         <button class="jt-btn ghost ro-hide" onclick="jtClear()" style="margin-left:auto">Clear</button>
@@ -3232,7 +3255,7 @@ function jtPlay(){
     if(running===0){ // settle: mark any leftover as blocked
       _jt.nodes.forEach(x=>{ if(!done[x.id]&&!failed[x.id]&&!blocked[x.id]){ blocked[x.id]=1; jtSetNodeState(x.id,'blocked'); } });
       _jtReport.blocked=Object.keys(blocked).map(id=>jtName(id));
-      _jtSimRunning=false; const b=document.getElementById('jt-play'); if(b){b.textContent='▶ Simulate';b.disabled=false;} jtShowReport();
+      _jtSimRunning=false; const b=document.getElementById('jt-play'); if(b){b.textContent='▶ Simulate';b.disabled=false;} jtRecordSim('sim'); jtShowReport();
     }
   }
   setTimeout(tryStart,250);
@@ -3261,6 +3284,7 @@ function jtShowReport(){
     : `<div class="muted" style="font-size:12px;padding:4px 0">${r.live?'No rows were inserted — check target tables and Mapping API config on each job.':'No tables set on the jobs yet — open a job\'s ⚙ to set its target table and expected rows, then Play again.'}</div>`;
   h+=`<div class="jt-rep-sec">Execution order</div><ol class="jt-rep-ol">`+
     r.jobs.map(j=>`<li><strong>${esc(j.name)}</strong> <span class="muted">— ${jtFmtDur(j.sec)}${j.table?` → <code>${esc(j.table)}</code> (${(j.rows||0).toLocaleString()}${r.live?' inserted':' rows'}${r.live&&j.recordCount?` of ${j.recordCount} pulled`:''})`:''}${j.error?` <span style="color:#dc2626">— failed: ${esc(j.error)}</span>`:''}${!j.error&&j.note?` <span style="color:#b45309">— ${esc(j.note)}</span>`:''}</span></li>`).join('')+`</ol>`;
+  if(_jtCurrentRec) h+=`<div class="jt-rep-actions"><button class="jt-btn" onclick="jtOpenReportTab(_jtCurrentRec)">↗ Open full report · Print</button></div>`;
   body.innerHTML=h; document.getElementById('jt-rep-overlay').classList.add('on');
 }
 
@@ -3326,14 +3350,14 @@ async function jtPlayLive(){
     if(_jt.nodes.every(x=>done[x.id])){
       _jtSimRunning=false; _jtReport.totalSec=Math.round((performance.now()-t0)/1000);
       if(lb){ lb.innerHTML='⚡ Live Run again'; lb.disabled=false; } if(pb) pb.disabled=false;
-      jtShowReport();
+      jtRecordSim('live'); jtShowReport();
     }
   }
   setTimeout(tryStart,150);
 }
 
 // ══════════ FAILURE LAB — run every failure scenario, then generate a resilience report ══════════
-let _jtLabRunning=false, _jtLabAgg=null;
+let _jtLabRunning=false, _jtLabAgg=null, _jtCurrentRec=null;
 const jtSleep=ms=>new Promise(r=>setTimeout(r,ms));
 // est critical-path seconds over the jobs that SUCCEEDED in a scenario (honours triggers)
 function jtScenarioSec(done){
@@ -3489,10 +3513,156 @@ async function jtBuildFailureDoc(agg){
   h+=`<div class="jt-rep-sec">Top single points of failure</div><ol class="jt-rep-ol">`+
     spofs.slice(0,6).map(s=>`<li><strong>${esc(s.name)}</strong> <span class="muted">— blocks ${s.blast} job(s)${s.blast?': '+esc(s.blocks.join(', ')):''}</span></li>`).join('')+`</ol>`;
   h+=`<div class="jt-rep-sec">Full report</div><div class="muted" style="font-size:12px;margin-bottom:10px">A complete Markdown report (blast radius, per-job stats, scenario log, recommendations) has been downloaded. You can re-download or copy it below.</div>
-    <div style="display:flex;gap:8px"><button class="jt-btn" onclick="jtDownloadText(window._jtLabFname, window._jtLabMd)">⬇ Download report (.md)</button>
-    <button class="jt-btn ghost" onclick="navigator.clipboard.writeText(window._jtLabMd).then(()=>toast('Report copied'))">⧉ Copy Markdown</button></div>`;
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="jt-btn" onclick="jtOpenReportTab(_jtCurrentRec)">↗ Open full report · Print</button>
+    <button class="jt-btn ghost" onclick="jtDownloadText(window._jtLabFname, window._jtLabMd)">⬇ Markdown</button>
+    <button class="jt-btn ghost" onclick="navigator.clipboard.writeText(window._jtLabMd).then(()=>toast('Report copied'))">⧉ Copy</button></div>`;
+  // build a structured record + save to run history
+  const labData={ project:proj, scenario:scn, generated:D.toISOString(), jobsCount:agg.nodes.length, edges:agg.edges, scenariosRun:agg.scenarios.length,
+    baseSec:agg.baseSec, worstBlast:spofs[0]?spofs[0].blast:0, chaos:chaos.length, chaosOk,
+    spofs, perJob:agg.nodes.map(n=>{const p=agg.perJob[n.id]; return {name:n.name, runs:p.runs, fails:p.fails, blocked:p.blockedTimes, avgSec:p.runs?Math.round(p.sumSec/p.runs):0};}),
+    slow:slow.map(n=>({name:n.name,est:n.est,table:n.table})), scenarios:agg.scenarios, recommendations:recs, flaky };
+  _jtCurrentRec={ id:'r'+Date.now().toString(36), ts:Date.now(), kind:'lab', scenario:scn, data:labData, md };
+  jtHistSaveRec(_jtCurrentRec);
   body.innerHTML=h; document.getElementById('jt-rep-overlay').classList.add('on');
-  toast('🔬 Failure analysis complete — report downloaded');
+  toast('🔬 Failure analysis complete — saved to history');
+}
+
+// ══════════ RUN HISTORY (Simulate + Live + Failure Lab) ══════════
+function jtActiveScnName(){ return (jtScenarios().find(s=>s.id===jtActiveId())||{}).name||'Flow'; }
+function jtHistKey(){ return 'jt_hist_'+getActivePid(); }
+function jtHistLoad(){ try{ return JSON.parse(localStorage.getItem(jtHistKey())||'[]'); }catch(e){ return []; } }
+function jtHistSaveRec(rec){ let h=jtHistLoad(); h.unshift(rec); while(h.length>60) h.pop();
+  try{ localStorage.setItem(jtHistKey(), JSON.stringify(h)); }
+  catch(e){ while(h.length>15){ h.pop(); try{ localStorage.setItem(jtHistKey(),JSON.stringify(h)); return; }catch(_){} } } }
+function jtHistDelete(id){ localStorage.setItem(jtHistKey(), JSON.stringify(jtHistLoad().filter(r=>r.id!==id))); jtRenderHistory(); toast('Run removed from history'); }
+function jtHistClear(){ if(!confirm('Clear all saved runs for this project?')) return; localStorage.removeItem(jtHistKey()); jtRenderHistory(); }
+function jtRecordSim(kind){ _jtCurrentRec={ id:'r'+Date.now().toString(36), ts:Date.now(), kind:kind, scenario:jtActiveScnName(),
+  data:{ totalSec:_jtReport.totalSec||0, jobs:_jtReport.jobs||[], tables:_jtReport.tables||{}, errors:_jtReport.errors||[], blocked:_jtReport.blocked||[] } };
+  jtHistSaveRec(_jtCurrentRec); }
+function jtRelTime(ts){ const s=Math.round((Date.now()-ts)/1000); if(s<60) return 'just now'; const m=Math.round(s/60); if(m<60) return m+'m ago'; const h=Math.round(m/60); if(h<24) return h+'h ago'; const d=Math.round(h/24); if(d<7) return d+'d ago'; return new Date(ts).toLocaleDateString(); }
+function jtHistSummary(r){ const d=r.data||{};
+  if(r.kind==='lab') return `${d.scenariosRun} scenarios · worst blast ${d.worstBlast} · ${d.chaosOk}/${d.chaos} outages survived · baseline ${jtFmtDur(d.baseSec)}`;
+  const fail=(d.errors||[]).length, blk=(d.blocked||[]).length, jobs=(d.jobs||[]).length;
+  return `${jobs} jobs · ${jtFmtDur(d.totalSec)}${fail?` · ${fail} failed`:''}${blk?` · ${blk} blocked`:''}${!fail&&!blk?' · clean run':''}`; }
+function jtKindMeta(k){ return k==='lab'?{ic:'🔬',lbl:'Failure Lab',cls:'lab'}:k==='live'?{ic:'⚡',lbl:'Live Run',cls:'live'}:{ic:'▶',lbl:'Simulation',cls:'sim'}; }
+function jtOpenHistory(){ jtRenderHistory(); document.getElementById('jt-hist-overlay').classList.add('on'); }
+function jtRenderHistory(){
+  const body=document.getElementById('jt-hist-body'); if(!body) return;
+  const h=jtHistLoad();
+  if(!h.length){ body.innerHTML=`<div class="jt-hist-empty"><div style="font-size:30px;margin-bottom:8px">🗂️</div>No runs yet. Press <strong>Simulate</strong> or <strong>Failure Lab</strong> and your results will be saved here.</div>`; return; }
+  body.innerHTML=h.map(r=>{ const m=jtKindMeta(r.kind);
+    return `<div class="jt-hist-row" onclick="jtOpenReportById('${r.id}')" title="Open full report in a new tab">
+      <div class="jt-hist-ic ${m.cls}">${m.ic}</div>
+      <div class="jt-hist-main"><div class="jt-hist-t">${esc(r.scenario)} <span class="jt-hist-kind">${m.lbl}</span></div>
+        <div class="jt-hist-sub">${esc(jtHistSummary(r))}</div></div>
+      <div class="jt-hist-time">${jtRelTime(r.ts)}</div>
+      <button class="jt-hist-open" onclick="event.stopPropagation();jtOpenReportById('${r.id}')" title="Open in new tab">↗</button>
+      <button class="jt-hist-del" onclick="event.stopPropagation();jtHistDelete('${r.id}')" title="Delete">✕</button>
+    </div>`; }).join('');
+}
+function jtOpenReportById(id){ const r=jtHistLoad().find(x=>x.id===id); if(r) jtOpenReportTab(r); else toast('Run not found'); }
+// Open a full, printable report in a NEW TAB (Emil-polished standalone document).
+function jtOpenReportTab(rec){ if(!rec){ toast('No report to open'); return; }
+  const w=window.open('','_blank'); if(!w){ toast('Pop-up blocked — allow pop-ups to open the report'); return; }
+  w.document.open(); w.document.write(jtReportHTML(rec)); w.document.close(); }
+function _jtBar(pct,color){ return `<span class="bar"><span class="fill" style="width:${Math.max(3,pct)}%;background:${color||'#6366f1'}"></span></span>`; }
+function jtReportHTML(rec){
+  const d=rec.data||{}, kind=rec.kind, m=jtKindMeta(kind);
+  const proj=(loadProjects().find(p=>p.id===getActivePid())||{}).name||'Project';
+  const when=new Date(rec.ts).toLocaleString();
+  const CSS=`
+    :root{--ink:#141a21;--muted:#8a93a2;--line:#e7ebf1;--bg:#fbfcfe;--accent:#6366f1;--ok:#16a34a;--bad:#dc2626;--warn:#c2410c}
+    *{box-sizing:border-box}
+    html{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+    body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.65 -apple-system,BlinkMacSystemFont,"SF Pro Text","Inter",system-ui,sans-serif;letter-spacing:-.005em}
+    .wrap{max-width:840px;margin:0 auto;padding:56px 32px 96px}
+    .bar-top{position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 20px;background:rgba(255,255,255,.82);backdrop-filter:saturate(180%) blur(14px);border-bottom:1px solid var(--line)}
+    .bar-top .brand{font-size:12.5px;font-weight:600;color:var(--muted);letter-spacing:.01em}
+    .bar-top button{font:inherit;font-size:13px;font-weight:600;border:1px solid var(--line);background:#fff;color:var(--ink);padding:8px 16px;border-radius:9px;cursor:pointer;transition:.15s}
+    .bar-top button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+    .bar-top button:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(2,6,23,.1)}
+    .kicker{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin-bottom:14px}
+    h1{font-size:34px;line-height:1.12;letter-spacing:-.022em;margin:0 0 10px;font-weight:700}
+    .meta{color:var(--muted);font-size:13.5px;margin-bottom:8px}
+    .meta b{color:var(--ink);font-weight:600}
+    h2{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:44px 0 16px;padding-top:20px;border-top:1px solid var(--line)}
+    .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:24px 0 8px}
+    .kpi{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px 18px 15px}
+    .kpi .big{font-size:26px;font-weight:700;letter-spacing:-.02em;line-height:1.1}
+    .kpi .lbl{font-size:11.5px;color:var(--muted);margin-top:4px;font-weight:500}
+    .kpi.bad .big{color:var(--bad)} .kpi.ok .big{color:var(--ok)}
+    ul.clean{margin:0;padding:0;list-style:none}
+    ul.clean li{position:relative;padding:7px 0 7px 22px;border-bottom:1px solid var(--line)}
+    ul.clean li:before{content:'';position:absolute;left:4px;top:15px;width:6px;height:6px;border-radius:50%;background:var(--accent)}
+    ul.clean li:last-child{border-bottom:0}
+    table{width:100%;border-collapse:collapse;margin:6px 0 4px;font-size:13.5px}
+    th{text-align:left;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700;padding:8px 12px;border-bottom:1px solid var(--line)}
+    td{padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
+    tr:last-child td{border-bottom:0}
+    td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+    code{font:12.5px/1 ui-monospace,"SF Mono",Menlo,monospace;background:#f1f5f9;color:#0f766e;padding:2px 6px;border-radius:5px}
+    .chip{display:inline-block;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:6px;margin:2px 3px 2px 0}
+    .chip.ok{background:#dcfce7;color:#15803d}.chip.bad{background:#fee2e2;color:#b91c1c}.chip.blk{background:#f1f5f9;color:#64748b}
+    .bar{display:inline-block;width:80px;height:7px;border-radius:5px;background:#eef2f7;vertical-align:middle;overflow:hidden}
+    .bar .fill{display:block;height:100%;border-radius:5px}
+    .callout{background:#f7f9fc;border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:10px;padding:13px 16px;color:#475569;font-size:13.5px;margin:12px 0}
+    .foot{margin-top:56px;padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font-size:12px}
+    ol.recs{margin:0;padding-left:20px} ol.recs li{padding:6px 0;border-bottom:1px solid var(--line)} ol.recs li:last-child{border-bottom:0}
+    @media print{ .bar-top{display:none} body{background:#fff} .wrap{padding:0 8px} .kpi,.callout{break-inside:avoid} h2{break-after:avoid} tr{break-inside:avoid} }
+  `;
+  const head=`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(proj)} — ${m.lbl} report</title><style>${CSS}</style></head><body>
+    <div class="bar-top"><span class="brand">Salescode.ai · SAP Integration Tracker — Job Tree</span><span><button onclick="window.print()" class="primary">🖨 Print / Save PDF</button> <button onclick="window.close()">Close</button></span></div>
+    <div class="wrap">
+    <div class="kicker">${m.ic} ${m.lbl} report</div>
+    <h1>${esc(proj)} — ${esc(rec.scenario)}</h1>
+    <div class="meta"><b>Run type:</b> ${m.lbl} &nbsp;·&nbsp; <b>When:</b> ${esc(when)}</div>`;
+  const foot=`<div class="foot">Generated by the Salescode.ai SAP Integration Tracker · Job Tree ${m.lbl}. This is a point-in-time analysis of the configured job graph.</div></div></body></html>`;
+  let c='';
+  if(kind==='lab'){
+    const maxBlast=Math.max(1,...(d.spofs||[]).map(s=>s.blast));
+    c+=`<div class="kpis">
+      <div class="kpi"><div class="big">${jtFmtDur(d.baseSec)}</div><div class="lbl">Healthy critical path</div></div>
+      <div class="kpi"><div class="big">${d.scenariosRun}</div><div class="lbl">Scenarios run</div></div>
+      <div class="kpi bad"><div class="big">${d.worstBlast}</div><div class="lbl">Worst blast radius</div></div>
+      <div class="kpi ${d.chaosOk===d.chaos?'ok':''}"><div class="big">${d.chaosOk}/${d.chaos}</div><div class="lbl">Random outages survived</div></div>
+      <div class="kpi"><div class="big">${d.jobsCount}</div><div class="lbl">Jobs · ${d.edges} deps</div></div></div>`;
+    c+=`<h2>Executive summary</h2><ul class="clean">`;
+    const top=(d.spofs||[])[0];
+    c+=`<li>A healthy end-to-end run takes about <b>${jtFmtDur(d.baseSec)}</b> along the critical path.</li>`;
+    if(top) c+=`<li>The biggest single point of failure is <b>${esc(top.name)}</b> — its failure blocks <b>${top.blast}</b> downstream job(s).</li>`;
+    c+=`<li><b>${d.chaosOk}</b> of <b>${d.chaos}</b> random-outage scenarios still completed cleanly.</li>`;
+    c+=(d.flaky&&d.flaky.length)?`<li><b>${d.flaky.length}</b> job(s) are configured as unreliable: ${d.flaky.map(f=>esc(f.name)+(f.mode==='always'?' (always fails)':` (~${f.pct||15}%)`)).join(', ')}.</li>`:`<li>No jobs are configured to fail — set a job's ⚙ → Reliability to model real outages.</li>`;
+    c+=`</ul>`;
+    c+=`<h2>Single points of failure — blast radius</h2><div class="callout">If a job fails, every job below it that needs it (via an <b>ALL</b> trigger) can't run. Ranked by how many jobs each failure takes down.</div>`;
+    c+=`<table><thead><tr><th>#</th><th>Job</th><th>Impact</th><th class="num">Blocks</th><th>Downstream blocked</th></tr></thead><tbody>`+
+      (d.spofs||[]).map((s,i)=>`<tr><td class="num">${i+1}</td><td><b>${esc(s.name)}</b></td><td>${_jtBar(s.blast/maxBlast*100, s.blast?'#dc2626':'#cbd5e1')}</td><td class="num">${s.blast}</td><td>${s.blast?s.blocks.map(b=>`<span class="chip blk">${esc(b)}</span>`).join(''):'<span style="color:#94a3b8">—</span>'}</td></tr>`).join('')+`</tbody></table>`;
+    c+=`<h2>Per-job behaviour across all scenarios</h2><table><thead><tr><th>Job</th><th class="num">Runs</th><th class="num">Failed</th><th class="num">Blocked</th><th class="num">Avg run</th></tr></thead><tbody>`+
+      (d.perJob||[]).map(p=>`<tr><td>${esc(p.name)}</td><td class="num">${p.runs}</td><td class="num" style="color:${p.fails?'#dc2626':'inherit'}">${p.fails}</td><td class="num" style="color:${p.blocked?'#b45309':'inherit'}">${p.blocked}</td><td class="num">${p.runs?jtFmtDur(p.avgSec):'—'}</td></tr>`).join('')+`</tbody></table>`;
+    c+=`<h2>Slowest jobs — timing hot-spots</h2><table><thead><tr><th>Job</th><th class="num">Est. run</th><th>Target table</th></tr></thead><tbody>`+
+      (d.slow||[]).map(n=>`<tr><td>${esc(n.name)}</td><td class="num">${jtFmtDur(n.est)}</td><td>${n.table?`<code>${esc(n.table)}</code>`:'—'}</td></tr>`).join('')+`</tbody></table>`;
+    c+=`<h2>Scenario log — all ${(d.scenarios||[]).length} runs</h2><table><thead><tr><th>#</th><th>Scenario</th><th>Forced to fail</th><th>Failed</th><th>Blocked</th><th>Status</th><th class="num">Run time</th></tr></thead><tbody>`+
+      (d.scenarios||[]).map((s,i)=>`<tr><td class="num">${i+1}</td><td>${esc(s.label)}</td><td>${s.forced&&s.forced.length?s.forced.map(esc).join(', '):'—'}</td><td>${s.failed&&s.failed.length?s.failed.map(x=>`<span class="chip bad">${esc(x)}</span>`).join(''):'—'}</td><td>${s.blocked&&s.blocked.length?s.blocked.map(x=>`<span class="chip blk">${esc(x)}</span>`).join(''):'—'}</td><td>${s.completed?'<span class="chip ok">completed</span>':'<span class="chip bad">degraded</span>'}</td><td class="num">${jtFmtDur(s.totalSec)}</td></tr>`).join('')+`</tbody></table>`;
+    c+=`<h2>Recommendations</h2><ol class="recs">`+(d.recommendations||[]).map(r=>`<li>${r.replace(/\*\*(.+?)\*\*/g,'<b>$1</b>')}</li>`).join('')+`</ol>`;
+  } else {
+    const jobs=d.jobs||[], tn=Object.keys(d.tables||{}), rows=tn.reduce((s,t)=>s+((d.tables[t].rows)||0),0);
+    const errs=d.errors||[], blk=d.blocked||[];
+    c+=`<div class="kpis">
+      <div class="kpi"><div class="big">${jtFmtDur(d.totalSec)}</div><div class="lbl">${kind==='live'?'Actual wall time':'Critical-path time'}</div></div>
+      <div class="kpi"><div class="big">${jobs.length}</div><div class="lbl">Jobs executed</div></div>
+      <div class="kpi"><div class="big">${tn.length}</div><div class="lbl">Tables populated</div></div>
+      <div class="kpi"><div class="big">${rows.toLocaleString()}</div><div class="lbl">Rows ${kind==='live'?'inserted':'added'}</div></div>
+      <div class="kpi ${errs.length?'bad':'ok'}"><div class="big">${errs.length}</div><div class="lbl">Failed jobs</div></div>
+      <div class="kpi ${blk.length?'bad':''}"><div class="big">${blk.length}</div><div class="lbl">Blocked jobs</div></div></div>`;
+    if(errs.length){ c+=`<h2>⚠ Failed jobs</h2><ul class="clean">`+errs.map(e=>`<li><b>${esc(e.name)}</b> — <span style="color:#dc2626">${esc(e.error)}</span></li>`).join('')+`</ul>`; }
+    if(blk.length){ c+=`<h2>⛔ Blocked — never ran (upstream failure)</h2><div>`+blk.map(nm=>`<span class="chip blk">${esc(nm)}</span>`).join('')+`</div>`; }
+    c+=`<h2>Tables &amp; data ${kind==='live'?'inserted':'added'}</h2>`;
+    c+= tn.length ? `<table><thead><tr><th>Table</th><th class="num">Rows</th><th>Populated by</th></tr></thead><tbody>`+
+      tn.map(t=>`<tr><td><code>${esc(t)}</code></td><td class="num">${(d.tables[t].rows||0).toLocaleString()}</td><td>${(d.tables[t].jobs||[]).map(esc).join(', ')}</td></tr>`).join('')+`</tbody></table>`
+      : `<div class="callout">No tables were populated — set target tables on the jobs (⚙) to track where data lands.</div>`;
+    c+=`<h2>Execution order</h2><table><thead><tr><th>#</th><th>Job</th><th class="num">Time</th><th>Target table</th><th class="num">Rows</th><th>Outcome</th></tr></thead><tbody>`+
+      jobs.map((j,i)=>`<tr><td class="num">${i+1}</td><td>${esc(j.name)}</td><td class="num">${jtFmtDur(j.sec)}</td><td>${j.table?`<code>${esc(j.table)}</code>`:'—'}</td><td class="num">${(j.rows||0).toLocaleString()}</td><td>${j.error?`<span class="chip bad">failed</span>`:`<span class="chip ok">ok</span>`}</td></tr>`).join('')+`</tbody></table>`;
+  }
+  return head+c+foot;
 }
 
 function renderProjDropdown(){
