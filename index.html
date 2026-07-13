@@ -318,6 +318,26 @@ body.ro .ro-note{display:block}
 .jt-chip.time.muted{background:#f1f5f9;color:#94a3b8;font-weight:600}
 .jt-trig{font-size:8.5px;font-weight:800;letter-spacing:.4px;padding:2px 6px;border-radius:6px;background:#eef2ff;color:#4338ca}
 .jt-trig.any{background:#fff7ed;color:#c2410c}
+.jt-risk{font-size:10px;line-height:1}.jt-risk.always{color:#dc2626}.jt-risk.flaky{color:#d97706}
+/* failed + blocked node states */
+.jt-node.error{border-color:#fca5a5;animation:jtShake .4s ease}
+.jt-node.error::before{background:linear-gradient(#ef4444,#b91c1c)}
+.jt-node.error .jt-state{background:#dc2626;box-shadow:0 0 0 3px rgba(220,38,38,.18)}
+@keyframes jtShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-4px)}40%{transform:translateX(4px)}60%{transform:translateX(-3px)}80%{transform:translateX(2px)}}
+.jt-node.blocked{opacity:.5;filter:grayscale(.7)}
+.jt-node.blocked::before{background:#cbd5e1}
+.jt-node.blocked .jt-state{background:#94a3b8}
+.jt-btn.lab{background:linear-gradient(135deg,#8b5cf6,#6d28d9);box-shadow:0 2px 8px rgba(124,58,237,.3)}
+.jt-btn#jt-snap-btn.on{background:#eef2ff;color:#4f46e5;border-color:#c7d2fe}
+.jt-legend i.err{background:#dc2626}.jt-legend i.blk{background:#94a3b8}
+/* failure lab modal */
+.jt-lab-bar{height:9px;background:#eef2f7;border-radius:6px;overflow:hidden}
+.jt-lab-fill{height:100%;width:0;background:linear-gradient(90deg,#8b5cf6,#6366f1);border-radius:6px;transition:width .3s ease}
+.jt-lab-live{margin-top:12px;min-height:22px}
+.jt-lab-tag{display:inline-block;font-size:11px;font-weight:700;padding:3px 9px;border-radius:7px}
+.jt-lab-tag.ok{background:#dcfce7;color:#15803d}.jt-lab-tag.bad{background:#fee2e2;color:#b91c1c}
+.jt-rep-blocked{display:flex;flex-wrap:wrap;gap:6px}
+.jt-rep-bchip{font-size:11px;font-weight:600;color:#64748b;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:7px;padding:3px 8px}
 /* ports */
 .jt-port{position:absolute;left:50%;transform:translateX(-50%);width:13px;height:13px;border-radius:50%;background:#fff;border:2.5px solid #6366f1;cursor:crosshair;bottom:-7px;transition:transform .12s,box-shadow .12s,background .12s;z-index:2}
 .jt-port:hover{background:#6366f1;box-shadow:0 0 0 4px rgba(99,102,241,.18);transform:translateX(-50%) scale(1.25)}
@@ -2227,6 +2247,18 @@ th .info-i{margin-left:4px}
       <option value="all">Run after ALL upstream jobs finish (default)</option>
       <option value="any">Run after ANY upstream job finishes (partial)</option>
     </select>
+    <div style="display:flex;gap:12px">
+      <div style="flex:1.3"><label>Reliability</label>
+        <select id="jt-cfg-fail" onchange="jtCfgPreview()">
+          <option value="ok">Always succeeds</option>
+          <option value="flaky">Flaky — fails sometimes</option>
+          <option value="always">Always fails</option>
+        </select>
+      </div>
+      <div style="flex:1"><label>Fail chance %</label><input id="jt-cfg-failpct" type="number" min="0" max="100" placeholder="15" oninput="jtCfgPreview()"/></div>
+    </div>
+    <label>Timing variance ±% <span class="muted">(run-to-run jitter — models "slow/spiky" jobs)</span></label>
+    <input id="jt-cfg-jitter" type="number" min="0" max="90" placeholder="0" oninput="jtCfgPreview()"/>
     <div id="jt-cfg-est" class="jt-cfg-est"></div>
   </div>
   <div class="jt-modal-f"><button class="jt-btn ghost" onclick="document.getElementById('jt-cfg-overlay').classList.remove('on')">Cancel</button><button class="jt-btn" onclick="jtSaveNodeCfg()">Save job</button></div>
@@ -2237,6 +2269,19 @@ th .info-i{margin-left:4px}
   <div class="jt-modal-h"><span>▶ Simulation report</span><button class="jt-modal-x" onclick="document.getElementById('jt-rep-overlay').classList.remove('on')" aria-label="Close">✕</button></div>
   <div class="jt-modal-b" id="jt-rep-body"></div>
   <div class="jt-modal-f"><button class="jt-btn" onclick="document.getElementById('jt-rep-overlay').classList.remove('on')">Close</button></div>
+</div></div>
+
+<!-- ══ JOB TREE — Failure Lab progress ══ -->
+<div id="jt-lab-overlay" class="jt-modal-bk"><div class="jt-modal" style="max-width:460px" role="dialog" aria-modal="true">
+  <div class="jt-modal-h"><span>🔬 Failure Lab</span><button class="jt-modal-x" onclick="jtLabStop()" aria-label="Close">✕</button></div>
+  <div class="jt-modal-b">
+    <div id="jt-lab-phase" style="font-size:13px;color:#475569;font-weight:600;margin-bottom:4px">Preparing scenarios…</div>
+    <div id="jt-lab-scn" style="font-size:12px;color:#94a3b8;margin-bottom:12px;min-height:16px"></div>
+    <div class="jt-lab-bar"><div class="jt-lab-fill" id="jt-lab-fill"></div></div>
+    <div id="jt-lab-count" style="font-size:11px;color:#94a3b8;margin-top:6px;text-align:right"></div>
+    <div id="jt-lab-live" class="jt-lab-live"></div>
+  </div>
+  <div class="jt-modal-f"><button class="jt-btn ghost" onclick="jtLabStop()">Stop &amp; build report</button></div>
 </div></div>
 
 <!-- ══ NEW PROJECT — onboarding carousel + form ══ -->
@@ -2836,6 +2881,9 @@ window.addEventListener('resize',()=>{ if(_tourActive) showTourStep(); });
 // ═══════════════════════════════════════════════════
 const JT_W=208, JT_H=104;
 const JT_RATE=1500; // cells/sec assumed throughput for the time estimate (rows × cols ÷ rate)
+let _jtSnap=true; const JT_GRID=20; // align-to-grid snapping while dragging
+function jtToggleSnap(btn){ _jtSnap=!_jtSnap; if(btn) btn.classList.toggle('on',_jtSnap); toast(_jtSnap?'Grid snapping on':'Grid snapping off'); const c=document.getElementById('jt-canvas'); if(c) c.classList.toggle('snap',_jtSnap); }
+const jtSnapV=v=>_jtSnap?Math.round(v/JT_GRID)*JT_GRID:Math.round(v);
 let _jt={nodes:[],edges:[]};
 let _jtView={x:60,y:50,s:1};
 let _jtLink=null, _jtSpeed=1, _jtSimTimers=[], _jtSimRunning=false, _jtReport=null, _jtEditId=null;
@@ -2843,7 +2891,11 @@ let _jtLink=null, _jtSpeed=1, _jtSimTimers=[], _jtSimRunning=false, _jtReport=nu
 function jtEstSec(n){ const r=+n.rows||0,c=+n.cols||0; if(r&&c) return Math.max(1,Math.round(r*c/JT_RATE)); return +n.dur||0; }
 function jtFmtDur(s){ s=Math.round(s); if(s<=0) return '—'; if(s<60) return s+'s'; const m=Math.floor(s/60),x=s%60; if(m<60) return x?`${m}m ${x}s`:`${m}m`; const h=Math.floor(m/60); return `${h}h ${m%60}m`; }
 // compressed animation duration (ms) so an 8-min job plays in <1s; respects speed control
-function jtSimMs(n){ const s=jtEstSec(n)||3; return Math.max(650,Math.min(3200, s*1.8))/_jtSpeed; }
+function jtJitter(n){ const j=+n.jitter||0; return j? (1 + (Math.random()*2-1)*j/100) : 1; }
+function jtSimMs(n){ const s=jtEstSec(n)||3; return Math.max(650,Math.min(3200, s*1.8))*jtJitter(n)/_jtSpeed; }
+function jtSimMsFx(n){ const s=jtEstSec(n)||3; return Math.max(240,Math.min(950, s*24))*jtJitter(n)/_jtSpeed; }
+function jtWillFail(n){ if(n.failMode==='always') return true; if(n.failMode==='flaky') return Math.random()*100 < (+n.failPct||15); return false; }
+function jtName(id){ const n=jtNodeById(id); return n?n.name:id; }
 function jtParents(id){ return _jt.edges.filter(e=>e.to===id).map(e=>e.from); }
 // ── Scenarios (multiple Job-Tree pages per project) ──
 function jtScenarios(){
@@ -2903,14 +2955,16 @@ function renderJobTree(){
         </span>
         <span class="jt-sep ro-hide"></span>
         <span class="jt-tgrp">
-          <button class="jt-btn play" id="jt-play" onclick="jtPlay()" title="Visual timing simulation — no real data moves">▶ Simulate</button>
+          <button class="jt-btn play" id="jt-play" onclick="jtPlay()" title="Visual timing simulation — honours per-job failure & timing settings">▶ Simulate</button>
           <button class="jt-btn live ro-hide" id="jt-play-live" onclick="jtPlayLive()" title="Really pull each master's API and write rows into Postgres">⚡ Live Run</button>
+          <button class="jt-btn lab" id="jt-play-lab" onclick="jtFailureLab()" title="Run every failure scenario (each job failing, plus random outages) and generate a resilience report">🔬 Failure Lab</button>
           <button class="jt-btn ghost" id="jt-reset" onclick="jtResetSim(true)" title="Reset">⟲</button>
           <select class="jt-sel sp" onchange="_jtSpeed=+this.value" title="Playback speed">
             <option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="3">3×</option>
           </select>
         </span>
-        <span class="jt-legend"><span><i class="idle"></i>Idle</span><span><i class="run"></i>Running</span><span><i class="done"></i>Done</span><span><i class="err"></i>Failed</span></span>
+        <button class="jt-btn ghost ro-hide" id="jt-snap-btn" onclick="jtToggleSnap(this)" title="Snap nodes to a grid while dragging">▦ Snap</button>
+        <span class="jt-legend"><span><i class="idle"></i>Idle</span><span><i class="run"></i>Running</span><span><i class="done"></i>Done</span><span><i class="err"></i>Failed</span><span><i class="blk"></i>Blocked</span></span>
         <button class="jt-btn ghost ro-hide" onclick="jtClear()" style="margin-left:auto">Clear</button>
       </div>
       <div class="jt-canvas" id="jt-canvas">
@@ -2921,6 +2975,7 @@ function renderJobTree(){
       </div>
     </div>`;
   jtRenderNodes(); jtRenderEdges(); jtApplyView(); jtBindCanvas();
+  const sb=document.getElementById('jt-snap-btn'); if(sb) sb.classList.toggle('on',_jtSnap);
 }
 function jtAddNode(){
   const sel=document.getElementById('jt-add-sel'); const name=sel&&sel.value; if(!name) return;
@@ -2952,8 +3007,10 @@ function jtRenderNodes(){
     const d=document.createElement('div');
     d.className='jt-node'; d.id='node-'+n.id; d.style.left=n.x+'px'; d.style.top=n.y+'px';
     const est=jtEstSec(n); const hasP=jtParents(n.id).length>0;
+    const rk=n.failMode==='always'?'<span class="jt-risk always" title="Always fails in simulation">⚠</span>':n.failMode==='flaky'?`<span class="jt-risk flaky" title="Fails ~${n.failPct||15}% of runs">⚠</span>`:'';
     d.innerHTML=`<div class="jt-head"><span class="jt-ico">⚙</span><span class="jt-kind">Job</span>`
       +`${hasP?`<span class="jt-trig ${n.trigger==='any'?'any':'all'}" title="${n.trigger==='any'?'Runs when ANY parent finishes':'Runs when ALL parents finish'}">${n.trigger==='any'?'ANY':'ALL'}</span>`:''}`
+      +rk
       +`<span class="jt-state"></span></div>`
       +`<div class="jt-name">${esc(n.name)}</div>`
       +`<div class="jt-meta"><span class="jt-chip tbl${n.table?'':' muted'}">▤ ${n.table?esc(n.table):'no table'}</span><span class="jt-chip time${est?'':' muted'}">⏱ ${est?jtFmtDur(est):'set time'}</span></div>`
@@ -2998,7 +3055,7 @@ function jtStartDrag(id,ev){
   if(!jtCanEdit()) return; ev.preventDefault();
   const n=jtNodeById(id); const w=jtToWorld(ev.clientX,ev.clientY); const off={x:w.x-n.x,y:w.y-n.y};
   const el=document.getElementById('node-'+id); el.classList.add('dragging');
-  function mv(e){ const p=jtToWorld(e.clientX,e.clientY); n.x=Math.round(p.x-off.x); n.y=Math.round(p.y-off.y); el.style.left=n.x+'px'; el.style.top=n.y+'px'; jtRenderEdges(); }
+  function mv(e){ const p=jtToWorld(e.clientX,e.clientY); n.x=jtSnapV(p.x-off.x); n.y=jtSnapV(p.y-off.y); el.style.left=n.x+'px'; el.style.top=n.y+'px'; jtRenderEdges(); }
   function up(){ document.removeEventListener('mousemove',mv); document.removeEventListener('mouseup',up); el.classList.remove('dragging'); saveJobTreeState(); }
   document.addEventListener('mousemove',mv); document.addEventListener('mouseup',up);
 }
@@ -3088,8 +3145,8 @@ function jtAutoLayout(mode){
   return done(mode==='compact'?'compact tree':'vertical tree');
 }
 // ── Run simulation ──
-function jtSetNodeState(id,st){ const el=document.getElementById('node-'+id); if(!el)return; el.classList.remove('running','done','error'); if(st&&st!=='idle'){ el.classList.add(st); if(st==='done'){ el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); } } }
-function jtResetSim(toastIt){ _jtSimTimers.forEach(clearTimeout); _jtSimTimers=[]; _jtSimRunning=false; document.querySelectorAll('#jt-world .jt-node').forEach(el=>el.classList.remove('running','done','error')); document.querySelectorAll('.jt-token').forEach(t=>t.remove()); document.querySelectorAll('.jt-edges path.flow').forEach(p=>p.classList.remove('flow')); const b=document.getElementById('jt-play'); if(b){b.textContent='▶ Simulate';b.disabled=false;} const lb=document.getElementById('jt-play-live'); if(lb){lb.innerHTML='⚡ Live Run';lb.disabled=false;} if(toastIt) toast('↺ Reset'); }
+function jtSetNodeState(id,st){ const el=document.getElementById('node-'+id); if(!el)return; el.classList.remove('running','done','error','blocked'); if(st&&st!=='idle'){ el.classList.add(st); if(st==='done'){ el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); } } }
+function jtResetSim(toastIt){ _jtLabRunning=false; _jtSimTimers.forEach(clearTimeout); _jtSimTimers=[]; _jtSimRunning=false; document.querySelectorAll('#jt-world .jt-node').forEach(el=>el.classList.remove('running','done','error','blocked')); document.querySelectorAll('.jt-token').forEach(t=>t.remove()); document.querySelectorAll('.jt-edges path.flow').forEach(p=>p.classList.remove('flow')); const b=document.getElementById('jt-play'); if(b){b.textContent='▶ Simulate';b.disabled=false;} const lb=document.getElementById('jt-play-live'); if(lb){lb.innerHTML='⚡ Live Run';lb.disabled=false;} const xb=document.getElementById('jt-play-lab'); if(xb){xb.innerHTML='🔬 Failure Lab';xb.disabled=false;} if(toastIt) toast('↺ Reset'); }
 function jtFlowToken(edgeIdx,dur){
   const svg=document.getElementById('jt-edges'); const path=document.getElementById('edge-'+edgeIdx); if(!svg||!path)return;
   path.classList.add('flow'); setTimeout(()=>{ if(path)path.classList.remove('flow'); },dur+120);
@@ -3112,14 +3169,19 @@ function jtEditNode(id){
   document.getElementById('jt-cfg-cols').value=n.cols||'';
   document.getElementById('jt-cfg-dur').value=n.dur||'';
   document.getElementById('jt-cfg-trig').value=n.trigger||'all';
+  document.getElementById('jt-cfg-fail').value=n.failMode||'ok';
+  document.getElementById('jt-cfg-failpct').value=n.failPct||'';
+  document.getElementById('jt-cfg-jitter').value=n.jitter||'';
   document.getElementById('jt-cfg-overlay').classList.add('on');
   jtCfgPreview();
 }
 function jtCfgPreview(){
   const r=+document.getElementById('jt-cfg-rows').value||0, c=+document.getElementById('jt-cfg-cols').value||0, d=+document.getElementById('jt-cfg-dur').value||0;
   const sec = (r&&c)? Math.max(1,Math.round(r*c/JT_RATE)) : d;
+  const fm=document.getElementById('jt-cfg-fail').value, fp=+document.getElementById('jt-cfg-failpct').value||15, jt=+document.getElementById('jt-cfg-jitter').value||0;
   const el=document.getElementById('jt-cfg-est');
-  el.innerHTML = sec? `Estimated real run: <strong>${jtFmtDur(sec)}</strong> &nbsp;·&nbsp; plays in ~${Math.round(Math.max(350,Math.min(2600,sec*1.6)))} ms${(r&&c)?` &nbsp;·&nbsp; ${ (r*c).toLocaleString() } cells @ ${JT_RATE}/s`:''}` : 'Set rows × columns (or a manual duration) to estimate the run time.';
+  let risk = fm==='always'?`<span style="color:#dc2626;font-weight:700">⚠ always fails</span>` : fm==='flaky'?`<span style="color:#b45309;font-weight:700">⚠ fails ~${fp}% of runs</span>` : `<span style="color:#16a34a;font-weight:700">✓ reliable</span>`;
+  el.innerHTML = (sec? `Estimated real run: <strong>${jtFmtDur(sec)}</strong>${jt?` ±${jt}%`:''}${(r&&c)?` &nbsp;·&nbsp; ${ (r*c).toLocaleString() } cells @ ${JT_RATE}/s`:''}` : 'Set rows × columns (or a manual duration) to estimate the run time.') + `<br>${risk}`;
 }
 function jtSaveNodeCfg(){
   const n=jtNodeById(_jtEditId); if(!n) return;
@@ -3128,6 +3190,9 @@ function jtSaveNodeCfg(){
   n.cols=+document.getElementById('jt-cfg-cols').value||0;
   n.dur=+document.getElementById('jt-cfg-dur').value||0;
   n.trigger=document.getElementById('jt-cfg-trig').value||'all';
+  n.failMode=document.getElementById('jt-cfg-fail').value||'ok';
+  n.failPct=+document.getElementById('jt-cfg-failpct').value||0;
+  n.jitter=+document.getElementById('jt-cfg-jitter').value||0;
   saveJobTreeState(); document.getElementById('jt-cfg-overlay').classList.remove('on'); renderJobTree();
 }
 // ── Event-driven run simulation honouring trigger modes + capacity estimate ──
@@ -3146,17 +3211,29 @@ function jtPlay(){
       realFin[n.id]=start+jtEstSec(n);
     });
   }
-  _jtReport={ tables:{}, jobs:[], totalSec: Math.max(0,...Object.values(realFin)) };
-  function eligible(id){ const ps=jtParents(id); if(!ps.length) return true; const n=jtNodeById(id); return n.trigger==='any'? ps.some(p=>done[p]) : ps.every(p=>done[p]); }
-  function tryStart(){ _jt.nodes.forEach(n=>{ if(!started[n.id] && eligible(n.id)) startNode(n); }); }
-  function startNode(n){ started[n.id]=1; jtSetNodeState(n.id,'running'); _jtSimTimers.push(setTimeout(()=>finish(n), jtSimMs(n))); }
+  _jtReport={ tables:{}, jobs:[], totalSec: Math.max(0,...Object.values(realFin)), errors:[], blocked:[] };
+  const failed={}, blocked={};
+  function satisfied(id){ const ps=jtParents(id); if(!ps.length) return true; const n=jtNodeById(id); const ok=ps.filter(p=>done[p]&&!failed[p]); return n.trigger==='any'? ok.length>=1 : ok.length===ps.length; }
+  function deadlocked(id){ const ps=jtParents(id); if(!ps.length) return false; const n=jtNodeById(id); const bad=p=>failed[p]||blocked[p]; return n.trigger==='any'? ps.every(bad) : ps.some(bad); }
+  function tryStart(){ let changed=true; while(changed){ changed=false; _jt.nodes.forEach(n=>{ if(started[n.id]||done[n.id]||failed[n.id]||blocked[n.id]) return;
+    if(satisfied(n.id)){ startNode(n); changed=true; } else if(deadlocked(n.id)){ blocked[n.id]=1; jtSetNodeState(n.id,'blocked'); changed=true; } }); } }
+  let running=0;
+  function startNode(n){ started[n.id]=1; running++; jtSetNodeState(n.id,'running'); _jtSimTimers.push(setTimeout(()=>finish(n), jtSimMs(n))); }
   function finish(n){
-    done[n.id]=1; jtSetNodeState(n.id,'done');
-    if(n.table){ const t=(_jtReport.tables[n.table]=_jtReport.tables[n.table]||{rows:0,jobs:[]}); t.rows+=(+n.rows||0); t.jobs.push(n.name); }
-    _jtReport.jobs.push({name:n.name, sec:jtEstSec(n), table:n.table||'', rows:+n.rows||0});
-    _jt.edges.forEach((e,i)=>{ if(e.from===n.id) jtFlowToken(i, jtSimMs(n)*.7); });
+    running--;
+    if(jtWillFail(n)){ failed[n.id]=1; jtSetNodeState(n.id,'error'); _jtReport.errors.push({name:n.name,error:n.failMode==='always'?'forced failure (config)':'flaky failure'}); _jtReport.jobs.push({name:n.name, sec:jtEstSec(n), table:n.table||'', rows:0, error:n.failMode==='always'?'forced failure':'flaky failure'}); }
+    else{
+      done[n.id]=1; jtSetNodeState(n.id,'done');
+      if(n.table){ const t=(_jtReport.tables[n.table]=_jtReport.tables[n.table]||{rows:0,jobs:[]}); t.rows+=(+n.rows||0); t.jobs.push(n.name); }
+      _jtReport.jobs.push({name:n.name, sec:jtEstSec(n), table:n.table||'', rows:+n.rows||0});
+      _jt.edges.forEach((e,i)=>{ if(e.from===n.id) jtFlowToken(i, jtSimMs(n)*.7); });
+    }
     tryStart();
-    if(_jt.nodes.every(x=>done[x.id])){ _jtSimRunning=false; const b=document.getElementById('jt-play'); if(b){b.textContent='▶ Play again';b.disabled=false;} jtShowReport(); }
+    if(running===0){ // settle: mark any leftover as blocked
+      _jt.nodes.forEach(x=>{ if(!done[x.id]&&!failed[x.id]&&!blocked[x.id]){ blocked[x.id]=1; jtSetNodeState(x.id,'blocked'); } });
+      _jtReport.blocked=Object.keys(blocked).map(id=>jtName(id));
+      _jtSimRunning=false; const b=document.getElementById('jt-play'); if(b){b.textContent='▶ Simulate';b.disabled=false;} jtShowReport();
+    }
   }
   setTimeout(tryStart,250);
 }
@@ -3170,9 +3247,13 @@ function jtShowReport(){
     <div class="jt-rep-kpi"><div class="big">${r.jobs.length}</div><div class="lbl">Jobs executed</div></div>
     <div class="jt-rep-kpi"><div class="big">${tn.length}</div><div class="lbl">Tables populated</div></div>
     <div class="jt-rep-kpi"><div class="big">${totalRows.toLocaleString()}</div><div class="lbl">Rows ${r.live?'inserted':'added'}</div></div></div>`;
-  if(r.live && r.errors && r.errors.length){
+  if(r.errors && r.errors.length){
     h+=`<div class="jt-rep-sec">⚠️ Failed jobs (${r.errors.length})</div><div class="jt-rep-errs">`+
       r.errors.map(e=>`<div class="jt-rep-err"><strong>${esc(e.name)}</strong> — ${esc(e.error)}</div>`).join('')+`</div>`;
+  }
+  if(r.blocked && r.blocked.length){
+    h+=`<div class="jt-rep-sec">⛔ Blocked — never ran (upstream failure)</div><div class="jt-rep-blocked">`+
+      r.blocked.map(nm=>`<span class="jt-rep-bchip">${esc(nm)}</span>`).join('')+`</div>`;
   }
   h+=`<div class="jt-rep-sec">Tables &amp; data ${r.live?'inserted':'added'}</div>`;
   h+= tn.length ? `<table class="jt-rep-tbl"><thead><tr><th>Table</th><th>Rows</th><th>Populated by</th></tr></thead><tbody>`+
@@ -3249,6 +3330,169 @@ async function jtPlayLive(){
     }
   }
   setTimeout(tryStart,150);
+}
+
+// ══════════ FAILURE LAB — run every failure scenario, then generate a resilience report ══════════
+let _jtLabRunning=false, _jtLabAgg=null;
+const jtSleep=ms=>new Promise(r=>setTimeout(r,ms));
+// est critical-path seconds over the jobs that SUCCEEDED in a scenario (honours triggers)
+function jtScenarioSec(done){
+  const fin={}; const ind={}; _jt.nodes.forEach(n=>ind[n.id]=jtParents(n.id).length);
+  const q=_jt.nodes.filter(n=>!ind[n.id]).map(n=>n.id);
+  const seen={};
+  while(q.length){ const id=q.shift(); if(seen[id])continue; seen[id]=1;
+    if(done[id]){ const ps=jtParents(id).filter(p=>done[p]); const base=ps.length?Math.max(...ps.map(p=>fin[p]||0)):0; fin[id]=base+jtEstSec(jtNodeById(id)); }
+    _jt.edges.filter(e=>e.from===id).forEach(e=>{ if(--ind[e.to]<=0) q.push(e.to); }); }
+  return Math.round(Math.max(0,...Object.values(fin),0));
+}
+// static blast radius: if `failIds` fail, which jobs can never run (trigger-aware)
+function jtBlastRadius(failIds){
+  const failed={}; failIds.forEach(id=>failed[id]=1);
+  const ok={}, blocked={}; let changed=true;
+  // iterate to fixpoint
+  for(let guard=0; guard<_jt.nodes.length+2 && changed; guard++){ changed=false;
+    _jt.nodes.forEach(n=>{ if(failed[n.id]||ok[n.id]||blocked[n.id]) return;
+      const ps=jtParents(n.id); const bad=p=>failed[p]||blocked[p];
+      if(!ps.length){ ok[n.id]=1; changed=true; return; }
+      const good=ps.filter(p=>ok[p]);
+      if(n.trigger==='any'){ if(good.length){ ok[n.id]=1; changed=true; } else if(ps.every(bad)){ blocked[n.id]=1; changed=true; } }
+      else { if(ps.some(bad)){ blocked[n.id]=1; changed=true; } else if(ps.every(p=>ok[p])){ ok[n.id]=1; changed=true; } }
+    });
+  }
+  return Object.keys(blocked);
+}
+// animate ONE scenario with a forced-failure set; resolve with the outcome
+function jtRunScenario(failSet){
+  return new Promise(resolve=>{
+    document.querySelectorAll('#jt-world .jt-node').forEach(el=>el.classList.remove('running','done','error','blocked'));
+    document.querySelectorAll('.jt-token').forEach(t=>t.remove());
+    const done={}, failed={}, blocked={}, started={}, ran=[]; let running=0, finished=false;
+    const timers=[];
+    function satisfied(id){ const ps=jtParents(id); if(!ps.length) return true; const n=jtNodeById(id); const okp=ps.filter(p=>done[p]&&!failed[p]); return n.trigger==='any'? okp.length>=1 : okp.length===ps.length; }
+    function deadlocked(id){ const ps=jtParents(id); if(!ps.length) return false; const n=jtNodeById(id); const bad=p=>failed[p]||blocked[p]; return n.trigger==='any'? ps.every(bad) : ps.some(bad); }
+    function tryStart(){ let ch=true; while(ch){ ch=false; _jt.nodes.forEach(n=>{ if(started[n.id]||done[n.id]||failed[n.id]||blocked[n.id]) return;
+      if(satisfied(n.id)){ startNode(n); ch=true; } else if(deadlocked(n.id)){ blocked[n.id]=1; jtSetNodeState(n.id,'blocked'); ch=true; } }); } }
+    function startNode(n){ started[n.id]=1; running++; jtSetNodeState(n.id,'running'); timers.push(setTimeout(()=>finish(n), jtSimMsFx(n))); }
+    function finish(n){ running--;
+      if(failSet.has(n.id)){ failed[n.id]=1; jtSetNodeState(n.id,'error'); }
+      else { done[n.id]=1; jtSetNodeState(n.id,'done'); _jt.edges.forEach((e,i)=>{ if(e.from===n.id) jtFlowToken(i, jtSimMsFx(n)*.7); }); }
+      ran.push({id:n.id, sec:jtEstSec(n)});
+      tryStart();
+      if(running===0) end();
+    }
+    function end(){ if(finished) return; finished=true; timers.forEach(clearTimeout);
+      _jt.nodes.forEach(x=>{ if(!done[x.id]&&!failed[x.id]&&!blocked[x.id]){ blocked[x.id]=1; jtSetNodeState(x.id,'blocked'); } });
+      resolve({ completed:!Object.keys(failed).length && !Object.keys(blocked).length,
+        failed:Object.keys(failed), blocked:Object.keys(blocked), ran, totalSec:jtScenarioSec(done) }); }
+    timers.push(setTimeout(end, 30000)); // safety
+    setTimeout(tryStart, 100);
+  });
+}
+function jtLabPhase(t){ const e=document.getElementById('jt-lab-phase'); if(e) e.textContent=t; }
+function jtLabScn(t){ const e=document.getElementById('jt-lab-scn'); if(e) e.innerHTML=t; }
+function jtLabProg(i,total){ const f=document.getElementById('jt-lab-fill'); if(f) f.style.width=Math.round(i/total*100)+'%'; const c=document.getElementById('jt-lab-count'); if(c) c.textContent=`${i} / ${total} scenarios`; }
+function jtLabLive(html){ const e=document.getElementById('jt-lab-live'); if(e) e.innerHTML=html; }
+function jtLabStop(){ _jtLabRunning=false; }
+function jtFailureLab(){
+  if(_jtLabRunning) return;
+  if(!_jt.nodes.length){ toast('Add some jobs first'); return; }
+  jtResetSim(); _jtLabRunning=true; _jtSimRunning=true;
+  const pb=document.getElementById('jt-play'), lb=document.getElementById('jt-play-live'), xb=document.getElementById('jt-play-lab');
+  if(pb)pb.disabled=true; if(lb)lb.disabled=true; if(xb){xb.disabled=true; xb.innerHTML='● Running…';}
+  document.getElementById('jt-lab-overlay').classList.add('on');
+  // build scenario list
+  const nodes=_jt.nodes.slice();
+  const scenarios=[{label:'Baseline · no failures', fail:new Set(), kind:'base'}];
+  nodes.forEach(n=>scenarios.push({label:'Single failure · '+n.name, fail:new Set([n.id]), kind:'spof', focus:n.id}));
+  const R=Math.min(10, Math.max(5, Math.round(nodes.length/2)));
+  for(let i=0;i<R;i++){ const f=new Set(); nodes.forEach(n=>{ const p=n.failMode==='always'?100:(n.failMode==='flaky'?(n.failPct||15):15); if(Math.random()*100<p) f.add(n.id); }); if(!f.size) f.add(nodes[Math.floor(Math.random()*nodes.length)].id); scenarios.push({label:'Random outage #'+(i+1), fail:f, kind:'chaos'}); }
+  const agg={ started:new Date(), nodes:nodes.map(n=>({id:n.id,name:n.name,table:n.table||'',est:jtEstSec(n),trigger:n.trigger||'all',failMode:n.failMode||'ok',failPct:n.failPct||0,jitter:n.jitter||0})),
+    perJob:{}, scenarios:[], baseSec:0, edges:_jt.edges.length };
+  nodes.forEach(n=>agg.perJob[n.id]={name:n.name, runs:0, fails:0, blockedTimes:0, sumSec:0, blast:jtBlastRadius([n.id]) });
+  (async function loop(){
+    for(let i=0;i<scenarios.length;i++){
+      if(!_jtLabRunning) break;
+      const sc=scenarios[i];
+      jtLabPhase(sc.kind==='base'?'Baseline run':sc.kind==='spof'?'Single-point-of-failure sweep':'Random outage stress test');
+      jtLabScn(sc.fail.size? `Failing: <strong>${[...sc.fail].map(id=>esc(jtName(id))).join(', ')}</strong>` : 'All jobs healthy');
+      jtLabProg(i,scenarios.length);
+      const res=await jtRunScenario(sc.fail);
+      if(sc.kind==='base') agg.baseSec=res.totalSec;
+      res.ran.forEach(r=>{ const pj=agg.perJob[r.id]; if(pj){ pj.runs++; pj.sumSec+=r.sec; } });
+      res.failed.forEach(id=>{ if(agg.perJob[id]) agg.perJob[id].fails++; });
+      res.blocked.forEach(id=>{ if(agg.perJob[id]) agg.perJob[id].blockedTimes++; });
+      agg.scenarios.push({ label:sc.label, kind:sc.kind, forced:[...sc.fail].map(jtName), completed:res.completed, failed:res.failed.map(jtName), blocked:res.blocked.map(jtName), totalSec:res.totalSec });
+      jtLabLive(`<span class="jt-lab-tag ${res.completed?'ok':'bad'}">${res.completed?'✓ completed':res.failed.length+' failed · '+res.blocked.length+' blocked'}</span>`);
+      jtLabProg(i+1,scenarios.length);
+      await jtSleep(260);
+    }
+    _jtLabRunning=false; _jtSimRunning=false;
+    if(pb)pb.disabled=false; if(lb)lb.disabled=false; if(xb){xb.disabled=false; xb.innerHTML='🔬 Failure Lab';}
+    document.getElementById('jt-lab-overlay').classList.remove('on');
+    _jtLabAgg=agg;
+    await jtBuildFailureDoc(agg);
+  })();
+}
+function jtDownloadText(name, text, mime){ const b=new Blob([text],{type:mime||'text/markdown'}); const u=URL.createObjectURL(b); const a=document.createElement('a'); a.href=u; a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(u),2000); }
+async function jtBuildFailureDoc(agg){
+  const proj=(loadProjects().find(p=>p.id===getActivePid())||{}).name||'Project';
+  const scn=(jtScenarios().find(s=>s.id===jtActiveId())||{}).name||'Flow';
+  const jobs=Object.values(agg.perJob);
+  const spofs=agg.nodes.map(n=>({name:n.name, blast:agg.perJob[n.id].blast.length, blocks:agg.perJob[n.id].blast})).sort((a,b)=>b.blast-a.blast);
+  const flaky=agg.nodes.filter(n=>n.failMode!=='ok').map(n=>({name:n.name, mode:n.failMode, pct:n.failPct}));
+  const slow=agg.nodes.slice().sort((a,b)=>b.est-a.est).slice(0,5);
+  const chaos=agg.scenarios.filter(s=>s.kind==='chaos');
+  const chaosOk=chaos.filter(s=>s.completed).length;
+  const worstChaos=chaos.slice().sort((a,b)=>(b.failed.length+b.blocked.length)-(a.failed.length+a.blocked.length))[0];
+  const fmtL=arr=>arr.length?arr.join(', '):'—';
+  const D=new Date();
+  let md=`# Job Tree — Resilience & Failure Analysis\n\n`;
+  md+=`**Project:** ${proj}  \n**Scenario board:** ${scn}  \n**Generated:** ${D.toLocaleString()}  \n**Jobs:** ${agg.nodes.length} · **Dependencies:** ${agg.edges} · **Scenarios run:** ${agg.scenarios.length}\n\n`;
+  md+=`---\n\n## 1. Executive summary\n\n`;
+  md+=`- **Healthy run (critical path):** ~${jtFmtDur(agg.baseSec)} end-to-end when nothing fails.\n`;
+  const topSpof=spofs[0];
+  md+=`- **Biggest single point of failure:** **${topSpof.name}** — if it fails, **${topSpof.blast} downstream job(s)** cannot run${topSpof.blast?`: ${fmtL(topSpof.blocks)}`:''}.\n`;
+  md+=`- **Random outage resilience:** ${chaosOk}/${chaos.length} random-outage scenarios still completed cleanly.\n`;
+  if(flaky.length) md+=`- **Configured risk:** ${flaky.length} job(s) are marked unreliable (${flaky.map(f=>f.mode==='always'?f.name+' — always fails':f.name+` — ~${f.pct||15}%`).join('; ')}).\n`;
+  else md+=`- **Configured risk:** no jobs are marked as flaky/failing — set a job's ⚙ → Reliability to model outages.\n`;
+  md+=`\n## 2. Single points of failure (blast radius)\n\nIf a job fails, every job below it that depends on it (via an ALL trigger) is blocked. Ranked by how many jobs each failure takes down.\n\n`;
+  md+=`| Job | Jobs blocked if it fails | Blocked jobs |\n|---|---:|---|\n`;
+  spofs.forEach(s=>{ md+=`| ${s.name} | ${s.blast} | ${s.blast?s.blocks.join(', '):'—'} |\n`; });
+  md+=`\n> Jobs with a large blast radius are the ones to make resilient first — add a retry, an alert, or switch dependents to an **ANY** trigger where a partial run is acceptable.\n\n`;
+  md+=`## 3. Per-job behaviour across all scenarios\n\n| Job | Runs | Times failed | Times blocked | Avg run |\n|---|---:|---:|---:|---:|\n`;
+  agg.nodes.forEach(n=>{ const p=agg.perJob[n.id]; md+=`| ${n.name} | ${p.runs} | ${p.fails} | ${p.blockedTimes} | ${p.runs?jtFmtDur(Math.round(p.sumSec/p.runs)):'—'} |\n`; });
+  md+=`\n## 4. Slowest jobs (time hot-spots)\n\n| Job | Est. run | Target table |\n|---|---:|---|\n`;
+  slow.forEach(n=>{ md+=`| ${n.name} | ${jtFmtDur(n.est)} | ${n.table||'—'} |\n`; });
+  md+=`\n## 5. Scenario log\n\n| # | Scenario | Forced to fail | Failed | Blocked | Completed | Run time |\n|--:|---|---|---|---|:--:|--:|\n`;
+  agg.scenarios.forEach((s,i)=>{ md+=`| ${i+1} | ${s.label} | ${fmtL(s.forced)} | ${fmtL(s.failed)} | ${fmtL(s.blocked)} | ${s.completed?'✅':'❌'} | ${jtFmtDur(s.totalSec)} |\n`; });
+  md+=`\n## 6. Recommendations\n\n`;
+  const recs=[];
+  spofs.filter(s=>s.blast>=2).slice(0,5).forEach(s=>recs.push(`**${s.name}** blocks ${s.blast} downstream jobs on failure — add a retry/alert, or make its dependents use an ANY trigger where a partial load is acceptable.`));
+  if(worstChaos && (worstChaos.failed.length+worstChaos.blocked.length)) recs.push(`Worst random outage (${worstChaos.label}) failed ${worstChaos.failed.length} and blocked ${worstChaos.blocked.length} jobs — consider isolating these chains so one outage doesn't cascade.`);
+  slow.slice(0,2).forEach(n=>recs.push(`**${n.name}** is a timing hot-spot (~${jtFmtDur(n.est)}) — run it as early as possible and in parallel with independent jobs to shorten the critical path.`));
+  if(!flaky.length) recs.push(`No failure modes are configured yet — open a few jobs' ⚙ and set Reliability to "flaky" to model realistic outages, then re-run the lab.`);
+  recs.forEach((r,i)=>md+=`${i+1}. ${r}\n`);
+  md+=`\n---\n_Generated by the Salescode.ai SAP Integration Tracker — Job Tree Failure Lab._\n`;
+
+  // download + in-app summary
+  const fname=`failure-analysis-${proj.replace(/[^a-z0-9]+/gi,'-').toLowerCase()}-${D.toISOString().slice(0,10)}.md`;
+  window._jtLabMd=md; window._jtLabFname=fname;
+  jtDownloadText(fname, md);
+  // show summary in the report modal
+  const body=document.getElementById('jt-rep-body'); const title=document.querySelector('#jt-rep-overlay .jt-modal-h span');
+  if(title) title.innerHTML='🔬 Failure Lab report <span class="jt-live-badge" style="background:#7c3aed">RESILIENCE</span>';
+  let h=`<div class="jt-rep-top">
+    <div class="jt-rep-kpi"><div class="big">${jtFmtDur(agg.baseSec)}</div><div class="lbl">Healthy critical path</div></div>
+    <div class="jt-rep-kpi"><div class="big">${agg.scenarios.length}</div><div class="lbl">Scenarios run</div></div>
+    <div class="jt-rep-kpi"><div class="big">${spofs[0].blast}</div><div class="lbl">Worst blast radius</div></div>
+    <div class="jt-rep-kpi"><div class="big">${chaosOk}/${chaos.length}</div><div class="lbl">Outages survived</div></div></div>`;
+  h+=`<div class="jt-rep-sec">Top single points of failure</div><ol class="jt-rep-ol">`+
+    spofs.slice(0,6).map(s=>`<li><strong>${esc(s.name)}</strong> <span class="muted">— blocks ${s.blast} job(s)${s.blast?': '+esc(s.blocks.join(', ')):''}</span></li>`).join('')+`</ol>`;
+  h+=`<div class="jt-rep-sec">Full report</div><div class="muted" style="font-size:12px;margin-bottom:10px">A complete Markdown report (blast radius, per-job stats, scenario log, recommendations) has been downloaded. You can re-download or copy it below.</div>
+    <div style="display:flex;gap:8px"><button class="jt-btn" onclick="jtDownloadText(window._jtLabFname, window._jtLabMd)">⬇ Download report (.md)</button>
+    <button class="jt-btn ghost" onclick="navigator.clipboard.writeText(window._jtLabMd).then(()=>toast('Report copied'))">⧉ Copy Markdown</button></div>`;
+  body.innerHTML=h; document.getElementById('jt-rep-overlay').classList.add('on');
+  toast('🔬 Failure analysis complete — report downloaded');
 }
 
 function renderProjDropdown(){
