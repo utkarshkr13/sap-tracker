@@ -3438,7 +3438,7 @@ async function jtBuildFailureDoc(agg){
   const proj=(loadProjects().find(p=>p.id===getActivePid())||{}).name||'Project';
   const scn=(jtScenarios().find(s=>s.id===jtActiveId())||{}).name||'Flow';
   const jobs=Object.values(agg.perJob);
-  const spofs=agg.nodes.map(n=>({name:n.name, blast:agg.perJob[n.id].blast.length, blocks:agg.perJob[n.id].blast})).sort((a,b)=>b.blast-a.blast);
+  const spofs=agg.nodes.map(n=>({name:n.name, blast:agg.perJob[n.id].blast.length, blocks:agg.perJob[n.id].blast.map(jtName)})).sort((a,b)=>b.blast-a.blast);
   const flaky=agg.nodes.filter(n=>n.failMode!=='ok').map(n=>({name:n.name, mode:n.failMode, pct:n.failPct}));
   const slow=agg.nodes.slice().sort((a,b)=>b.est-a.est).slice(0,5);
   const chaos=agg.scenarios.filter(s=>s.kind==='chaos');
